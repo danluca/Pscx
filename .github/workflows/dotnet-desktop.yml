@@ -116,5 +116,5 @@ jobs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: Zip Package
-        path:  ${{ github.workspace }}${{ env.Wap_Project_Directory }}\*.zip
+        name: PSCX Zip Package
+        path:  ${{ github.workspace }}${{ env.Wap_Project_Directory }}\Pscx-${{ env.Build_Version }}.zip
