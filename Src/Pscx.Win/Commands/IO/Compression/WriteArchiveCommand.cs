@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------
-// Authors: Dan Luca
+// Authors: jachymko, Oisin Grehan, Dan Luca
 //
 // Description: Archive Creation using SharpCompress library
 //

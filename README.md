@@ -12,27 +12,46 @@ The customizations made in this fork include:
 * build upgraded to VS2022
 * packaging and build improvements throughout
 * removed cmdlets with low value, seldomly used
+* GitHub CI/CD build
 
 ## Release notes
 
-See [Changelog.md](CHANGELOG.md).
+See [Changelog.md](CHANGELOG.md) for more detailed information. 
 
 ## Install Pscx
 
 ### Pre-requisites
 
 * Install [latest PowerShell Core version](https://github.com/PowerShell/PowerShell/releases/latest)
-* Create a profile - may also want to have a look at [ompgit](https://gitlab.com/danluca/ohmyposhgit) profile enhancer
+* Create a profile - may also want to have a look at the _awesome_ [ompgit](https://gitlab.com/danluca/ohmyposhgit) profile & prompt enhancer, especially if you use git SCM (shameless plug :stuck_out_tongue_winking_eye: )
 
 ### Installation
-TBD
-* Download the [latest artifact](https://gitlab.com/danluca/pscx-light/releases/latest) from Package Registry
-* Unzip to `~/Documents/PowerShell/Modules` folder
+* Download the [latest artifact](https://github.com/danluca/Pscx/releases/latest) from GitHub
+  * note this artifact may in fact be a double zip of the `Pscx-{version}.zip` file - this is an artifact of GitHub. A solution/work-around may surface, but for the time being this is not seen as a major inconvenience.
+* Unzip the `Pscx-{version}.zip` file to `~/Documents/PowerShell/Modules` folder
 * Import module PSCX in your PowerShell profile file `import-module pscx`
 
 ## Maintainers
  - @danluca and other maintainers in this GitHub repository
 
+### Design constraints
+#### C# Cmdlet C#
+Required Annotations:
+* `Cmdlet` using appropriate PscxVerbs and PscxNouns per the containing module. Do not use plain strings as this interferes with the tooling (see below)
+* `Description` specify a summary of what the cmdlet accomplishes. This supports the tooling as well.
+* (optional) `DetailedDescription` for more detailed information. While the format is not as flexible as the documentation comments in a `ps1` file, it is in keeping of the best practice of having documentation as close to the code as possible, for contextual/sustaining benefits
+
+Place a new C# cmdlet in the OS appropriate project - `Pscx` for cross-platform, `Pscx.Win` for Windows specific. `Pscx.Core` is a framework level library that both `Pscx` and `Pscx.Win` projects depend upon; it is not intended to contain exportable cmdlets but their base classes and utilities. 
+
+When this OS based functionality separation is not self evident and a class is not entirely cross-platform nor OS specific, at a minimum do annotate the functions that are OS specific with `SupportedOSPlatform` attribute. Refactoring the design where the OS specific classes extend a basic common functionality is encouraged.
+
+When new C# cmdlets are added, remember to add corresponding help file in `Pscx.Help` project.
+
+
+### Tooling
+Several conveniences are made available in support of release process:
+* `Tools\version_update.ps1` - consistently updates the version across all assembly info classes, psd1 files, etc.
+* `Tools\find_cmdlets.ps1` - reports all the cmdlets and functions found throughout the PSCX solution (all projects and modules) (based on the _Cmdlet_ annotations discussed above). This aids in creating the `psd1` module files. It also helps with creating the content of the _Cmdlets_ and _Functions_ sections below - it pulls the cmdlet name and description (non-MD formatted, but it could be) such that it can be pasted directly into the section and apply MD formatting.
 
 ## Included cmdlets and functions
 

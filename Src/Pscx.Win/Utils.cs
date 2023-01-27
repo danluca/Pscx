@@ -1,5 +1,5 @@
 ﻿//---------------------------------------------------------------------
-// Author: Dan Luca
+// Author: Keith Hill, Dan Luca
 //
 // Description: Class to implement some generic windows utilities.
 //
