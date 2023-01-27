@@ -1,7 +1,8 @@
 # PowerShell Community Extensions Light Changelog
 
-## 3.6.4 - December 2022
+## 3.6.4 - January 2023
 
+* GitHub CI/CD build pipeline (aka Actions) and published artifacts
 * Upgraded to .NET 6.0, PowerShell Core 7.2
 * Enhanced CD module, jump to top/bottom of stack, ANSI colors, more shortcuts
 * Minimum PowerShell version is 7.0
