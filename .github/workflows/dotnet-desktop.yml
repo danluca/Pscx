@@ -56,9 +56,11 @@ jobs:
                              # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
 
     env:
-      Solution_Dir: Src\                                    # Replace with your solution name, i.e. MyWpfApp.sln.
-      Test_Project_Path: Src\Pscx.UnitTests\Pscx.UnitTests.csproj    # Replace with the path to your test project, i.e. MyWpfApp.Tests\MyWpfApp.Tests.csproj.
-      Wap_Project_Directory: \Output                               # Replace with the Wap project directory relative to the solution, i.e. MyWpfApp.Package.
+      Solution_Dir: Src\                                            # Replace with your solution name, i.e. MyWpfApp.sln.
+      Build_Version: 3.6.4.${{ github.run_number }}
+      Test_Project_Path: Src\Pscx.UnitTests\Pscx.UnitTests.csproj   # Replace with the path to your test project, i.e. MyWpfApp.Tests\MyWpfApp.Tests.csproj.
+      Wap_Project_Directory: \Output                                # Replace with the Wap project directory relative to the solution, i.e. MyWpfApp.Package.
+
 
     steps:
     - name: Checkout
@@ -83,7 +85,8 @@ jobs:
     # Run the .Net build
     - name: Assemble the library
       run: |
-        set-location $env:Solution_Dir
+        .\Tools\version_update.ps1 "$env:Build_Version"
+        set-location "$env:Solution_Dir"
         dotnet restore -property:Configuration=$env:Configuration
         dotnet msbuild -property:Configuration=$env:Configuration
       env:
