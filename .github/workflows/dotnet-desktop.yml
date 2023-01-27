@@ -84,6 +84,7 @@ jobs:
     - name: Assemble the library
       run: |
         set-location $env:Solution_Dir
+        dotnet restore -property:Configuration=$env:Configuration
         dotnet msbuild -property:Configuration=$env:Configuration
       env:
         Configuration: ${{ matrix.configuration }}
