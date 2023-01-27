@@ -40,7 +40,7 @@ name: .NET Core Desktop
 
 on:
   push:
-    branches: [ "master", "dev/*" ]
+    branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
 
@@ -58,7 +58,7 @@ jobs:
     env:
       Solution_Dir: Src\                                    # Replace with your solution name, i.e. MyWpfApp.sln.
       Test_Project_Path: Src\Pscx.UnitTests\Pscx.UnitTests.csproj    # Replace with the path to your test project, i.e. MyWpfApp.Tests\MyWpfApp.Tests.csproj.
-      Wap_Project_Directory: ..\Output                               # Replace with the Wap project directory relative to the solution, i.e. MyWpfApp.Package.
+      Wap_Project_Directory: \Output                               # Replace with the Wap project directory relative to the solution, i.e. MyWpfApp.Package.
 
     steps:
     - name: Checkout
@@ -114,4 +114,4 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: Zip Package
-        path: ${{ env.Wap_Project_Directory }}\*.zip
+        path:  ${{ github.workspace }}${{ env.Wap_Project_Directory }}\*.zip
