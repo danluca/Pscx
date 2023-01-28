@@ -13,12 +13,13 @@ using System.Management.Automation;
 using System.Xml;
 using System.Xml.Xsl;
 using Microsoft.PowerShell.Commands;
-using Pscx.IO;
+using Pscx.Core.IO;
 
 namespace Pscx.Commands.Xml
 {
     [OutputType(typeof(string))]
-    [Cmdlet(VerbsData.Convert, PscxNouns.Xml, DefaultParameterSetName = ParameterSetPath)]
+    [Cmdlet(VerbsData.Convert, PscxNouns.Xml, DefaultParameterSetName = ParameterSetPath),
+     Description("Converts XML through a XSL")]
     [RelatedLink(typeof(TestXmlCommand))]
     [RelatedLink(typeof(FormatXmlCommand))]
     [ProviderConstraint(typeof(FileSystemProvider))]

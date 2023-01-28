@@ -6,14 +6,13 @@
 // Creation Date: Jul 27, 2009
 //---------------------------------------------------------------------
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Management.Automation;
 using Pscx.SIUnits;
+using System.ComponentModel;
 
 namespace Pscx.Commands
 {
-    [Cmdlet(VerbsData.ConvertTo, PscxNouns.Metric)]
+    [Cmdlet(VerbsData.ConvertTo, PscxNouns.Metric), Description("Converts to metric system units")]
     [OutputType(new[]{typeof(object)})]
     public class ConvertToMetricCommand : PscxCmdlet
     {

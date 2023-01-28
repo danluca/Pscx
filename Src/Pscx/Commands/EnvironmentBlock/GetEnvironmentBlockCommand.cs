@@ -1,10 +1,10 @@
-﻿using System;
+﻿using Pscx.EnvironmentBlock;
+using System.ComponentModel;
 using System.Management.Automation;
-using Pscx.EnvironmentBlock;
 
 namespace Pscx.Commands.EnvironmentBlock
 {
-    [Cmdlet(VerbsCommon.Get, PscxNouns.EnvironmentBlock)]
+    [Cmdlet(VerbsCommon.Get, PscxNouns.EnvironmentBlock), Description("Get the current environment block")]
     [RelatedLink(typeof(AddPathVariableCommand))]
     [RelatedLink(typeof(GetPathVariableCommand))]
     [RelatedLink(typeof(SetPathVariableCommand))]

@@ -120,10 +120,9 @@ if ($args.Length -gt 0)
 # Cmdlet aliases
 # -----------------------------------------------------------------------
 Set-Alias gtn   Pscx\Get-TypeName      -Description "PSCX alias"
-Set-Alias fhex  Pscx\Format-PscxHex    -Description "PSCX alias"
+Set-Alias fhex  Pscx\Format-Hex        -Description "PSCX alias"
 Set-Alias cvxml Pscx\Convert-Xml       -Description "PSCX alias"
 Set-Alias fxml  Pscx\Format-Xml        -Description "PSCX alias"
-Set-Alias ocb   Pscx\Out-PscxClipboard -Description "PSCX alias"
 Set-Alias lorem Pscx\Get-LoremIpsum    -Description "PSCX alias"
 Set-Alias ln    Pscx\New-HardLink      -Description "PSCX alias"
 Set-Alias touch Pscx\Set-FileTime      -Description "PSCX alias"
@@ -131,7 +130,20 @@ Set-Alias tail  Pscx\Get-FileTail      -Description "PSCX alias"
 Set-Alias skip  Pscx\Skip-Object       -Description "PSCX alias"
 
 # Compatibility alias
-Set-Alias Resize-Bitmap Pscx\Set-BitmapSize -Description "PSCX alias"
+# Set-Alias Resize-Bitmap Pscx\Set-BitmapSize -Description "PSCX alias"
+
+# -----------------------------------------------------------------------
+# Load the PscxWin companion module if running on Windows
+# -----------------------------------------------------------------------
+if ($IsWindows) {
+    $subModuleBasePath = "$PSScriptRoot\PscxWin.psd1"
+    try {
+        # Don't complain about non-standard verbs with nested imports but we will still have one complaint for the final global scope import
+        Import-Module $subModuleBasePath -DisableNameChecking
+    } catch {
+        Write-Warning "Module PscxWin load error: $_"
+    }
+}
 
 if ($Pscx:Preferences["PageHelpUsingLess"]) {
     if ($PSVersionTable.PSVersion.Major -le 5) {
@@ -139,18 +151,19 @@ if ($Pscx:Preferences["PageHelpUsingLess"]) {
     }
     elseif (!(Test-Path Env:PAGER)) {
         # Only set this env var if someone has not defined it themselves
-        $env:PAGER = 'less "-PsPage %db?B of %D:.\. Press h for help or q to quit\.$"'
+        $env:PAGER = 'less'
+        $env:LESS = "-PsPage %db?B of %D:.\. Press h for help or q to quit\.$"
     }
 }
 
 # -----------------------------------------------------------------------
-# Load nested modules selected by user
+# Load nested modules selected by user - on Windows, PscxWin must be loaded first
 # -----------------------------------------------------------------------
 $stopWatch = new-object System.Diagnostics.StopWatch
 $keys = @($Pscx:Preferences.ModulesToImport.Keys)
 if ($Pscx:Preferences.ShowModuleLoadDetails)
 {
-    Write-Host "PowerShell Community Extensions $($Pscx:Version)`n"
+    Write-Host "PowerShell Core Community Extensions $($Pscx:Version)`n"
     $totalModuleLoadTimeMs = 0
     $stopWatch.Reset()
     $stopWatch.Start()
@@ -230,32 +243,6 @@ foreach ($key in $keys)
     if ($Pscx:Preferences.ShowModuleLoadDetails)
     {
         Write-Host " ]"
-    }
-}
-
-if ($Pscx:Preferences.ModulesToImport["Prompt"]) {
-    # Get the default prompt definition.
-    $initialSessionState = [System.Management.Automation.Runspaces.Runspace]::DefaultRunspace.InitialSessionState
-    if (!$initialSessionState -or !$initialSessionState.PSObject.Properties.Match('Commands') -or !$initialSessionState.Commands['prompt']) {
-        $defaultPromptDef = "`$(if (test-path variable:/PSDebugContext) { '[DBG]: ' } else { '' }) + 'PS ' + `$(Get-Location) + `$(if (`$nestedpromptlevel -ge 1) { '>>' }) + '> '"
-    }
-    else {
-        $defaultPromptDef = $initialSessionState.Commands['prompt'].Definition
-    }
-
-    $currentPromptDef = if ($funcInfo = Get-Command prompt -ErrorAction SilentlyContinue) { $funcInfo.Definition }
-
-    if (!$currentPromptDef) {
-        # If prompt is missing, create a global one we can overwrite with Set-Item
-        function global:prompt { ' ' }
-    }
-
-    $pscxPromptScriptBlock = (Get-Command PscxPrompt -Type Function).ScriptBlock
-
-    # If there is no prompt function or the prompt function is the default, replace the current prompt function definition
-    if (!$currentPromptDef -or ($currentPromptDef -eq $defaultPromptDef)) {
-        # Set the posh-git prompt as the default prompt
-        Set-Item Function:\prompt -Value $pscxPromptScriptBlock
     }
 }
 

@@ -7,24 +7,19 @@
 //
 // Copyright (C) 2006 PowerShell Community Extensions Developers
 //---------------------------------------------------------------------
+using Microsoft.PowerShell.Commands;
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Management.Automation;
-using System.Security;
-using System.Text;
 using System.Xml;
 using System.Xml.XPath;
-
-using Microsoft.PowerShell.Commands;
 
 namespace Pscx.Commands.Xml
 {
     [OutputType(typeof(string))]
-    [Cmdlet(PscxVerbs.Format, PscxNouns.Xml, DefaultParameterSetName = ParameterSetPath)]
-    [Description("Pretty print for XML files and XmlDocument objects.")]    
+    [Cmdlet(PscxVerbs.Format, PscxNouns.Xml, DefaultParameterSetName = ParameterSetPath),
+     Description("Pretty print for XML files and XmlDocument objects.")]    
     [RelatedLink(typeof(ConvertXmlCommand))]
     [RelatedLink(typeof(TestXmlCommand))]
     [ProviderConstraint(typeof(FileSystemProvider))]

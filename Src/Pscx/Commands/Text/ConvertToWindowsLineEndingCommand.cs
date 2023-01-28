@@ -6,15 +6,13 @@
 //
 // Creation Date: Nov 12, 2006
 //---------------------------------------------------------------------
-using System;
+using Microsoft.PowerShell.Commands;
 using System.ComponentModel;
 using System.Management.Automation;
 
-using Microsoft.PowerShell.Commands;
-
 namespace Pscx.Commands.Text
 {
-    [Cmdlet(VerbsData.ConvertTo, "WindowsLineEnding", DefaultParameterSetName = "Path", SupportsShouldProcess = true)]
+    [Cmdlet(VerbsData.ConvertTo, PscxNouns.WindowsLineEnding, DefaultParameterSetName = "Path", SupportsShouldProcess = true)]
     [Description("Converts the line endings in the specified file to Windows line endings \"\\r\\n\".")]
     [DetailedDescription("Converts the line endings in the specified file to Windows line endings \"\\r\\n\".  " +
                          "You can convert a single file to a new file name.  Or you can convert multiple files and " +
