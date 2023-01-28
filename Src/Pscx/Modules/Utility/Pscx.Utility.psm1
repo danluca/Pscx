@@ -142,7 +142,7 @@ function PscxHelp
         } elseif ($pagerCommand.CommandType -eq [System.Management.Automation.CommandTypes]::Application) {
             if ($pagerCommand.Name -match '^less') {
                 # if using less - add the LESS environment variable for custom arguments - see https://man7.org/linux/man-pages/man1/less.1.html#ENVIRONMENT_VARIABLES
-                $env:LESS = "-sPPage %db?B of %D:.\. h for help, q to quit\."
+                $env:LESS = "-FrsPPage %db?B of %D:.\. h for help, q to quit\."
             }
             # If the pager is an application, format the output width before sending to the app.
             #$consoleWidth = [System.Math]::Max([System.Console]::WindowWidth, 20)

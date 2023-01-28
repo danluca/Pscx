@@ -24,8 +24,9 @@ if (!(Test-Path "Apps" -PathType Container)) {
     mkdir "Apps\macOS"
     mkdir "Apps\Linux"
 }
-cp $solDir\..\Imports\Less-553\less*.* .\Apps\Win\
-cp $solDir\..\Imports\Less-553\license .\Apps\Win\LICENSE_less.txt
+cp $solDir\..\Imports\Less-608\less*.* .\Apps\Win\
+cp $solDir\..\Imports\Less-608\license .\Apps\Win\LICENSE_less_orig.txt
+cp $solDir\..\Imports\Less-608\LICENSE_win.txt .\Apps\Win\LICENSE_less_win.txt
 cp $solDir\..\Imports\gsudo\win\gsudo.exe .\Apps\Win\sudo.exe
 cp $solDir\..\Imports\gsudo\LICENSE.txt .\Apps\Win\LICENSE_sudo.txt
 cp $solDir\..\Imports\7zip\win\x64\7z.* .\Apps\Win\

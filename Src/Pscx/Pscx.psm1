@@ -148,11 +148,10 @@ if ($IsWindows) {
 if ($Pscx:Preferences["PageHelpUsingLess"]) {
     if ($PSVersionTable.PSVersion.Major -le 5) {
         Set-Alias help PscxHelp -Option AllScope -Scope Global -Description "PSCX alias"
-    }
-    elseif (!(Test-Path Env:PAGER)) {
+    } elseif (!(Test-Path Env:PAGER)) {
         # Only set this env var if someone has not defined it themselves
         $env:PAGER = 'less'
-        $env:LESS = "-PsPage %db?B of %D:.\. Press h for help or q to quit\.$"
+        $env:LESS = "-FrsPPage %db?B of %D:.\. Press h for help or q to quit\.$"
     }
 }
 
