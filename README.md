@@ -18,6 +18,10 @@ The customizations made in this fork include:
 
 See [Changelog.md](CHANGELOG.md) for more detailed information. 
 
+## License
+PSCX is licensed under MIT license. This work includes other open-source projects licensed under their respective licenses, attached as appropriate. 
+See the PSCX [LICENSE](./LICENSE) file as well [Imports](./Imports/) folder for respective license files of the projects distributed/leveraged.
+
 ## Install Pscx
 
 ### Pre-requisites

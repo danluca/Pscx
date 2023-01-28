@@ -24,11 +24,17 @@ if (!(Test-Path "Apps" -PathType Container)) {
     mkdir "Apps\macOS"
     mkdir "Apps\Linux"
 }
-cp $solDir\..\Imports\Less-553\*.* .\Apps\Win\
+cp $solDir\..\Imports\Less-553\less*.* .\Apps\Win\
+cp $solDir\..\Imports\Less-553\license .\Apps\Win\LICENSE_less.txt
 cp $solDir\..\Imports\gsudo\win\gsudo.exe .\Apps\Win\sudo.exe
+cp $solDir\..\Imports\gsudo\LICENSE.txt .\Apps\Win\LICENSE_sudo.txt
 cp $solDir\..\Imports\7zip\win\x64\7z.* .\Apps\Win\
 cp $solDir\..\Imports\7zip\macOS\7zz .\Apps\macOS\
 cp $solDir\..\Imports\7zip\linux\x64\7zz .\Apps\Linux\
+cp $solDir\..\Imports\7zip\License.txt .\Apps\Win\LICENSE_7zip.txt
+cp $solDir\..\Imports\7zip\License.txt .\Apps\macOS\LICENSE_7zip.txt
+cp $solDir\..\Imports\7zip\License.txt .\Apps\Linux\LICENSE_7zip.txt
+cp $solDir\..\LICENSE .\LICENSE.txt
 popd
 
 #sign if enabled
@@ -46,7 +52,7 @@ if (!(Test-Path $packDir)) {
 }
 
 pushd $outDir
-cp Pscx.Core.dll,Pscx.dll,Pscx.psd1,Pscx.psm1,Pscx.UserPreferences.ps1,Pscx.ico $packDir -Force
+cp Pscx.Core.dll,Pscx.dll,Pscx.psd1,Pscx.psm1,Pscx.UserPreferences.ps1,Pscx.ico,LICENSE.txt $packDir -Force
 cp $solDir\..\CHANGELOG.md $packDir -Force
 cp Apps $packDir -Recurse -Force
 cp FormatData $packDir -Recurse -Force
