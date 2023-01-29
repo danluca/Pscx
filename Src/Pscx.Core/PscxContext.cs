@@ -39,7 +39,7 @@ namespace Pscx.Core {
                 AppsDir = Path.Combine(AppsDir, "macOS");
             }
 
-            using (var variable = new PathVariable("Path", EnvironmentVariableTarget.Process)) {
+            using (var variable = new PathVariable("PATH", EnvironmentVariableTarget.Process)) {
                 variable.Append(this.AppsDir);
             }
 
