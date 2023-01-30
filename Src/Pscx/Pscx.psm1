@@ -151,7 +151,7 @@ if ($Pscx:Preferences["PageHelpUsingLess"]) {
     } elseif (!(Test-Path Env:PAGER)) {
         # Only set this env var if someone has not defined it themselves
         $env:PAGER = 'less'
-        $env:LESS = "-FrsPPage %db?B of %D:.\. Press h for help or q to quit\.$"
+        $env:LESS = "-FRsPPage %db?B of %D:.\. Press h for help or q to quit\.$"
     }
 }
 
@@ -166,7 +166,7 @@ if ($Pscx:Preferences.ShowModuleLoadDetails)
     $totalModuleLoadTimeMs = 0
     $stopWatch.Reset()
     $stopWatch.Start()
-    $keys = @($keys | Sort)
+    $keys = @($keys | Sort-Object)
 }
 
 foreach ($key in $keys)

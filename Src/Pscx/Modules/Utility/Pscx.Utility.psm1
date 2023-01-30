@@ -142,7 +142,7 @@ function PscxHelp
         } elseif ($pagerCommand.CommandType -eq [System.Management.Automation.CommandTypes]::Application) {
             if ($pagerCommand.Name -match '^less') {
                 # if using less - add the LESS environment variable for custom arguments - see https://man7.org/linux/man-pages/man1/less.1.html#ENVIRONMENT_VARIABLES
-                $env:LESS = "-FrsPPage %db?B of %D:.\. h for help, q to quit\."
+                $env:LESS = "-FRsPPage %db?B of %D:.\. h for help, q to quit\."
             }
             # If the pager is an application, format the output width before sending to the app.
             #$consoleWidth = [System.Math]::Max([System.Console]::WindowWidth, 20)
@@ -222,7 +222,7 @@ function PscxLess
         }
     }
 
-    $env:LESS = '-PsPage %db?B of %D:.\. Press h for help or q to quit\.$'
+    $env:LESS = '-FRsPPage %db?B of %D:.\. Press h for help or q to quit\.$'
     $lessCmd = (Get-Command less -CommandType Application -ErrorAction Ignore).Path
 
     # Tricky to get this just right.
@@ -2117,22 +2117,6 @@ Set-Alias swr   Pscx\Set-Writable           -Description "PSCX alias"
 }
 
 $acceleratorsType = [psobject].Assembly.GetType('System.Management.Automation.TypeAccelerators')
-
-#add RAR (if present) to the path
-if ($IsWindows) {
-    $regPath = "HKLM:\SOFTWARE\WinRAR"
-    if (Test-Path $regPath) {
-        $rarDir = Split-Path (Get-ItemProperty $regPath).'exe64' -Parent
-        # Add-PathVariable is not available here as the PSCX is not fully loaded - perform the equivalent work
-        $envPath = [System.Environment]::GetEnvironmentVariable("PATH", [EnvironmentVariableTarget]::Process)
-        $envPathElements = [System.Collections.Generic.HashSet[string]]::New()
-        $envPath.Split([System.IO.Path]::PathSeparator, [System.StringSplitOptions]::RemoveEmptyEntries) | ForEach-Object {
-            $envPathElements.Add($_)
-        }
-        $envPathElements.Add($rarDir)
-        [System.Environment]::SetEnvironmentVariable("PATH", ($envPathElements -join [System.IO.Path]::PathSeparator), [System.EnvironmentVariableTarget]::Process)
-    }
-}
 
 #update the PSCX preferences with the most capable file editor:
 # for windows: VSCode, Notepad++, Notepad (in this order)
