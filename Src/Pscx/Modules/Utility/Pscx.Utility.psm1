@@ -2144,24 +2144,19 @@ if ($IsWindows) {
     } elseif (Test-Path "HKLM:\SOFTWARE\Notepad++") {
         $Pscx:Preferences['TextEditor'] = Join-Path (Get-ItemProperty "HKLM:\SOFTWARE\Notepad++").'(default)' 'Notepad++.exe'
     } else {
-        $Pscx:Preferences['TextEditor'] = 'notepad'
+        $Pscx:Preferences['TextEditor'] = (Get-Command notepad).Path
     }
 } elseif ($IsMacOS) {
     # default text editor is Text Mate (custom package) or TextEdit
     if ($betterEditor) {
-        $Pscx:Preferences['TextEditor'] = 'code'
-    } elseif (Get-Command mate -CommandType Application -ErrorAction Ignore) {
-        $Pscx:Preferences['TextEditor'] = 'mate'
+        $Pscx:Preferences['TextEditor'] = ($betterEditor | Where-Object {$_.Path -notmatch '\.cmd'}).Path
     } else {
-        $Pscx:Preferences['TextEditor'] = 'TextEdit'
+        $mateEditor = Get-Command mate -CommandType Application -ErrorAction Ignore
+        $Pscx:Preferences['TextEditor'] = ${mateEditor}?.Path ?? '/System/Applications/TextEdit.app/Contents/MacOS/TextEdit'
     }
 } else {
     # default Ubuntu text editor is gedit
-    if ($betterEditor) {
-        $Pscx:Preferences['TextEditor'] = 'code'
-    } else {
-        $Pscx:Preferences['TextEditor'] = 'gedit'
-    }
+    $Pscx:Preferences['TextEditor'] = $betterEditor ? ($betterEditor | Where-Object {$_.Path -notmatch '\.cmd'}).Path : (Get-Command gedit).Path
 }
 
 AddAccelerator "accelerators" $acceleratorsType
