@@ -14,6 +14,7 @@ using System.Globalization;
 using System.IO;
 using System.Management.Automation;
 using System.Management.Automation.Runspaces;
+using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
@@ -294,8 +295,7 @@ namespace Pscx.Core.IO {
             };
 
             // best way to check paths in a static context
-            return PipelineHelper.ExecuteScalar<bool>(
-                new Command(@"Microsoft.PowerShell.Management\Test-Path"), pathArg);
+            return PipelineHelper.ExecuteScalar<bool>( new Command(@"Microsoft.PowerShell.Management\Test-Path"), pathArg);
         }
 
 
@@ -311,16 +311,14 @@ namespace Pscx.Core.IO {
             string pathArg = (pscxPath.IsUnresolved) ? "LiteralPath" : "Path";
 
             if (Exists(pscxPath)) {
-                bool isLeaf = PipelineHelper.ExecuteScalar<bool>(
-                    new Command("Test-Path"), new CommandArgument() { Name = pathArg, Value = qualifiedPath },
-                    new CommandArgument() { Name = "PathType", Value = "Leaf" });
+                bool isLeaf = PipelineHelper.ExecuteScalar<bool>( new Command("Test-Path"), 
+                    new CommandArgument() { Name = pathArg, Value = qualifiedPath }, new CommandArgument() { Name = "PathType", Value = "Leaf" });
 
                 if (isLeaf) {
                     pathType = PscxPathType.Leaf;
                 } else {
-                    bool isContainer = PipelineHelper.ExecuteScalar<bool>(
-                        new Command("Test-Path"), new CommandArgument() { Name = pathArg, Value = qualifiedPath },
-                        new CommandArgument() { Name = "PathType", Value = "Container" });
+                    bool isContainer = PipelineHelper.ExecuteScalar<bool>( new Command("Test-Path"), 
+                        new CommandArgument() { Name = pathArg, Value = qualifiedPath }, new CommandArgument() { Name = "PathType", Value = "Container" });
 
                     if (isContainer) {
                         pathType = PscxPathType.Container;
@@ -335,32 +333,28 @@ namespace Pscx.Core.IO {
             PscxArgumentException.ThrowIfIsNullOrEmpty(path);
             PscxArgumentException.ThrowIfIsNull(drive);
 
-            string qualifiedPath = path;
-            bool unqualified = true;
+            //ensure consistent directory separator chars - this is likely redundant, the callers have already ran the user input through lookup API that normalizes the separator chars
+            Regex re = new("[\\\\/]");
+            string qualifiedPath = re.Replace(path, Path.DirectorySeparatorChar.ToString());
 
-            int index = path.IndexOf(':');
-            if (index != -1) {
-                if (string.Equals(path.Substring(0, index), drive.Name, StringComparison.OrdinalIgnoreCase)) {
-                    unqualified = false;
+            if (OperatingSystem.IsWindows()) {
+                // if it is the same drive, then return unchanged
+                if (string.Equals(drive.Root, Path.GetPathRoot(qualifiedPath))) {
+                    return qualifiedPath;
                 }
+                // if a network drive, display root is the UNC - if path starts with it, then convert it to mapped drive path
+                if (!string.IsNullOrEmpty(drive.DisplayRoot) && qualifiedPath.StartsWith(drive.DisplayRoot)) {
+                    return drive.Root + qualifiedPath.Substring(drive.DisplayRoot.Length);
+                }
+                //ensure the path does not start with directory separator
+                if (qualifiedPath.StartsWith(Path.DirectorySeparatorChar)) {
+                    qualifiedPath = qualifiedPath.Substring(1);
+                }
+                //combine with drive root (contains a trailing dir separator char)
+                return drive.Root + qualifiedPath;
             }
-            if (unqualified) {
-                const char separator = '\\';
-                string format = "{0}:" + separator + "{1}";
-
-                if (path.StartsWith(separator.ToString(), StringComparison.Ordinal)) {
-                    format = "{0}:{1}";
-                }
-
-                // strip root
-                if (!String.IsNullOrEmpty(drive.Root)) {
-                    if (path.StartsWith(drive.Root)) {
-                        path = path.Substring(drive.Root.Length + 1); // grab trailing slash
-                    }
-                }
-
-                qualifiedPath = string.Format(CultureInfo.InvariantCulture, format, drive.Name, path);
-            }
+            //unix systems don't have the concept of drive - however, the drive argument is not-null and represents the '/' root path
+            //return the path as sent 
             return qualifiedPath;
         }
 
@@ -368,7 +362,10 @@ namespace Pscx.Core.IO {
             PscxArgumentException.ThrowIfIsNullOrEmpty(path);
             PscxArgumentException.ThrowIfIsNull(provider);
 
-            string qualifiedPath = path;
+            //ensure consistent directory separator chars - this is likely redundant, the callers have already ran the user input through lookup API that normalizes the separator chars
+            Regex re = new("[\\\\/]");
+            string qualifiedPath = re.Replace(path, Path.DirectorySeparatorChar.ToString());;
+
             bool isProviderQualified = false;
             int index = path.IndexOf("::", StringComparison.Ordinal);
             if (index != -1) {
@@ -378,8 +375,7 @@ namespace Pscx.Core.IO {
                 }
             }
             if (!isProviderQualified) {
-                qualifiedPath = string.Format(CultureInfo.InvariantCulture, "{0}{1}{2}", GetProviderFullName(provider),
-                                              "::", path);
+                qualifiedPath = string.Format(CultureInfo.InvariantCulture, "{0}{1}{2}", GetProviderFullName(provider), "::", path);
             }
             return qualifiedPath;
         }
