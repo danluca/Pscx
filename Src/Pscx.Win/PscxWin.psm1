@@ -308,6 +308,7 @@ function Import-VisualStudioVars {
 # aliases
 Set-Alias rvhr  Pscx\Resolve-HResult        -Description "PSCX alias"
 Set-Alias rvwer Pscx\Resolve-WindowsError   -Description "PSCX alias"
+Set-Alias ln    Pscx\New-HardLink           -Description "PSCX alias"
 
 
 # -----------------------------------------------------------------------

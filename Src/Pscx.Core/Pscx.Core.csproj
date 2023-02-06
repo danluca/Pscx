@@ -57,9 +57,9 @@
     <Compile Remove="SIUnits\NonSIUnitTypeConverter.cs" />
   </ItemGroup>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="pwsh.exe -NoProfile -ExecutionPolicy RemoteSigned -NonInteractive -File ..\Tools\pscxcore-postbuild.ps1 -outDir $(TargetDir) -configuration $(Configuration)" WorkingDirectory="$(SolutionDir)" />
+    <Exec Command="pwsh -NoProfile -ExecutionPolicy RemoteSigned -NonInteractive -File ../Tools/pscxcore-postbuild.ps1 -outDir $(TargetDir) -configuration $(Configuration)" WorkingDirectory="$(SolutionDir)" />
   </Target>
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-	<Exec Command="pwsh.exe -NoProfile -ExecutionPolicy RemoteSigned -NonInteractive -File ..\Tools\pscxcore-prebuild.ps1 -outDir $(TargetDir) -configuration $(Configuration)" WorkingDirectory="$(SolutionDir)" />
+	<Exec Command="pwsh -NoProfile -ExecutionPolicy RemoteSigned -NonInteractive -File ../Tools/pscxcore-prebuild.ps1 -outDir $(TargetDir) -configuration $(Configuration)" WorkingDirectory="$(SolutionDir)" />
   </Target>
 </Project>

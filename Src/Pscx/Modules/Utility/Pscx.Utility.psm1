@@ -1834,8 +1834,9 @@ if ($IsWindows) {
         $Pscx:Preferences['TextEditor'] = ${mateEditor}?.Path ?? '/System/Applications/TextEdit.app/Contents/MacOS/TextEdit'
     }
 } else {
-    # default Ubuntu text editor is gedit
-    $Pscx:Preferences['TextEditor'] = $betterEditor ? ($betterEditor | Where-Object {$_.Path -notmatch '\.cmd'}).Path : (Get-Command gedit).Path
+    # default Ubuntu text editor is reportedly gedit; account for container env where there are no editors - use cat instead, read-only file viewer
+    $nixEditor = (Get-Command gedit -CommandType Application -ErrorAction Ignore)?.Path ?? 'cat'
+    $Pscx:Preferences['TextEditor'] = $betterEditor ? ($betterEditor | Where-Object {$_.Path -notmatch '\.cmd'}).Path : $nixEditor
 }
 
 AddAccelerator "accelerators" $acceleratorsType

@@ -20,7 +20,7 @@ Import-Module ./Pscx.psd1
 Import-Module ./PscxHelp.psd1
 
 Remove-Item -Recurse -Force $outputPath -ErrorAction Ignore
-mkdir $outputPath -Force
+New-Item $outputPath -ItemType Directory -Force
 
 ./Scripts/GeneratePscxHelpXml.ps1 $outputPath ./Help -Configuration $configuration
 ./Scripts/GenerateAboutPsxcHelpTxt.ps1 $outputPath -Configuration $configuration
