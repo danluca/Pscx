@@ -50,7 +50,8 @@
     )
     FunctionsToExport = @(
         'Resolve-HResult',
-        'Resolve-WindowsError'
+        'Resolve-WindowsError',
+        'Import-VisualStudioVars'
     )
     FormatsToProcess   = @(
         'FormatData\Pscx.Archive.Format.ps1xml',
@@ -81,11 +82,7 @@
             IconUri = 'https://gitlab.com/danluca/pscx-light/-/blob/master/PscxIcon.png?raw=true'
 
             # Release notes
-            ReleaseNotes = @'
-3.5.0 - September 20, 2021
-
-* Extracted Windows specific commands and cmdlets
-'@
+            ReleaseNotes = "See CHANGELOG.md file in PSCX module's root folder"
         } # End of PSData hashtable
     } # End of PrivateData hashtable
 }

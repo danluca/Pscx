@@ -148,7 +148,7 @@ function updateSeedAssemblyInfo([string]$filePath, [string]$newVer) {
 #######################################
 Push-Location $PSScriptRoot
 
-Push-Location ..\Src
+Push-Location ../Src
 
 [AssemblyInfo]$asmbInfo = updateSeedAssemblyInfo ((Get-Item $pscxAssemblyInfo).FullName) $newVersion
 

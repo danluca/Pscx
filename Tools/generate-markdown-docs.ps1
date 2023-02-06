@@ -3,7 +3,7 @@ $PSStyle.OutputRendering = [System.Management.Automation.OutputRendering]::Plain
 
 $cmdLets = (Get-Module pscx).ExportedCmdlets.Keys
 $functions = (Get-Module pscx).ExportedFunctions.Keys
-$cmdLetsAndFunctions = $cmdLets + $functions | Select -uniq | Sort-Object
+$cmdLetsAndFunctions = $cmdLets + $functions | Select-Object -uniq | Sort-Object
 
 $nounsAndCommands = @{}
 
@@ -39,7 +39,7 @@ foreach ( $cmdLet in ($cmdLetsAndFunctions) ) {
 $output = ''
 
 # Now sort by the nouns and spit out the headings and documentation
-foreach($item in $nounsAndCommands.GetEnumerator() | Sort Name) {
+foreach($item in $nounsAndCommands.GetEnumerator() | Sort-Object Name) {
   $noun = $item.Name
   $output += @'
 ### {0}
@@ -57,4 +57,4 @@ foreach($item in $nounsAndCommands.GetEnumerator() | Sort Name) {
   }
 }
 
-echo $output
+Write-Output $output

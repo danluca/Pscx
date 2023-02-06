@@ -94,13 +94,13 @@ function New-HelpSkeleton {
 
 	process 
 	{
-		$_.GetExportedTypes() | where { $_Cmdlet.IsAssignableFrom($_) } | foreach `
+		$_.GetExportedTypes() | Where-Object { $_Cmdlet.IsAssignableFrom($_) } | ForEach-Object `
 		{	
 			if ($cmdletClassName -and ($cmdletClassName -notcontains $_.Name)) { return }
 			
 			$cmdlet = $_
 		
-			$_.GetCustomAttributes($_CmdletAttribute, $false) | foreach `
+			$_.GetCustomAttributes($_CmdletAttribute, $false) | ForEach-Object `
 			{
 				$filename = "$($_.VerbName + $_.NounName).xml"
 				$filename = (join-path $OutputPath $filename)
@@ -108,7 +108,7 @@ function New-HelpSkeleton {
 				$description = ''
 				$detailed = ''
 				
-				$cmdlet.GetCustomAttributes($false) |% {
+				$cmdlet.GetCustomAttributes($false) |ForEach-Object {
 
 					$type = $_.GetType().FullName
 					
@@ -135,7 +135,7 @@ function New-HelpSkeleton {
 
 				"    <Parameters>"                            >> $filename
 				
-				$cmdlet.GetProperties('Public,Instance,FlattenHierarchy') | foreach `
+				$cmdlet.GetProperties('Public,Instance,FlattenHierarchy') | ForEach-Object `
 				{
 					$pa = @($_.GetCustomAttributes($_ParameterAttribute, $false))[0]
 					
@@ -143,7 +143,7 @@ function New-HelpSkeleton {
 						$description = ($pa.HelpMessage)
 						$default = ''
 
-						$_.GetCustomAttributes($false) |% {
+						$_.GetCustomAttributes($false) |ForEach-Object {
 							$type = $_.GetType().FullName
 							
 							if($type -eq 'System.ComponentModel.DefaultValueAttribute') {

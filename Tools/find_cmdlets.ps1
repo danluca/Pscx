@@ -75,7 +75,7 @@ function findCmdletsInProject([string]$path) {
 }
 
 function findCmdletInFile([string]$file, [hashtable]$verbs, [hashtable]$nouns, [hashtable]$result) {
-    $content = gc $file
+    $content = Get-Content $file
     $start=$false
     $done=$false
     $cmdletName = $null
@@ -141,10 +141,10 @@ function quoteProperty($col, $propName=$null) {
 ## Main
 #######################################
 
-pushd $PSScriptRoot
-pushd ../Src
+Push-Location $PSScriptRoot
+Push-Location ../Src
 
-ls . -Attributes D | ForEach-Object {findCmdletsInProject $_.FullName}
+Get-ChildItem . -Attributes D | ForEach-Object {findCmdletsInProject $_.FullName}
 
-popd
-popd
+Pop-Location
+Pop-Location

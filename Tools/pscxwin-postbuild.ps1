@@ -18,19 +18,19 @@ $version = (Import-PowerShellDataFile (Join-Path $outDir "PscxWin.psd1")).Module
 if ($configuration -eq "Release-Signed") {
     Write-host "$signTool sign /t http://timestamp.digicert.com /sha1 BB25149CDAF879A29DB6A011F6FC874AF32CBF51 $pscxDll"
     & $signTool sign /t http://timestamp.digicert.com /sha1 BB25149CDAF879A29DB6A011F6FC874AF32CBF51 "$pscxDll"
-    Write-Host ".\SignScripts.ps1" 
-    .\SignScripts.ps1
+    Write-Host "./SignScripts.ps1" 
+    ./SignScripts.ps1
 }
 
-$packDir = Join-Path $solDir "..\Output\Pscx\$version\"
+$packDir = Join-Path $solDir "../Output/Pscx/$version/"
 if (!(Test-Path $packDir)) {
-    mkdir $packDir
+    New-Item $packDir -ItemType Directory -Force
 }
 
-pushd $outDir
-cp Pscx.Win.dll,PscxWin.psd1,PscxWin.psm1,SevenZipSharp.* $packDir
-cp FormatData $packDir -Recurse -Force
-cp Modules $packDir -Recurse -Force
-cp TypeData $packDir -Recurse -Force
-popd
+Push-Location $outDir
+Copy-Item Pscx.Win.dll,PscxWin.psd1,PscxWin.psm1,SevenZipSharp.* $packDir
+Copy-Item FormatData $packDir -Recurse -Force
+Copy-Item Modules $packDir -Recurse -Force
+Copy-Item TypeData $packDir -Recurse -Force
+Pop-Location
 

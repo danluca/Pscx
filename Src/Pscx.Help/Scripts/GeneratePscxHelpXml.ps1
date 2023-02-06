@@ -19,14 +19,14 @@ $transformsDir    = Join-Path $ProviderHelpPath Transformations
 # Import-Module $PscxManifest
 
 # Test the XML help files
-gci $localizedHelpPath\*.xml  | Foreach {
+Get-ChildItem $localizedHelpPath\*.xml  | ForEach-Object {
     if (!(Test-Xml $_)) {
         Test-Xml $_ -verbose
         Write-Error "$_ is not a valid XML file"
         exit 1
     }
 }
-gci $providerHelpPath\Provider*.xml  | Foreach {
+Get-ChildItem $providerHelpPath\Provider*.xml  | ForEach-Object {
     if (!(Test-Xml $_)) {
         Test-Xml $_ -verbose
         Write-Error "$_ is not a valid XML file"
@@ -43,25 +43,25 @@ function buildAssemblyHelp([string]$moduleDll, [string]$outDir, [string]$localiz
     Get-PSSnapinHelp $moduleDll -LocalizedHelpPath $localizedHelpDir -OutputPath $MergedHelpPath
 
 $contents = Get-Content $MergedHelpPath
-$contents | foreach {$_ -replace 'PscxPathInfo','String'} | Out-File $MergedHelpPath -Encoding Utf8
+$contents | ForEach-Object {$_ -replace 'PscxPathInfo','String'} | Out-File $MergedHelpPath -Encoding Utf8
 
 Convert-Xml $MergedHelpPath -xslt $transformsDir\Maml.xslt -OutputPath $PscxHelpPath
 
 $helpXml = [xml](Get-Content $PscxHelpPath)
-$attrs = $helpXml.helpItems.Attributes | Where Name -ne schema
-$attrs | Foreach {[void]$helpXml.helpItems.Attributes.Remove($_)}
+$attrs = $helpXml.helpItems.Attributes | Where-Object Name -ne schema
+$attrs | ForEach-Object {[void]$helpXml.helpItems.Attributes.Remove($_)}
 
 $msHelpAttr = $helpXml.CreateAttribute('xmlns', 'MSHelp', 'http://www.w3.org/2000/xmlns/')
 $msHelpAttr.Value = 'http://msdn.microsoft.com/mshelp'
 $attrs += $msHelpAttr
 
-$helpXml.helpItems.command | %{$cmd = $_; $attrs | % {[void]$cmd.SetAttributeNode($_.Clone())}}
+$helpXml.helpItems.command | ForEach-Object{$cmd = $_; $attrs | ForEach-Object {[void]$cmd.SetAttributeNode($_.Clone())}}
 $helpXml.Save($PscxHelpPath)
 
 # Low tech approach to merging in the provider help
-$helpfile = Get-Content $PscxHelpPath | ? {$_ -notmatch '</helpItems>'}
+$helpfile = Get-Content $PscxHelpPath | Where-Object {$_ -notmatch '</helpItems>'}
 $providerHelp = @()
-gci $providerHelpPath\Provider*.xml | ? {$_.Name -notmatch 'Provider_template'} | Foreach {
+Get-ChildItem $providerHelpPath\Provider*.xml | Where-Object {$_.Name -notmatch 'Provider_template'} | ForEach-Object {
     Write-Host "Processing $_"
     $providerHelp += Get-Content $_
 }

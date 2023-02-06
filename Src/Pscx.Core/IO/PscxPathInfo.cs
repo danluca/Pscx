@@ -370,9 +370,7 @@ namespace Pscx.Core.IO {
             int index = path.IndexOf("::", StringComparison.Ordinal);
             if (index != -1) {
                 string providerName = path.Substring(0, index);
-                if (CompareProviderNames(provider.Name, providerName) == true) {
-                    isProviderQualified = true;
-                }
+                isProviderQualified = CompareProviderNames(provider.Name, providerName);
             }
             if (!isProviderQualified) {
                 qualifiedPath = string.Format(CultureInfo.InvariantCulture, "{0}{1}{2}", GetProviderFullName(provider), "::", path);
@@ -386,10 +384,9 @@ namespace Pscx.Core.IO {
             if (chunks.Length == 1) {
                 // not snapin-qualified (shortname)
                 return firstName.Equals(secondName, StringComparison.OrdinalIgnoreCase);
-            } else {
-                // snapin-qualified, e.g. vendor.namespace\provider
-                return firstName.Equals(chunks[1], StringComparison.OrdinalIgnoreCase);
             }
+            // snapin-qualified, e.g. vendor.namespace\provider
+            return firstName.Equals(chunks[1], StringComparison.OrdinalIgnoreCase);
         }
 
         protected static string GetProviderFullName(ProviderInfo provider) {
