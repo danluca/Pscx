@@ -73,13 +73,13 @@
             Tags = @('Utilities','Windows','PSCX','ActiveDirectory','WMI')
 
             # A URL to the license for this module.
-            LicenseUri = 'https://gitlab.com/danluca/pscx-light/-/blob/master/LICENSE'
+            LicenseUri = 'https://github.com/danluca/Pscx/blob/master/LICENSE'
 
             # A URL to the main website for this project.
-            ProjectUri = 'https://gitlab.com/danluca/pscx-light'
+            ProjectUri = 'https://github.com/danluca/Pscx'
 
             # A URL to an icon representing this module.
-            IconUri = 'https://gitlab.com/danluca/pscx-light/-/blob/master/PscxIcon.png?raw=true'
+            IconUri = 'https://github.com/danluca/Pscx/blob/master/PscxIcon.png?raw=true'
 
             # Release notes
             ReleaseNotes = "See CHANGELOG.md file in PSCX module's root folder"

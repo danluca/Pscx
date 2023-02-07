@@ -10,7 +10,7 @@
     <FileVersion>$(AssemblyVersion)</FileVersion>
     <Authors>https://github.com/pscx/Pscx; fork https://github.com/danluca/Pscx</Authors>
     <Copyright>Copyright © 2005-2023 Keith Hill, Oisin Grehan, Dan Luca, and contributors</Copyright>
-    <RepositoryUrl>git@gitlab.com:danluca/pscx-light.git</RepositoryUrl>
+    <RepositoryUrl>git@github.com:danluca/Pscx.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <Title>Pscx.Core module</Title>
   </PropertyGroup>
