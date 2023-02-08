@@ -123,9 +123,19 @@ function getConstants([System.IO.FileSystemInfo]$file) {
 function getPSFunctions([System.IO.FileSystemInfo]$file) {
     $func = @()
     if ($file) {
+        $funcDef = $null
         Get-Content $file | ForEach-Object {
             if ($_ -match '^\s*function\s([\w-_]+)\b') {
-                $func += $Matches[1]
+                # if funcDef has a value, it is an outer function - we don't want to capture inner functions
+                if (!$funcDef) {
+                    $funcDef = $Matches[1]
+                }
+            } elseif ($_ -match "^\}\s*") {
+                # end of a top-level function, capture it in the list and restart parsing
+                if ($funcDef) {
+                    $func += $funcDef
+                    $funcDef = $null
+                }
             }
         }
     }
