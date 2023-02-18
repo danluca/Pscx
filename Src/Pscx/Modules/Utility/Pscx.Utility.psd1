@@ -5,6 +5,7 @@
     AliasesToExport = '*'
     FunctionsToExport = @(
         'AddAccelerator',
+        'RemoveAccelerator',
         'PscxHelp',
         'PscxLess',
         'Edit-Profile',

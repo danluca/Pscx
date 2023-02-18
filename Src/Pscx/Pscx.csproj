@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <OutputType>Library</OutputType>
+    <RootNamespace>Pscx</RootNamespace>
     <OldToolsVersion>3.5</OldToolsVersion>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <ApplicationIcon>Pscx.ico</ApplicationIcon>
@@ -38,14 +39,6 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <Content Include="TypeData\Pscx.Reflection.Type.ps1xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="..\AssemblyInfo.Shared.cs">
-      <Link>Properties\AssemblyInfo.Shared.cs</Link>
-    </Compile>
     <Compile Update="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -53,11 +46,16 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\AssemblyInfo.Shared.cs">
+      <Link>Properties\AssemblyInfo.Shared.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Pscx.Core\Pscx.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Pscx.psd1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="FormatData\Pscx.SIUnits.Format.ps1xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -110,32 +108,35 @@
     <Content Include="TypeData\Pscx.SIUnits.Type.ps1xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="TypeData\Pscx.Reflection.Type.ps1xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Modules\FileSystem\Pscx.FileSystem.Type.ps1xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Modules\Net\Pscx.Net.Format.ps1xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Modules\Net\Pscx.Net.psd1">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Modules\Net\Pscx.Net.Type.ps1xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.Platforms" Version="6.0.7" />
+    <PackageReference Include="NodaTime" Version="3.1.6" GeneratePathProperty="true" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Remove="Commands\GetPEHeaderCommand.cs" />
-    <Compile Remove="Commands\IO\TestPscxPathCommand.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Update="Modules\Net\Pscx.Net.Format.ps1xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Modules\Net\Pscx.Net.psd1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Modules\Net\Pscx.Net.Type.ps1xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="Pscx.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+      <!--some old(er) nuget packages do not copy their artifacts in output folder using newer project style - workaround based on https://github.com/NuGet/Home/issues/4837-->
+      <Copy SourceFiles="$(PkgNodatime)/lib/$(TargetFramework)/NodaTime.dll" DestinationFolder="$(TargetDir)"/>
+      <Copy SourceFiles="$(PkgNodatime)/lib/$(TargetFramework)/NodaTime.xml" DestinationFolder="$(TargetDir)"/>
     <Exec Command="pwsh -NoProfile -ExecutionPolicy RemoteSigned -NonInteractive -File ../Tools/pscx-postbuild.ps1 -outDir $(TargetDir) -configuration $(Configuration)" WorkingDirectory="$(SolutionDir)" />
   </Target>
 </Project>

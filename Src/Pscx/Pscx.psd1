@@ -9,7 +9,7 @@
     ModuleVersion      = "3.6.4"
     RequiredAssemblies = 'Pscx.dll' # needed for [pscxmodules] type (does not import cmdlets/providers)
     RootModule         = 'Pscx.psm1'
-    NestedModules      = 'Pscx.dll'
+    NestedModules      = @('Pscx.dll', 'NodaTime.dll')
     AliasesToExport    = '*'
     CmdletsToExport    = @(
         # PSCX main module
@@ -91,6 +91,7 @@
         'Add-ShortPath',
         #PSCX.Utility
         'AddAccelerator',
+        'RemoveAccelerator',
         'PscxHelp',
         'PscxLess',
         'Edit-Profile',

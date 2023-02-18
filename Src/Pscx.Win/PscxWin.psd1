@@ -9,7 +9,7 @@
     ModuleVersion      = '3.6.4'
     RequiredAssemblies = 'Pscx.Win.dll'
     RootModule         = 'PscxWin.psm1'
-    NestedModules      = 'Pscx.Win.dll'
+    NestedModules      = @('Pscx.Win.dll', 'SevenZipSharp.dll')
     AliasesToExport    = '*'
     CmdletsToExport    = @(
         'Invoke-OleDbCommand',

@@ -8,6 +8,16 @@
 function AddAccelerator($name, $type) {
     if (!$acceleratorsType::Get.ContainsKey($name)) {
         $acceleratorsType::Add($name, $type)
+    } else {
+        Write-Warning "$name exists already as a TypeAccelerator - NOT overwritten"
+    }
+}
+
+function RemoveAccelerator($name) {
+    if ($acceleratorsType::Get.ContainsKey($name)) {
+        $acceleratorsType::Remove($name)
+    } else {
+        Write-Warning "$name is not a TypeAccelerator"
     }
 }
 
@@ -1842,7 +1852,13 @@ if ($IsWindows) {
 AddAccelerator "accelerators" $acceleratorsType
 AddAccelerator "hex"  ([Pscx.TypeAccelerators.Hex])
 AddAccelerator "base64"  ([Pscx.TypeAccelerators.Base64])
+AddAccelerator "b64"  ([Pscx.TypeAccelerators.Base64])
 AddAccelerator "isodate"  ([Pscx.TypeAccelerators.IsoDateTime])
+AddAccelerator "zonedtime"  ([Pscx.Time.ZonedDateTime])
+AddAccelerator "offsettime"  ([Pscx.Time.OffsetDateTime])
+AddAccelerator "localtime"  ([Pscx.Time.LocalDateTime])
+AddAccelerator "tz"  ([NodaTime.DateTimeZone])
+AddAccelerator "tzi"  ([System.TimeZoneInfo])
 
 
 Export-ModuleMember -Alias * -Function *
