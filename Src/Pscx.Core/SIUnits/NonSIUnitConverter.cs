@@ -4,11 +4,11 @@ using System.Globalization;
 
 namespace Pscx.SIUnits
 {
-    public class NonSIUnitConverter : TypeConverter
+    public sealed class NonSIUnitConverter : TypeConverter
     {
         public override Boolean CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
-            if (sourceType == typeof(String))
+            if (sourceType == typeof(string))
             {
                 return true;
             }
@@ -18,7 +18,7 @@ namespace Pscx.SIUnits
 
         public override Boolean CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
-            if (destinationType == typeof(String))
+            if (destinationType == typeof(string))
             {
                 return true;
             }
@@ -28,10 +28,7 @@ namespace Pscx.SIUnits
 
         public override Object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, Object value)
         {
-            var str = (value as String);
-
-            if (str != null)
-            {
+            if (value is string str) {
                 return NonSIUnit.Parse(str);
             }
 
@@ -40,7 +37,7 @@ namespace Pscx.SIUnits
 
         public override Object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, Object value, Type destinationType)
         {
-            if (value != null)
+            if (value != null && destinationType == typeof(string))
             {
                 return value.ToString();
             }
