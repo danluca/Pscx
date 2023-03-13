@@ -107,8 +107,8 @@ Get the Portable Executable file header
 ### Get-PscxHash
 Gets the hash value for the specified file or byte array via the pipeline.
 
-### ConvertTo-Metric
-Converts to metric system units
+### ConvertTo-Unit
+Converts a measurement from one unit into another (compatible) unit.
 
 ### ConvertTo-UnixLineEnding
 Converts the line endings in the specified file to Unix line endings \"\\n\".
