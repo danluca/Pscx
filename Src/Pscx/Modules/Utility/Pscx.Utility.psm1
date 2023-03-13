@@ -8,6 +8,16 @@
 function AddAccelerator($name, $type) {
     if (!$acceleratorsType::Get.ContainsKey($name)) {
         $acceleratorsType::Add($name, $type)
+    } else {
+        Write-Warning "$name exists already as a TypeAccelerator - NOT overwritten"
+    }
+}
+
+function RemoveAccelerator($name) {
+    if ($acceleratorsType::Get.ContainsKey($name)) {
+        $acceleratorsType::Remove($name)
+    } else {
+        Write-Warning "$name is not a TypeAccelerator"
     }
 }
 
@@ -33,7 +43,7 @@ filter New-HashObject {
     $result = new-object PSObject
     $hash = $_
 
-    $hash.Keys | %{ $result | add-member NoteProperty "$_" $hash[$_] -force }
+    $hash.Keys | ForEach-Object { $result | add-member NoteProperty "$_" $hash[$_] -force }
 
     $result
 }
@@ -142,7 +152,7 @@ function PscxHelp
         } elseif ($pagerCommand.CommandType -eq [System.Management.Automation.CommandTypes]::Application) {
             if ($pagerCommand.Name -match '^less') {
                 # if using less - add the LESS environment variable for custom arguments - see https://man7.org/linux/man-pages/man1/less.1.html#ENVIRONMENT_VARIABLES
-                $env:LESS = "-FrsPPage %db?B of %D:.\. h for help, q to quit\."
+                $env:LESS = "-FRsPPage %db?B of %D:.\. h for help, q to quit\."
             }
             # If the pager is an application, format the output width before sending to the app.
             #$consoleWidth = [System.Math]::Max([System.Console]::WindowWidth, 20)
@@ -222,7 +232,7 @@ function PscxLess
         }
     }
 
-    $env:LESS = '-PsPage %db?B of %D:.\. Press h for help or q to quit\.$'
+    $env:LESS = '-FRsPPage %db?B of %D:.\. Press h for help or q to quit\.$'
     $lessCmd = (Get-Command less -CommandType Application -ErrorAction Ignore).Path
 
     # Tricky to get this just right.
@@ -314,7 +324,7 @@ function Resolve-ErrorRecord {
                $txt += @($Exception | Format-List * -Force | Out-String -Stream)
             }
 
-            $txt | Foreach {$prevBlank=$false} {
+            $txt | ForEach-Object {$prevBlank=$false} {
                        if ($_.Trim().Length -gt 0) {
                            $_
                            $prevBlank = $false
@@ -323,84 +333,6 @@ function Resolve-ErrorRecord {
                            $prevBlank = $true
                        }
                    }
-        }
-    }
-}
-
-<#
-.SYNOPSIS
-    Resolves the hresult error code to a textual description of the error.
-.DESCRIPTION
-    Resolves the hresult error code to a textual description of the error.
-.PARAMETER HResult
-    The hresult error code to resolve.
-.EXAMPLE
-    C:\PS> Resolve-HResult -2147023293
-    Fatal error during installation. (Exception from HRESULT: 0x80070643)
-.NOTES
-    Aliases:  rvhr
-#>
-function Resolve-HResult
-{
-    param(
-        [Parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
-        [long[]]
-        $HResult
-    )
-
-    Process
-    {
-        foreach ($hr in $HResult)
-        {
-            $comEx = [System.Runtime.InteropServices.Marshal]::GetExceptionForHR($hr)
-            if ($comEx)
-            {
-                $comEx.Message
-            }
-            else
-            {
-                Write-Error "$hr doesn't correspond to a known HResult"
-            }
-        }
-    }
-}
-
-<#
-.SYNOPSIS
-    Resolves a Windows error number a textual description of the error.
-.DESCRIPTION
-    Resolves a Windows error number a textual description of the error. The Windows
-    error number is typically retrieved via the Win32 API GetLastError() but it is
-    typically displayed in messages to the end user.
-.PARAMETER ErrorNumber
-    The Windows error code number to resolve.
-.EXAMPLE
-    C:\PS> Resolve-WindowsError 5
-    Access is denied
-.NOTES
-    Aliases:  rvwer
-#>
-function Resolve-WindowsError
-{
-    param(
-        [Parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
-        [int[]]
-        $ErrorNumber
-    )
-
-    Process
-    {
-        foreach ($num in $ErrorNumber)
-        {
-            $win32Ex = new-object ComponentModel.Win32Exception $num
-            if ($win32Ex)
-            {
-                $win32Ex.Message
-            }
-            else
-            {
-                Write-Error "$num does not correspond to a known Windows error code"
-            }
         }
     }
 }
@@ -476,9 +408,15 @@ function Invoke-BatchFile {
 
     $tempFile = [IO.Path]::GetTempFileName()
 
-    ## Store the output of cmd.exe.  We also ask cmd.exe to output
-    ## the environment table after the batch file completes
-    cmd.exe /c " `"$Path`" $Parameters && set " > $tempFile
+    if ($IsWindows) {
+        ## Store the output of cmd.exe.  We also ask cmd.exe to output
+        ## the environment table after the batch file completes
+        cmd.exe /c " `"$Path`" $Parameters && set " > $tempFile
+    } else {
+        $shell = $env:SHELL ?? '/bin/bash'
+        $cmd = "$shell -c '$Path ; env'"
+        Invoke-Expression $cmd > $tempFile
+    }
 
     ## Go through the environment variables in the temp file.
     ## For each of them, set the variable in our local environment.
@@ -551,8 +489,7 @@ function Get-ViewDefinition {
         # from modules
         if ($Path.count -eq 0) {
             # Populate the arrays with the standard ps1xml format file information
-            gci $PsHome *.format.ps1xml | % `
-            {
+            Get-ChildItem $PsHome *.format.ps1xml | ForEach-Object {
                 if (Test-Path $_.fullname) {
                     $x = New-Object xml.XmlDocument
                     $x.Load($_.fullname)
@@ -561,8 +498,7 @@ function Get-ViewDefinition {
                 }
             }
             # Populate the arrays with format info from loaded modules
-            Get-Module | Select-Object -ExpandProperty exportedformatfiles | % `
-            {
+            Get-Module | Select-Object -ExpandProperty exportedformatfiles | ForEach-Object {
                 if (Test-Path $_) {
                     $x = New-Object xml.XmlDocument
                     $x.load($_)
@@ -574,8 +510,7 @@ function Get-ViewDefinition {
             # deprecated with modules in v2, so exclude them by default
             if ($IncludeSnapInFormatting) {
                 # Populate the arrays with format info from loaded snapins
-                Get-PSSnapin | ? { $_.name -notmatch "Microsoft\." } | Select-Object applicationbase,formats | % `
-                {
+                Get-PSSnapin | Where-Object { $_.name -notmatch "Microsoft\." } | Select-Object applicationbase,formats | ForEach-Object {
                     foreach ($f in $_.formats) {
                         $x = New-Object xml.xmlDocument
                         if ( test-path $f ) {
@@ -619,7 +554,7 @@ function Get-ViewDefinition {
             }
             elseif ($view.ViewSelectedBy.SelectionSetName) {
                 $typeNameNodes = $formatFile.SelectNodes('/Configuration/SelectionSets/SelectionSet/Types')
-                $typeNames = $typeNameNodes | foreach {$_.TypeName}
+                $typeNames = $typeNameNodes | ForEach-Object {$_.TypeName}
                 $typeNames -contains $typeName
             }
             else {
@@ -768,7 +703,7 @@ function Stop-RemoteProcess
                     continue
                 }
                 $params.Filter = "Name LIKE '%$item%'"
-                Get-WmiObject @params | Foreach {
+                Get-WmiObject @params | ForEach-Object {
                     if ($_.Terminate().ReturnValue -ne 0) {
                         Write-Error "Failed to stop process $item on $ComputerName."
                     }
@@ -784,7 +719,7 @@ function Stop-RemoteProcess
                     continue
                 }
                 $params.Filter = "ProcessId = $item"
-                Get-WmiObject @params | Foreach {
+                Get-WmiObject @params | ForEach-Object {
                     if ($_.Terminate().ReturnValue -ne 0) {
                         Write-Error "Failed to stop process id $item on $ComputerName."
                     }
@@ -812,7 +747,7 @@ function Get-ScreenCss
     Process
     {
         '<style>'
-        [Enum]::GetValues([ConsoleColor]) | Foreach {
+        [Enum]::GetValues([ConsoleColor]) | ForEach-Object {
             "  .F$_ { color: $_; }"
             "  .B$_ { background-color: $_; }"
         }
@@ -1055,7 +990,7 @@ function Set-Writable
             # In the non-literal case we may need to resolve a wildcarded path
             foreach ($apath in $Path) {
                 if (Test-Path $apath) {
-                    $resolvedPaths += @(Resolve-Path $apath | Foreach { $_.Path })
+                    $resolvedPaths += @(Resolve-Path $apath | ForEach-Object { $_.Path })
                 }
                 else {
                     Write-Error "File $apath does not exist"
@@ -1141,7 +1076,7 @@ function Set-FileAttributes {
             # In the non-literal case we may need to resolve a wildcarded path
             foreach ($apath in $Path) {
                 if (Test-Path $apath) {
-                    $resolvedPaths += @(Resolve-Path $apath | Foreach { $_.Path })
+                    $resolvedPaths += @(Resolve-Path $apath | ForEach-Object { $_.Path })
                 }
                 else {
                     Write-Error "File $apath does not exist"
@@ -1236,7 +1171,7 @@ function Set-ReadOnly {
             # In the non-literal case we may need to resolve a wildcarded path
             foreach ($apath in $Path) {
                 if (Test-Path $apath) {
-                    $resolvedPaths += @(Resolve-Path $apath | Foreach { $_.Path })
+                    $resolvedPaths += @(Resolve-Path $apath | ForEach-Object { $_.Path })
                 }
                 else {
                     Write-Error "File/Folder $apath does not exist"
@@ -1417,7 +1352,7 @@ function Show-Tree {
 
         function ShowItemText([string]$ItemPath, [string]$ItemName, [bool[]]$IsLast) {
             if ($IsLast.Count -eq 0) {
-                $itemText = Resolve-Path -LiteralPath $ItemPath | Foreach { $_.Path }
+                $itemText = Resolve-Path -LiteralPath $ItemPath | ForEach-Object { $_.Path }
                 CompactString $itemText
             }
             else {
@@ -1500,7 +1435,7 @@ function Show-Tree {
     Process {
         if ($psCmdlet.ParameterSetName -eq "Path") {
             # In the -Path (non-literal) resolve path in case it is wildcarded.
-            $resolvedPaths = @($Path | Resolve-Path | Foreach {"$_"})
+            $resolvedPaths = @($Path | Resolve-Path | ForEach-Object {"$_"})
         }
         else {
             # Must be -LiteralPath
@@ -1803,234 +1738,6 @@ function Get-Parameter {
 
 <#
 .SYNOPSIS
-    Imports environment variables for the specified version of Visual Studio.
-.DESCRIPTION
-    Imports environment variables for the specified version of Visual Studio.
-    This function requires the PowerShell Community Extensions. To find out
-    the most recent set of Visual Studio environment variables imported use
-    the cmdlet Get-EnvironmentBlock.  If you want to revert back to a previous
-    Visul Studio environment variable configuration use the cmdlet
-    Pop-EnvironmentBlock.
-.PARAMETER VisualStudioVersion
-    The version of Visual Studio to import environment variables for. Valid
-    values are 2008, 2010, 2012, 2013, 2015, 2017 and 2019.
-.PARAMETER Architecture
-    Selects the desired architecture to configure the environment for.
-    If this parameter isn't specified, the command will attempt to locate and
-    use VsDevCmd.bat.  If VsDevCmd.bat can't be found (not installed) then the
-    command will use vcvarsall.bat with either the argument x86 if running in
-    32-bit PowerShell or amd64 if running in 64-bit PowerShell. Other valid
-    values are: arm, x86_arm, x86_amd64, amd64_x86.
-.PARAMETER RequireWorkload
-    This parameter applies to Visual Studio 2017 and higher.  It allows you
-    to specify which workloads are required for the environment you desire to
-    import.  This can be used when you have multiple versions of Visual Studio
-    2017 installed and different versions support different workloads e.g.
-    perhaps only the "Preview" version supports the
-    Microsoft.VisualStudio.Component.VC.Tools.x86.x64 workload.
-.EXAMPLE
-    C:\PS> Import-VisualStudioVars 2015
-
-    Sets up the environment variables to use the VS 2015 tools. If
-    VsDevCmd.bat is found then it will use that. Otherwise, vcvarsall.bat will
-    be used with an architecture of either x86 for 32-bit Powershell, or amd64
-    for 64-bit Powershell.
-.EXAMPLE
-    C:\PS> Import-VisualStudioVars 2013 arm
-
-    Sets up the environment variables for the VS 2013 ARM tools.
-.EXAMPLE
-    C:\PS> Import-VisualStudioVars 2017 -Architecture amd64 -RequireWorkload Microsoft.VisualStudio.Component.VC.Tools.x86.x64
-
-    Finds an instance of VS 2017 that has the required workload and sets up
-    the environment variables to use that instance of the VS 2017 tools.
-    To see a full list of available workloads, execute:
-    Get-VSSetupInstance | Foreach-Object Packages | Foreach-Object Id | Sort-Object
-#>
-function Import-VisualStudioVars {
-    param
-    (
-        [Parameter(Position = 0)]
-        [ValidateSet('90','2008','100','2010','110','2012','120','2013','140','2015','150','2017','160','2019','170','2022')]
-        [string]
-        $VisualStudioVersion,
-
-        [Parameter(Position = 1)]
-        [string]
-        $Architecture,
-
-        [Parameter()]
-        [ValidateNotNullOrEmpty()]
-        [string[]]
-        $RequireWorkload
-    )
-
-    begin {
-        $ArchSpecified = $true
-        if (!$Architecture) {
-            $ArchSpecified = $false
-            $Architecture = $(if ($Pscx:Is64BitProcess) {'amd64'} else {'x86'})
-        }
-
-        function GetSpecifiedVSSetupInstance($Version, [switch]$Latest, [switch]$FailOnMissingVSSetup) {
-            if ((Get-Module -Name VSSetup -ListAvailable) -eq $null) {
-                Write-Warning "You must install the VSSetup module to import Visual Studio variables for Visual Studio 2017 or higher."
-                Write-Warning "Install the VSSetup module with the command: Install-Module VSSetup -Scope CurrentUser"
-
-                if ($FailOnMissingVSSetup) {
-                    throw "VSSetup module is not installed, unable to import Visual Studio 2017 (or higher) environment variables."
-                }
-                else {
-                    # For the default (no VS version specified) case, we can look for earlier versions of VS.
-                    return $null
-                }
-            }
-
-            Import-Module VSSetup -ErrorAction Stop
-
-            $selectArgs = @{
-                Product = '*'
-            }
-
-            if ($Latest) {
-                $selectArgs['Latest'] = $true
-            }
-            elseif ($Version) {
-                $selectArgs['Version'] = $Version
-            }
-
-            if ($RequireWorkload -or $ArchSpecified) {
-                if (!$RequireWorkload) {
-                    # We get here when the architecture was specified but no worload, most likely these users want the C++ workload
-                    $RequireWorkload = 'Microsoft.VisualStudio.Component.VC.Tools.x86.x64'
-                }
-
-                $selectArgs['Require'] = $RequireWorkload
-            }
-
-            Write-Verbose "$($MyInvocation.MyCommand.Name) Select-VSSetupInstance args:"
-            Write-Verbose "$(($selectArgs | Out-String) -split "`n")"
-            $vsInstance = Get-VSSetupInstance | Select-VSSetupInstance @selectArgs | Select-Object -First 1
-            $vsInstance
-        }
-
-        function FindAndLoadBatchFile($ComnTools, $ArchSpecified, [switch]$IsAppxInstall) {
-            $batchFilePath = Join-Path $ComnTools VsDevCmd.bat
-            if (!$ArchSpecified -and (Test-Path -LiteralPath $batchFilePath)) {
-                if ($IsAppxInstall) {
-                    # The newer batch files spit out a header that tells you which environment was loaded
-                    # so only write out the below message when -Verbose is specified.
-                    Write-Verbose "Invoking '$batchFilePath'"
-                }
-                else {
-                    "Invoking '$batchFilePath'"
-                }
-
-                Invoke-BatchFile $batchFilePath
-            }
-            else {
-                if ($IsAppxInstall) {
-                    $batchFilePath = Join-Path $ComnTools ..\..\VC\Auxiliary\Build\vcvarsall.bat
-
-                    # The newer batch files spit out a header that tells you which environment was loaded
-                    # so only write out the below message when -Verbose is specified.
-                    Write-Verbose "Invoking '$batchFilePath' $Architecture"
-                }
-                else {
-                    $batchFilePath = Join-Path $ComnTools ..\..\VC\vcvarsall.bat
-                    "Invoking '$batchFilePath' $Architecture"
-                }
-
-                Invoke-BatchFile $batchFilePath $Architecture
-            }
-        }
-    }
-
-    end {
-        switch -regex ($VisualStudioVersion) {
-            '90|2008' {
-                Push-EnvironmentBlock -Description "Before importing VS 2008 $Architecture environment variables"
-                Write-Verbose "Invoking ${env:VS90COMNTOOLS}..\..\VC\vcvarsall.bat $Architecture"
-                Invoke-BatchFile "${env:VS90COMNTOOLS}..\..\VC\vcvarsall.bat" $Architecture
-            }
-
-            '100|2010' {
-                Push-EnvironmentBlock -Description "Before importing VS 2010 $Architecture environment variables"
-                Write-Verbose "Invoking ${env:VS100COMNTOOLS}..\..\VC\vcvarsall.bat $Architecture"
-                Invoke-BatchFile "${env:VS100COMNTOOLS}..\..\VC\vcvarsall.bat" $Architecture
-            }
-
-            '110|2012' {
-                Push-EnvironmentBlock -Description "Before importing VS 2012 $Architecture environment variables"
-                FindAndLoadBatchFile $env:VS110COMNTOOLS $ArchSpecified
-            }
-
-            '120|2013' {
-                Push-EnvironmentBlock -Description "Before importing VS 2013 $Architecture environment variables"
-                FindAndLoadBatchFile $env:VS120COMNTOOLS $ArchSpecified
-            }
-
-            '140|2015' {
-                Push-EnvironmentBlock -Description "Before importing VS 2015 $Architecture environment variables"
-                FindAndLoadBatchFile $env:VS140COMNTOOLS $ArchSpecified
-            }
-
-            '150|2017' {
-                $vsInstance = GetSpecifiedVSSetupInstance -Version '[15.0,16.0)' -FailOnMissingVSSetup
-                if (!$vsInstance) {
-                    throw "No instances of Visual Studio 2017 found$(if ($RequireWorkload) {" for the required workload: $RequireWorkload"})."
-                }
-
-                Push-EnvironmentBlock -Description "Before importing VS 2017 $Architecture environment variables"
-                $installPath = $vsInstance.InstallationPath
-                FindAndLoadBatchFile "$installPath/Common7/Tools" $ArchSpecified -IsAppxInstall
-            }
-
-            '160|2019' {
-                $vsInstance = GetSpecifiedVSSetupInstance -Version '[16.0,17.0)' -FailOnMissingVSSetup
-                if (!$vsInstance) {
-                    throw "No instances of Visual Studio 2019 found$(if ($RequireWorkload) {" for the required workload: $RequireWorkload"})."
-                }
-
-                Push-EnvironmentBlock -Description "Before importing VS 2019 $Architecture environment variables"
-                $installPath = $vsInstance.InstallationPath
-                FindAndLoadBatchFile "$installPath/Common7/Tools" $ArchSpecified -IsAppxInstall
-            }
-
-            '170|2022' {
-                $vsInstance = GetSpecifiedVSSetupInstance -Version '[17.0,18.0)' -FailOnMissingVSSetup
-                if (!$vsInstance) {
-                    throw "No instances of Visual Studio 2022 found$(if ($RequireWorkload) {" for the required workload: $RequireWorkload"})."
-                }
-
-                Push-EnvironmentBlock -Description "Before importing VS 2022 $Architecture environment variables"
-                $installPath = $vsInstance.InstallationPath
-                FindAndLoadBatchFile "$installPath/Common7/Tools" $ArchSpecified -IsAppxInstall
-            }
-
-            default {
-                $vsInstance = GetSpecifiedVSSetupInstance -Latest
-                if ($vsInstance) {
-                    Push-EnvironmentBlock -Description "Before importing $($vsInstance.DisplayName) $Architecture environment variables"
-                    $installPath = $vsInstance.InstallationPath
-                    FindAndLoadBatchFile "$installPath/Common7/Tools" $ArchSpecified -IsAppxInstall
-                }
-                else {
-                    $envvar = @(Get-Item Env:\vs*comntools | Sort-Object { $_.Name -replace '(?<=VS)(\d)(0)','0$1$2'} -Descending)[0]
-                    if (!$envvar) {
-                        throw "No versions of Visual Studio found."
-                    }
-
-                    Push-EnvironmentBlock -Description "Before importing $($envvar.Name) $Architecture environment variables"
-                    FindAndLoadBatchFile ($envvar.Value) $ArchSpecified
-                }
-            }
-        }
-    }
-}
-
-<#
-.SYNOPSIS
     Gets the execution time for the specified Id of a command in the current
     session history.
 .DESCRIPTION
@@ -2058,7 +1765,7 @@ function Get-ExecutionTime {
     )
 
     End {
-        Get-History @PSBoundParameters | Foreach {
+        Get-History @PSBoundParameters | ForEach-Object {
             $obj = new-object psobject -Property @{
                 Id            = $_.Id
                 ExecutionTime = ($_.EndExecutionTime - $_.StartExecutionTime)
@@ -2083,8 +1790,6 @@ Set-Alias call  Pscx\Invoke-Method          -Description "PSCX alias"
 Set-Alias ql    Pscx\QuoteList              -Description "PSCX alias"
 Set-Alias qs    Pscx\QuoteString            -Description "PSCX alias"
 Set-Alias rver  Pscx\Resolve-ErrorRecord    -Description "PSCX alias"
-Set-Alias rvhr  Pscx\Resolve-HResult        -Description "PSCX alias"
-Set-Alias rvwer Pscx\Resolve-WindowsError   -Description "PSCX alias"
 Set-Alias sro   Pscx\Set-ReadOnly           -Description "PSCX alias"
 Set-Alias swr   Pscx\Set-Writable           -Description "PSCX alias"
 
@@ -2118,22 +1823,6 @@ Set-Alias swr   Pscx\Set-Writable           -Description "PSCX alias"
 
 $acceleratorsType = [psobject].Assembly.GetType('System.Management.Automation.TypeAccelerators')
 
-#add RAR (if present) to the path
-if ($IsWindows) {
-    $regPath = "HKLM:\SOFTWARE\WinRAR"
-    if (Test-Path $regPath) {
-        $rarDir = Split-Path (Get-ItemProperty $regPath).'exe64' -Parent
-        # Add-PathVariable is not available here as the PSCX is not fully loaded - perform the equivalent work
-        $envPath = [System.Environment]::GetEnvironmentVariable("PATH", [EnvironmentVariableTarget]::Process)
-        $envPathElements = [System.Collections.Generic.HashSet[string]]::New()
-        $envPath.Split([System.IO.Path]::PathSeparator, [System.StringSplitOptions]::RemoveEmptyEntries) | ForEach-Object {
-            $envPathElements.Add($_)
-        }
-        $envPathElements.Add($rarDir)
-        [System.Environment]::SetEnvironmentVariable("PATH", ($envPathElements -join [System.IO.Path]::PathSeparator), [System.EnvironmentVariableTarget]::Process)
-    }
-}
-
 #update the PSCX preferences with the most capable file editor:
 # for windows: VSCode, Notepad++, Notepad (in this order)
 # for macOS: VSCode, Text Mate (in this order)
@@ -2144,30 +1833,32 @@ if ($IsWindows) {
     } elseif (Test-Path "HKLM:\SOFTWARE\Notepad++") {
         $Pscx:Preferences['TextEditor'] = Join-Path (Get-ItemProperty "HKLM:\SOFTWARE\Notepad++").'(default)' 'Notepad++.exe'
     } else {
-        $Pscx:Preferences['TextEditor'] = 'notepad'
+        $Pscx:Preferences['TextEditor'] = (Get-Command notepad).Path
     }
 } elseif ($IsMacOS) {
     # default text editor is Text Mate (custom package) or TextEdit
     if ($betterEditor) {
-        $Pscx:Preferences['TextEditor'] = 'code'
-    } elseif (Get-Command mate -CommandType Application -ErrorAction Ignore) {
-        $Pscx:Preferences['TextEditor'] = 'mate'
+        $Pscx:Preferences['TextEditor'] = ($betterEditor | Where-Object {$_.Path -notmatch '\.cmd'}).Path
     } else {
-        $Pscx:Preferences['TextEditor'] = 'TextEdit'
+        $mateEditor = Get-Command mate -CommandType Application -ErrorAction Ignore
+        $Pscx:Preferences['TextEditor'] = ${mateEditor}?.Path ?? '/System/Applications/TextEdit.app/Contents/MacOS/TextEdit'
     }
 } else {
-    # default Ubuntu text editor is gedit
-    if ($betterEditor) {
-        $Pscx:Preferences['TextEditor'] = 'code'
-    } else {
-        $Pscx:Preferences['TextEditor'] = 'gedit'
-    }
+    # default Ubuntu text editor is reportedly gedit; account for container env where there are no editors - use cat instead, read-only file viewer
+    $nixEditor = (Get-Command gedit -CommandType Application -ErrorAction Ignore)?.Path ?? 'cat'
+    $Pscx:Preferences['TextEditor'] = $betterEditor ? ($betterEditor | Where-Object {$_.Path -notmatch '\.cmd'}).Path : $nixEditor
 }
 
 AddAccelerator "accelerators" $acceleratorsType
 AddAccelerator "hex"  ([Pscx.TypeAccelerators.Hex])
 AddAccelerator "base64"  ([Pscx.TypeAccelerators.Base64])
+AddAccelerator "b64"  ([Pscx.TypeAccelerators.Base64])
 AddAccelerator "isodate"  ([Pscx.TypeAccelerators.IsoDateTime])
+AddAccelerator "zonedtime"  ([Pscx.Time.ZonedDateTime])
+AddAccelerator "offsettime"  ([Pscx.Time.OffsetDateTime])
+AddAccelerator "localtime"  ([Pscx.Time.LocalDateTime])
+AddAccelerator "tz"  ([NodaTime.DateTimeZone])
+AddAccelerator "tzi"  ([System.TimeZoneInfo])
 
 
 Export-ModuleMember -Alias * -Function *

@@ -45,7 +45,7 @@ function WrapText($width = 74, $indent = 8) {
             }
             
             if($count -gt 0) {
-                $words[$index..($index + $count - 1)] |% {
+                $words[$index..($index + $count - 1)] |ForEach-Object {
                     $output.Append($_)  | out-null
                     $output.Append(' ') | out-null
                 }
@@ -112,14 +112,14 @@ $PscxModule = Get-Module Pscx
 #---------------------------------------------------------
 # Process the Module functions
 #---------------------------------------------------------
-$functions = Get-Command -type function -Module pscx | Foreach {Get-Help $_.Name} | Sort Name
+$functions = Get-Command -type function -Module pscx | ForEach-Object {Get-Help $_.Name} | Sort-Object Name
 
 #---------------------------------------------------------
 # Insert Header template
 #---------------------------------------------------------
 New-Item $AboutPscxHelpPath -Type File -Force > $null
 Get-Content (join-path $templateDir about_Pscx_header.txt) |
-    % { $_ -replace '<VERSION_NUMBER>', $PscxModule.Version } | OutAboutHelpFile
+    ForEach-Object { $_ -replace '<VERSION_NUMBER>', $PscxModule.Version } | OutAboutHelpFile
     
 #---------------------------------------------------------
 # Process Cmdlets
@@ -131,7 +131,7 @@ WriteLine
 "    The current PSCX cmdlets are listed below:" | OutAboutHelpFile
 WriteLine
 $MergedXml = [Xml](Get-Content $MergedHelpPath)
-$MergedXml.Cmdlets.Cmdlet | Sort Noun, Verb | % {
+$MergedXml.Cmdlets.Cmdlet | Sort-Object Noun, Verb | ForEach-Object {
     "    $($_.Verb)-$($_.Noun)"
     $_.DetailedDescription.Trim() | WrapText
 } | OutAboutHelpFile
@@ -139,7 +139,7 @@ $MergedXml.Cmdlets.Cmdlet | Sort Noun, Verb | % {
 $MergedHelpPath = Join-path $outputDir MergedHelp-Pscx.Win.xml
 if (Test-Path $MergedHelpPath -PathType Leaf) {
     $MergedXml = [Xml](Get-Content $MergedHelpPath)
-    $MergedXml.Cmdlets.Cmdlet | Sort Noun, Verb | % {
+    $MergedXml.Cmdlets.Cmdlet | Sort-Object Noun, Verb | ForEach-Object {
         "    $($_.Verb)-$($_.Noun)"
         $_.DetailedDescription.Trim() | WrapText
     } | OutAboutHelpFile
@@ -150,7 +150,7 @@ if (Test-Path $MergedHelpPath -PathType Leaf) {
 #---------------------------------------------------------
 WriteLine
 "PROVIDERS" | OutAboutHelpFile
-gci $providerHelpPath\Provider*.xml | ? {$_.Name -notmatch 'Provider_template'} | Sort Name  | % {
+Get-ChildItem $providerHelpPath\Provider*.xml | Where-Object {$_.Name -notmatch 'Provider_template'} | Sort-Object Name  | ForEach-Object {
     $provider = [xml](Get-Content $_)
     "    $($provider.providerHelp.Name.Trim())"
     $provider.providerHelp.Synopsis.Trim() | WrapText
@@ -165,7 +165,7 @@ gci $providerHelpPath\Provider*.xml | ? {$_.Name -notmatch 'Provider_template'} 
 "    The current PSCX functions are listed below:" | OutAboutHelpFile
 WriteLine
 foreach ($function in $functions) {
-    $aliases = Get-Alias | ?{$_.Definition -match "^$($function.Name)`$"} | sort Name | %{$_.Name}
+    $aliases = Get-Alias | Where-Object{$_.Definition -match "^$($function.Name)`$"} | Sort-Object Name | ForEach-Object{$_.Name}
     if ($aliases) {
         $OFS = ', '
         "    $($function.name) ($aliases)" | OutAboutHelpFile
@@ -184,14 +184,14 @@ foreach ($function in $functions) {
 "    Get-Command -Module Pscx* -CommandType Alias" | OutAboutHelpFile
 "    The current PSCX defined aliases are listed below:" | OutAboutHelpFile
 WriteLine
-$pscxAliases = Get-Command -type Alias -module Pscx | Sort Name
-$longestAlias = ($pscxAliases | %{$_.Name.Length} | Measure-object -max).Maximum
+$pscxAliases = Get-Command -type Alias -module Pscx | Sort-Object Name
+$longestAlias = ($pscxAliases | ForEach-Object{$_.Name.Length} | Measure-object -max).Maximum
 foreach ($alias in $pscxAliases) {
     Write-Host "Processing $alias"
     $len = $alias.Name.Length
     $diff = $longestAlias - $len
     "    $($alias.Name)" + " " * $diff + 
-        " : alias for $($alias.Definition) $(get-command $alias.Definition | %{$_.CommandType.ToString().ToLower()})" | 
+        " : alias for $($alias.Definition) $(get-command $alias.Definition | ForEach-Object{$_.CommandType.ToString().ToLower()})" | 
         OutAboutHelpFile
 }
 WriteLine

@@ -1,36 +1,38 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Configuration>
+  <SelectionSets>
+      <SelectionSet>
+          <Name>IQuantity</Name>
+          <Types>
+              <TypeName>Pscx.SimpleUnits.Angle</TypeName>
+              <TypeName>Pscx.SimpleUnits.Area</TypeName>
+              <TypeName>Pscx.SimpleUnits.DataStorage</TypeName>
+              <TypeName>Pscx.SimpleUnits.DataTransfer</TypeName>
+              <TypeName>Pscx.SimpleUnits.Energy</TypeName>
+              <TypeName>Pscx.SimpleUnits.FuelEconomy</TypeName>
+              <TypeName>Pscx.SimpleUnits.Length</TypeName>
+              <TypeName>Pscx.SimpleUnits.Mass</TypeName>
+              <TypeName>Pscx.SimpleUnits.Power</TypeName>
+              <TypeName>Pscx.SimpleUnits.Pressure</TypeName>
+              <TypeName>Pscx.SimpleUnits.Speed</TypeName>
+              <TypeName>Pscx.SimpleUnits.Temperature</TypeName>
+              <TypeName>Pscx.SimpleUnits.TimeInterval</TypeName>
+              <TypeName>Pscx.SimpleUnits.Volume</TypeName>
+          </Types>
+      </SelectionSet>
+  </SelectionSets>
   <ViewDefinitions>
-
     <View>
-      <Name>Pscx.SIUnits.Energy</Name>
+      <Name>Pscx.SimpleUnits.IQuantity</Name>
       <ViewSelectedBy>
-        <TypeName>Pscx.SIUnits.Energy</TypeName>
+        <SelectionSetName>IQuantity</SelectionSetName>
       </ViewSelectedBy>
       <TableControl>
         <TableRowEntries>
           <TableRowEntry>
             <TableColumnItems>
               <TableColumnItem>
-                <PropertyName>Energy</PropertyName>
-              </TableColumnItem>
-            </TableColumnItems>
-          </TableRowEntry>
-        </TableRowEntries>
-      </TableControl>
-    </View>
-    
-    <View>
-      <Name>Pscx.SIUnits.Length</Name>
-      <ViewSelectedBy>
-        <TypeName>Pscx.SIUnits.Length</TypeName>
-      </ViewSelectedBy>
-      <TableControl>
-        <TableRowEntries>
-          <TableRowEntry>
-            <TableColumnItems>
-              <TableColumnItem>
-                <PropertyName>Length</PropertyName>
+                <PropertyName>Measurement</PropertyName>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>
@@ -39,16 +41,22 @@
     </View>
 
     <View>
-      <Name>Pscx.SIUnits.Mass</Name>
+      <Name>Pscx.SimpleUnits.Unit</Name>
       <ViewSelectedBy>
-        <TypeName>Pscx.SIUnits.Mass</TypeName>
+        <TypeName>Pscx.SimpleUnits.Unit</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableRowEntries>
           <TableRowEntry>
             <TableColumnItems>
               <TableColumnItem>
-                <PropertyName>Mass</PropertyName>
+                <PropertyName>Name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>Symbol(s)</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>QuantityType</PropertyName>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>
@@ -56,18 +64,28 @@
       </TableControl>
     </View>
 
-
     <View>
-      <Name>Pscx.SIUnits.Pressure</Name>
+      <Name>Pscx.SimpleUnits.Measurement</Name>
       <ViewSelectedBy>
-        <TypeName>Pscx.SIUnits.Pressure</TypeName>
+        <TypeName>Pscx.SimpleUnits.Measurement</TypeName>
       </ViewSelectedBy>
       <TableControl>
-        <TableRowEntries>
+          <TableHeaders>
+              <TableColumnHeader>
+                  <Label>Value</Label>
+              </TableColumnHeader>
+              <TableColumnHeader>
+                  <Label>Unit</Label>
+              </TableColumnHeader>
+          </TableHeaders>
+          <TableRowEntries>
           <TableRowEntry>
             <TableColumnItems>
               <TableColumnItem>
-                <PropertyName>Pressure</PropertyName>
+                <PropertyName>value</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>unit</PropertyName>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>

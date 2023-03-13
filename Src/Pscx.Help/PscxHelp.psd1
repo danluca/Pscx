@@ -47,25 +47,16 @@
             Tags = @('PSCX','Utilities','Help','Internal')
 
             # A URL to the license for this module.
-            LicenseUri = 'https://gitlab.com/danluca/pscx-light/-/blob/master/LICENSE'
+            LicenseUri = 'https://github.com/danluca/Pscx/blob/master/LICENSE'
 
             # A URL to the main website for this project.
-            ProjectUri = 'https://gitlab.com/danluca/pscx-light'
+            ProjectUri = 'https://github.com/danluca/Pscx'
 
             # A URL to an icon representing this module.
-            IconUri = 'https://gitlab.com/danluca/pscx-light/-/blob/master/PscxIcon.png?raw=true'
+            IconUri = 'https://github.com/danluca/Pscx/blob/master/PscxIcon.png?raw=true'
 
             # ReleaseNotes of this module
-            ReleaseNotes = @'
-3.6.0 - December 2022
-* Ported to .Net 6.0 and Powershell Core 7.2
-* Moved to Visual Studio 2022
-
-3.5.0 - September 2021
-
-* Ported to .Net 5.0 and PowerShell Core 7.0
-* Moved to Visual Studio 2019
-'@
+            ReleaseNotes = "See CHANGELOG.md file in PSCX module's root folder"
 
         } # End of PSData hashtable
 

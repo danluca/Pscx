@@ -124,7 +124,6 @@ Set-Alias fhex  Pscx\Format-Hex        -Description "PSCX alias"
 Set-Alias cvxml Pscx\Convert-Xml       -Description "PSCX alias"
 Set-Alias fxml  Pscx\Format-Xml        -Description "PSCX alias"
 Set-Alias lorem Pscx\Get-LoremIpsum    -Description "PSCX alias"
-Set-Alias ln    Pscx\New-HardLink      -Description "PSCX alias"
 Set-Alias touch Pscx\Set-FileTime      -Description "PSCX alias"
 Set-Alias tail  Pscx\Get-FileTail      -Description "PSCX alias"
 Set-Alias skip  Pscx\Skip-Object       -Description "PSCX alias"
@@ -151,7 +150,7 @@ if ($Pscx:Preferences["PageHelpUsingLess"]) {
     } elseif (!(Test-Path Env:PAGER)) {
         # Only set this env var if someone has not defined it themselves
         $env:PAGER = 'less'
-        $env:LESS = "-FrsPPage %db?B of %D:.\. Press h for help or q to quit\.$"
+        $env:LESS = "-FRsPPage %db?B of %D:.\. Press h for help or q to quit\.$"
     }
 }
 
@@ -166,7 +165,7 @@ if ($Pscx:Preferences.ShowModuleLoadDetails)
     $totalModuleLoadTimeMs = 0
     $stopWatch.Reset()
     $stopWatch.Start()
-    $keys = @($keys | Sort)
+    $keys = @($keys | Sort-Object)
 }
 
 foreach ($key in $keys)

@@ -4,7 +4,7 @@
 #         history and backward/forward navigation using - and +.
 #         as ..[.]*.
 # Date:   Nov 18, 2006; Dec 22, 2021
-# Site:   https://www.gitlab.com/danluca/pscx-light
+# Site:   https://www.github.com/danluca/Pscx
 #---------------------------------------------------------------------------
 #requires -Version 6
 Set-StrictMode -Version Latest

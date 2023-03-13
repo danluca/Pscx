@@ -9,7 +9,7 @@
     ModuleVersion      = '3.6.4'
     RequiredAssemblies = 'Pscx.Win.dll'
     RootModule         = 'PscxWin.psm1'
-    NestedModules      = 'Pscx.Win.dll'
+    NestedModules      = @('Pscx.Win.dll', 'SevenZipSharp.dll')
     AliasesToExport    = '*'
     CmdletsToExport    = @(
         'Invoke-OleDbCommand',
@@ -50,7 +50,8 @@
     )
     FunctionsToExport = @(
         'Resolve-HResult',
-        'Resolve-WindowsError'
+        'Resolve-WindowsError',
+        'Import-VisualStudioVars'
     )
     FormatsToProcess   = @(
         'FormatData\Pscx.Archive.Format.ps1xml',
@@ -72,20 +73,16 @@
             Tags = @('Utilities','Windows','PSCX','ActiveDirectory','WMI')
 
             # A URL to the license for this module.
-            LicenseUri = 'https://gitlab.com/danluca/pscx-light/-/blob/master/LICENSE'
+            LicenseUri = 'https://github.com/danluca/Pscx/blob/master/LICENSE'
 
             # A URL to the main website for this project.
-            ProjectUri = 'https://gitlab.com/danluca/pscx-light'
+            ProjectUri = 'https://github.com/danluca/Pscx'
 
             # A URL to an icon representing this module.
-            IconUri = 'https://gitlab.com/danluca/pscx-light/-/blob/master/PscxIcon.png?raw=true'
+            IconUri = 'https://github.com/danluca/Pscx/blob/master/PscxIcon.png?raw=true'
 
             # Release notes
-            ReleaseNotes = @'
-3.5.0 - September 20, 2021
-
-* Extracted Windows specific commands and cmdlets
-'@
+            ReleaseNotes = "See CHANGELOG.md file in PSCX module's root folder"
         } # End of PSData hashtable
     } # End of PrivateData hashtable
 }

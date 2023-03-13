@@ -199,7 +199,8 @@ namespace Pscx.Commands.IO {
         protected override void ProcessPath(PscxPathInfo pscxPath) {
             if (this.ParameterSetName == ParameterSetNoFile) return;
 
-            string path = pscxPath.ProviderPath;
+            //enclose path in double quotes to account for space or other characters that need escaped
+            string path = $"\"{pscxPath.ProviderPath}\"";
 
             try {
                 if (this.ParameterSetName == ParameterSetPath || this.ParameterSetName == ParameterSetLiteralPath) {
@@ -213,13 +214,8 @@ namespace Pscx.Commands.IO {
 
                         // Get threshold value to determine whether to use backing file instead of in MemoryStream to contain
                         // the modified file contents until they can be copied back to the source file (after regex processing).
-                        int backingFileThreshold;
                         var editFileBackingFileThresholdPreference = PscxContext.Instance.Preferences[PscxContext.EditFileBackingFileThreshold];
-                        if (editFileBackingFileThresholdPreference is int) {
-                            backingFileThreshold = (int)editFileBackingFileThresholdPreference;
-                        } else {
-                            backingFileThreshold = PscxContext.EditFileBackingFileThresholdDefaultValue;
-                        }
+                        int backingFileThreshold = (editFileBackingFileThresholdPreference is int backingFileThresholdPreference) ? backingFileThresholdPreference : PscxContext.EditFileBackingFileThresholdDefaultValue;
 
                         var fileData = new FileData(path);
                         if (this.SingleString) {

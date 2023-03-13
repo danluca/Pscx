@@ -56,6 +56,7 @@ When new C# cmdlets are added, remember to add corresponding help file in `Pscx.
 Several conveniences are made available in support of release process:
 * `Tools\version_update.ps1` - consistently updates the version across all assembly info classes, psd1 files, etc.
 * `Tools\find_cmdlets.ps1` - reports all the cmdlets and functions found throughout the PSCX solution (all projects and modules) (based on the _Cmdlet_ annotations discussed above). This aids in creating the `psd1` module files. It also helps with creating the content of the _Cmdlets_ and _Functions_ sections below - it pulls the cmdlet name and description (non-MD formatted, but it could be) such that it can be pasted directly into the section and apply MD formatting.
+  * alternatively, all the PSD1 module manifest files would list the functions to export as '*' wildcard. Each PSM1 module file would then use `Export-ModuleMember` statements to explicitly list functions exported from that module. The parent module must include all the functions exported by the child/nested modules (leverage `Import-Module -PassThru` to get a module object and loop through `ExportedFunctions` property)
 
 ## Included cmdlets and functions
 
@@ -106,8 +107,8 @@ Get the Portable Executable file header
 ### Get-PscxHash
 Gets the hash value for the specified file or byte array via the pipeline.
 
-### ConvertTo-Metric
-Converts to metric system units
+### ConvertTo-Unit
+Converts a measurement from one unit into another (compatible) unit.
 
 ### ConvertTo-UnixLineEnding
 Converts the line endings in the specified file to Unix line endings \"\\n\".

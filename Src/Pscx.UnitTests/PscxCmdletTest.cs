@@ -94,9 +94,9 @@ namespace PscxUnitTests
             get
             {
 #if DEBUG
-                return "Debug\\net5.0";
+                return "Debug\\net6.0";
 #else
-                return "Release";
+                return "Release\\net6.0";
 #endif
             }
         }
