@@ -4,6 +4,10 @@ using System;
 using System.Globalization;
 
 namespace Pscx.TypeAccelerators {
+    /// <summary>
+    /// Support various time interaction methods - parsing, serialization, etc - especially helpful when accompanied
+    /// by a type accelerator in PowerShell context.
+    /// </summary>
     public struct IsoDateTime {
         private readonly string _value;
 

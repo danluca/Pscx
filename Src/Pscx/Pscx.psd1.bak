@@ -33,7 +33,7 @@
         'Pop-EnvironmentBlock',
         'Get-FileVersionInfo',
         'Convert-Xml',
-        'ConvertTo-Unit',
+        'ConvertTo-Metric',
         'Set-FileTime',
         'Split-PscxString',
         'ConvertTo-UnixLineEnding',

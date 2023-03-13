@@ -2,51 +2,255 @@
 <Types>
 
   <Type>
-    <Name>Pscx.SIUnits.Energy</Name>
+    <Name>Pscx.SimpleUnits.Angle</Name>
     <Members>
       <ScriptProperty>
-        <Name>Energy</Name>
+        <Name>StrAutoscaled</Name>
         <GetScriptBlock>
-          $this.ToString()
+          $this.Measurement.AsAutoScaledString()
+        </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
+        <Name>StrCanonical</Name>
+        <GetScriptBlock>
+          $this.Measurement.AsString()
         </GetScriptBlock>
       </ScriptProperty>
     </Members>
   </Type>
-
+  
   <Type>
-    <Name>Pscx.SIUnits.Length</Name>
+    <Name>Pscx.SimpleUnits.Area</Name>
     <Members>
       <ScriptProperty>
-        <Name>Length</Name>
+        <Name>StrAutoscaled</Name>
         <GetScriptBlock>
-          $this.ToString()
+          $this.Measurement.AsAutoScaledString()
+        </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
+        <Name>StrCanonical</Name>
+        <GetScriptBlock>
+          $this.Measurement.AsString()
         </GetScriptBlock>
       </ScriptProperty>
     </Members>
   </Type>
-
+  
   <Type>
-    <Name>Pscx.SIUnits.Mass</Name>
+    <Name>Pscx.SimpleUnits.DataStorage</Name>
     <Members>
       <ScriptProperty>
-        <Name>Mass</Name>
+        <Name>StrAutoscaled</Name>
         <GetScriptBlock>
-          $this.ToString()
+          $this.Measurement.AsAutoScaledString()
+        </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
+        <Name>StrCanonical</Name>
+        <GetScriptBlock>
+          $this.Measurement.AsString()
         </GetScriptBlock>
       </ScriptProperty>
     </Members>
   </Type>
-
+  
   <Type>
-    <Name>Pscx.SIUnits.Pressure</Name>
+    <Name>Pscx.SimpleUnits.DataTransfer</Name>
     <Members>
       <ScriptProperty>
-        <Name>Pressure</Name>
+        <Name>StrAutoscaled</Name>
         <GetScriptBlock>
-          $this.ToString()
+          $this.Measurement.AsAutoScaledString()
+        </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
+        <Name>StrCanonical</Name>
+        <GetScriptBlock>
+          $this.Measurement.AsString()
         </GetScriptBlock>
       </ScriptProperty>
     </Members>
   </Type>
+  
+    <Type>
+        <Name>Pscx.SimpleUnits.Energy</Name>
+        <Members>
+            <ScriptProperty>
+                <Name>StrAutoscaled</Name>
+                <GetScriptBlock>
+                    $this.Measurement.AsAutoScaledString()
+                </GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>StrCanonical</Name>
+                <GetScriptBlock>
+                    $this.Measurement.AsString()
+                </GetScriptBlock>
+            </ScriptProperty>
+        </Members>
+    </Type>
+  
+    <Type>
+        <Name>Pscx.SimpleUnits.FuelEconomy</Name>
+        <Members>
+            <ScriptProperty>
+                <Name>StrAutoscaled</Name>
+                <GetScriptBlock>
+                    $this.Measurement.AsAutoScaledString()
+                </GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>StrCanonical</Name>
+                <GetScriptBlock>
+                    $this.Measurement.AsString()
+                </GetScriptBlock>
+            </ScriptProperty>
+        </Members>
+    </Type>
+  
+    <Type>
+        <Name>Pscx.SimpleUnits.Length</Name>
+        <Members>
+            <ScriptProperty>
+                <Name>StrAutoscaled</Name>
+                <GetScriptBlock>
+                    $this.Measurement.AsAutoScaledString()
+                </GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>StrCanonical</Name>
+                <GetScriptBlock>
+                    $this.Measurement.AsString()
+                </GetScriptBlock>
+            </ScriptProperty>
+        </Members>
+    </Type>
+  
+    <Type>
+        <Name>Pscx.SimpleUnits.Mass</Name>
+        <Members>
+            <ScriptProperty>
+                <Name>StrAutoscaled</Name>
+                <GetScriptBlock>
+                    $this.Measurement.AsAutoScaledString()
+                </GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>StrCanonical</Name>
+                <GetScriptBlock>
+                    $this.Measurement.AsString()
+                </GetScriptBlock>
+            </ScriptProperty>
+        </Members>
+    </Type>
+  
+    <Type>
+        <Name>Pscx.SimpleUnits.Power</Name>
+        <Members>
+            <ScriptProperty>
+                <Name>StrAutoscaled</Name>
+                <GetScriptBlock>
+                    $this.Measurement.AsAutoScaledString()
+                </GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>StrCanonical</Name>
+                <GetScriptBlock>
+                    $this.Measurement.AsString()
+                </GetScriptBlock>
+            </ScriptProperty>
+        </Members>
+    </Type>
+  
+    <Type>
+        <Name>Pscx.SimpleUnits.Pressure</Name>
+        <Members>
+            <ScriptProperty>
+                <Name>StrAutoscaled</Name>
+                <GetScriptBlock>
+                    $this.Measurement.AsAutoScaledString()
+                </GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>StrCanonical</Name>
+                <GetScriptBlock>
+                    $this.Measurement.AsString()
+                </GetScriptBlock>
+            </ScriptProperty>
+        </Members>
+    </Type>
+  
+    <Type>
+        <Name>Pscx.SimpleUnits.Speed</Name>
+        <Members>
+            <ScriptProperty>
+                <Name>StrAutoscaled</Name>
+                <GetScriptBlock>
+                    $this.Measurement.AsAutoScaledString()
+                </GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>StrCanonical</Name>
+                <GetScriptBlock>
+                    $this.Measurement.AsString()
+                </GetScriptBlock>
+            </ScriptProperty>
+        </Members>
+    </Type>
+  
+    <Type>
+        <Name>Pscx.SimpleUnits.Temperature</Name>
+        <Members>
+            <ScriptProperty>
+                <Name>StrAutoscaled</Name>
+                <GetScriptBlock>
+                    $this.Measurement.AsAutoScaledString()
+                </GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>StrCanonical</Name>
+                <GetScriptBlock>
+                    $this.Measurement.AsString()
+                </GetScriptBlock>
+            </ScriptProperty>
+        </Members>
+    </Type>
+  
+    <Type>
+        <Name>Pscx.SimpleUnits.TimeInterval</Name>
+        <Members>
+            <ScriptProperty>
+                <Name>StrAutoscaled</Name>
+                <GetScriptBlock>
+                    $this.Measurement.AsAutoScaledString()
+                </GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>StrCanonical</Name>
+                <GetScriptBlock>
+                    $this.Measurement.AsString()
+                </GetScriptBlock>
+            </ScriptProperty>
+        </Members>
+    </Type>
+  
+    <Type>
+        <Name>Pscx.SimpleUnits.Volume</Name>
+        <Members>
+            <ScriptProperty>
+                <Name>StrAutoscaled</Name>
+                <GetScriptBlock>
+                    $this.Measurement.AsAutoScaledString()
+                </GetScriptBlock>
+            </ScriptProperty>
+            <ScriptProperty>
+                <Name>StrCanonical</Name>
+                <GetScriptBlock>
+                    $this.Measurement.AsString()
+                </GetScriptBlock>
+            </ScriptProperty>
+        </Members>
+    </Type>
   
 </Types>
