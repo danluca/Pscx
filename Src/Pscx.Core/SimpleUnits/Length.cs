@@ -83,14 +83,16 @@ namespace Pscx.SimpleUnits {
         public List<Unit> Units { get; } = UnitHelper.GetQuantityUnits(QuantityType.Length);
         public override string ToString() => Measurement.AsAutoScaledString();
 
-        public int CompareTo(IQuantity other) => CompareTo(other);
-        public bool Equals(IQuantity other) {
+        public override int GetHashCode() => CanonicalValue.GetHashCode();
+        public bool Equals(IQuantity other) => Equals((object)other);
+        public override bool Equals(object other) {
             if (other is Length length) {
                 //use a tolerance approach due to uncertainty in double represenation - e.g. 0.33333 is not equal with 1/3
                 return Math.Abs(CanonicalValue - length.CanonicalValue) <= (Unit.Precision * CanonicalValue);
             }
             return false;
         }
+        public int CompareTo(IQuantity other) => CompareTo((object)other);
         public int CompareTo(object obj) {
             if (obj is Length length) {
                 return CanonicalValue.CompareTo(length.CanonicalValue);

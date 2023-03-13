@@ -38,7 +38,7 @@
     <Content Include="Help\ConvertToMacOs9LineEnding.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Help\ConvertToMetric.xml">
+    <Content Include="Help\ConvertToUnit.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Help\ConvertToUnixLineEnding.xml">
