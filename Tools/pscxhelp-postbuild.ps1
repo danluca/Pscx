@@ -14,8 +14,10 @@ $outputPath = Join-Path $outDir "Output"
 # create help files
 Write-Host "Create help files..."
 Push-Location $outDir
-# copy the Apps folder from PSCX - not automatically copied by the build system
+# copy the Apps folder from PSCX and other files - not automatically copied by the build system
 Copy-Item $solDir/Pscx/bin/$configuration/net6.0/Apps . -Recurse -Force
+Copy-Item $solDir/Pscx/bin/$configuration/net6.0/NodaTime.* . -Force
+Copy-Item $solDir/Pscx.Win/bin/$configuration/net6.0/SevenZipSharp.* . -Force
 Import-Module ./Pscx.psd1
 Import-Module ./PscxHelp.psd1
 

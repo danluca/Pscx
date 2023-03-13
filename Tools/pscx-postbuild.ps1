@@ -53,7 +53,7 @@ if (!(Test-Path $packDir)) {
 }
 
 Push-Location $outDir
-Copy-Item Pscx.Core.dll,Pscx.dll,Pscx.psd1,Pscx.psm1,Pscx.UserPreferences.ps1,Pscx.ico,LICENSE.txt $packDir -Force
+Copy-Item Pscx.Core.dll,Pscx.dll,NodaTime.*,Pscx.psd1,Pscx.psm1,Pscx.UserPreferences.ps1,Pscx.ico,LICENSE.txt $packDir -Force
 Copy-Item $solDir/../CHANGELOG.md $packDir -Force
 Copy-Item Apps $packDir -Recurse -Force
 Copy-Item FormatData $packDir -Recurse -Force
