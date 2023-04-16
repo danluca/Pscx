@@ -27,6 +27,7 @@ if (!(Test-Path "Apps" -PathType Container)) {
 Copy-Item $solDir/../Imports/Less-608/less*.* ./Apps/Win/
 Copy-Item $solDir/../Imports/Less-608/license ./Apps/Win/LICENSE_less_orig.txt
 Copy-Item $solDir/../Imports/Less-608/LICENSE_win.txt ./Apps/Win/LICENSE_less_win.txt
+Copy-Item $solDir/../Imports/gsudo/win/gsudo.exe ./Apps/Win/gsudo.exe
 Copy-Item $solDir/../Imports/gsudo/win/gsudo.exe ./Apps/Win/sudo.exe
 Copy-Item $solDir/../Imports/gsudo/LICENSE.txt ./Apps/Win/LICENSE_sudo.txt
 Copy-Item $solDir/../Imports/7zip/win/x64/7z.* ./Apps/Win/
