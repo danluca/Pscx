@@ -1811,7 +1811,7 @@ Set-Alias swr   Pscx\Set-Writable           -Description "PSCX alias"
     AddRegex PSNonCommentedLine '(?<PSNonCommentedLine>^(?>\s*)(?!#|$))'
 
     AddRegex EmailAddress       '(?<EmailAddress>[A-Z0-9._%-]+@(?:[A-Z0-9-]+\.)+[A-Z]{2,4})'
-    AddRegex IPv4               '(?<IPv4>)(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))'
+    AddRegex IPv4               '(?<IPv4>(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))'
     AddRegex RepeatedWord       '\b(?<RepeatedWord>(\w+)\s+\1)\b'
     AddRegex HexDigit           '[0-9a-fA-F]'
     AddRegex HexNumber          '(?<HexNumber>(0[xX])?[0-9a-fA-F]+)'
