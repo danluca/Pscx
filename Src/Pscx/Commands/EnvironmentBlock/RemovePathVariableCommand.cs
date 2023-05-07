@@ -31,4 +31,3 @@ namespace Pscx.Commands.EnvironmentBlock {
     }
 
 }
-}
