@@ -57,7 +57,7 @@ jobs:
 
     env:
       Solution_Dir: Src\                                            # Replace with your solution name, i.e. MyWpfApp.sln.
-      Build_Version: 3.6.4.${{ github.run_number }}
+      Build_Version: 3.6.5.${{ github.run_number }}
       Test_Project_Path: Src\Pscx.UnitTests\Pscx.UnitTests.csproj   # Replace with the path to your test project, i.e. MyWpfApp.Tests\MyWpfApp.Tests.csproj.
       Wap_Project_Directory: \Output                                # Replace with the Wap project directory relative to the solution, i.e. MyWpfApp.Package.
 
