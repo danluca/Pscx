@@ -84,14 +84,14 @@ namespace PscxUnitTests.DirectoryServices
                 SetProperty(userPath, "Password", password);
 
                 DirectoryEntryInfo info = GetItem<DirectoryEntryInfo>(userPath);
-                Assert.IsNotNull(info);
+                Assert.That(info is not null);
                 
                 string samName = GetProperty<String>(userPath, "SamAccountName");
-                Assert.AreEqual(info.Name, samName);
+                Assert.That(info.Name, Is.EqualTo(samName));
 
                 using (DirectoryEntry entry = new DirectoryEntry(ForeignServerPath, samName, password))
                 {
-                    Assert.AreEqual("CN=" + info.Name, entry.Name);
+                    Assert.That("CN=" + info.Name, Is.EqualTo(entry.Name));
                 }
             }
             finally
@@ -108,10 +108,10 @@ namespace PscxUnitTests.DirectoryServices
             try
             {
                 SetProperty(userPath, "Disabled", 1);
-                Assert.IsTrue(GetProperty<Boolean>(userPath, "Disabled"));
+                Assert.That(GetProperty<Boolean>(userPath, "Disabled"), Is.True);
 
                 SetProperty(userPath, "Disabled", false);
-                Assert.IsFalse(GetProperty<Boolean>(userPath, "Disabled"));
+                Assert.That(GetProperty<Boolean>(userPath, "Disabled"), Is.False);
             }
             finally
             {
@@ -138,17 +138,17 @@ namespace PscxUnitTests.DirectoryServices
                 AddProperty(group, "Member", users[1]);
 
                 EntryInfoList members = GetProperty<EntryInfoList>(group, "Member");
-                Assert.IsNotNull(members);
+                Assert.That(members, Is.Not.Null);
 
-                Assert.Contains(users[0], members);
-                Assert.Contains(users[1], members);
+                Assert.That(members, Contains.Item(users[0]));
+                Assert.That(members, Contains.Item(users[1]));
                 AssertDoesNotContain(users[2], members);
 
                 RemoveProperty(group, "Member", users[1].FullName);
 
                 members = GetProperty<EntryInfoList>(group, "Member");
                 AssertDoesNotContain(users[1], members);
-                Assert.Contains(users[0], members);
+                Assert.That(members, Contains.Item(users[0]));
             }
             finally
             {

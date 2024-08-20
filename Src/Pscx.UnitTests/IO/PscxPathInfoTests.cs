@@ -150,8 +150,8 @@ namespace PscxUnitTests.IO
             string script = String.Format("new-object psobject -prop @{{Path = '{0}'}} | Test-AlternateDataStream -name foo", formatDataFile);
             Collection<PSObject> results = this.Invoke(script);
 
-            Assert.AreEqual(1, results.Count);
-            Assert.AreEqual("False", results[0].ToString());
+            Assert.That(1, Is.EqualTo(results.Count));
+            Assert.That("False", Is.EqualTo(results[0].ToString()));
         }
 
         [Test]
@@ -162,21 +162,21 @@ namespace PscxUnitTests.IO
             string script = String.Format("new-object psobject -prop @{{LiteralPath = '{0}'}} | Test-AlternateDataStream -name foo", formatDataFile);
             Collection<PSObject> results = this.Invoke(script);
 
-            Assert.AreEqual(1, results.Count);
-            Assert.AreEqual("False", results[0].ToString());
+            Assert.That(1, Is.EqualTo(results.Count));
+            Assert.That("False", Is.EqualTo(results[0].ToString()));
         }
 
         private void VerifyTestXmlOnFormatDataResults(string path, string ext, Collection<PSObject> results)
         {
             string[] files = Directory.GetFiles(path, ext, SearchOption.AllDirectories);
 
-            Assert.AreEqual(files.Length, results.Count);
+            Assert.That(files.Length, Is.EqualTo(results.Count));
             VerifyTrueResult(results);
         }
 
         private void VerifyTestXmlOnFormatDataResults(int numResultsExpected, Collection<PSObject> results)
         {
-            Assert.AreEqual(numResultsExpected, results.Count);
+            Assert.That(numResultsExpected, Is.EqualTo(results.Count));
             VerifyTrueResult(results);
         }
 

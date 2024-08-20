@@ -38,7 +38,7 @@ namespace PscxUnitTests
 
             Collection<PSObject> result = Invoke(getHashCmd);
 
-            Assert.AreEqual(1, result.Count);
+            Assert.That(1, Is.EqualTo(result.Count));
             HashInfo hashInfo = (HashInfo)result[0].BaseObject;
             VerifyHashInfo("MD5", expectedHash, expectedHashString, notepadPath, hashInfo);
             
@@ -61,7 +61,7 @@ namespace PscxUnitTests
 
             Collection<PSObject> result = Invoke(getItemCommand, getHashCmd);
 
-            Assert.AreEqual(1, result.Count);
+            Assert.That(1, Is.EqualTo(result.Count));
             HashInfo hashInfo = (HashInfo)result[0].BaseObject;
             VerifyHashInfo("MD5", expectedHash, expectedHashString, notepadPath, hashInfo);
         }
@@ -87,14 +87,14 @@ namespace PscxUnitTests
 
         private void VerifyHashInfo(string expectedAlgorithm, byte[] expectedHash, string expectedHashString, string expectedPath, HashInfo actualHashInfo)
         {
-            Assert.AreEqual(expectedAlgorithm, actualHashInfo.Algorithm);
-            StringAssert.AreEqualIgnoringCase(expectedPath, actualHashInfo.Path);
-            StringAssert.AreEqualIgnoringCase(expectedHashString, actualHashInfo.HashString);
+            Assert.That(expectedAlgorithm, Is.EqualTo(actualHashInfo.Algorithm));
+            Assert.That(expectedPath, Is.EqualTo(actualHashInfo.Path).IgnoreCase);
+            Assert.That(expectedHashString, Is.EqualTo(actualHashInfo.HashString).IgnoreCase);
 
-            Assert.AreEqual(expectedHash.Length, actualHashInfo.Hash.Length);
+            Assert.That(expectedHash.Length, Is.EqualTo(actualHashInfo.Hash.Length));
             for (int i = 0; i < expectedHash.Length; i++)
             {
-                Assert.AreEqual(expectedHash[i], actualHashInfo.Hash[i]);
+                Assert.That(expectedHash[i], Is.EqualTo(actualHashInfo.Hash[i]));
             }
         }
     }

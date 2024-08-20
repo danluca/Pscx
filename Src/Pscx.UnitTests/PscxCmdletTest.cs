@@ -94,9 +94,9 @@ namespace PscxUnitTests
             get
             {
 #if DEBUG
-                return "Debug\\net6.0";
+                return "Debug\\net8.0";
 #else
-                return "Release\\net6.0";
+                return "Release\\net8.0";
 #endif
             }
         }
@@ -193,7 +193,7 @@ namespace PscxUnitTests
 
         protected void AssertDoesNotContain(object expected, IList collection) 
         {
-            Assert.IsFalse(collection.Contains(expected));
+            Assert.That(collection.Contains(expected), Is.False);
         }
 
         [OneTimeSetUpAttribute]

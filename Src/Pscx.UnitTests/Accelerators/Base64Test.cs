@@ -19,7 +19,7 @@ namespace PscxUnitTests.Accelerators {
             string script = string.Format("Set-Location '{0}'; [base64](gc {1})", dataDir, fileName);
             Collection<PSObject> results = Invoke(script);
 
-            Assert.True(results.Count == 1);
+            Assert.That(results.Count == 1);
             Console.Write(results[0]);
 
         }

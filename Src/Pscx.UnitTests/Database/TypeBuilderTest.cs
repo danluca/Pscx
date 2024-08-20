@@ -21,7 +21,7 @@ namespace PscxUnitTests.Database
         {
             var builder = new DataTypeBuilder("PscxDb");
             Type type = builder.CreateType(new Pair<string, Type>[0]);
-            Assert.IsNotNull(type);
+            Assert.That(type, Is.Not.Null);
         }
 
         [Test]        
@@ -32,7 +32,7 @@ namespace PscxUnitTests.Database
             var builder = new DataTypeBuilder("PowerSQL");
             var lhs = builder.CreateType(dt1);
             var rhs = builder.CreateType(dt2);
-            Assert.AreNotEqual(lhs, rhs);
+            Assert.That(lhs, Is.EqualTo(rhs));
         }
 
         [Test]
@@ -43,9 +43,9 @@ namespace PscxUnitTests.Database
             var builder = new DataTypeBuilder("PowerSQL");
             var dynamic = builder.CreateType(dt);
             var properties = dynamic.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            Assert.AreEqual(1, properties.Length);
-            Assert.AreEqual("Test", properties[0].Name);
-            Assert.AreEqual( typeof (int?), properties[0].PropertyType);
+            Assert.That(1, Is.EqualTo(properties.Length));
+            Assert.That("Test", Is.EqualTo(properties[0].Name));
+            Assert.That(typeof(int?), Is.EqualTo(properties[0].PropertyType));
         }               
     }
 }

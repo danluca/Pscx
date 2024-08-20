@@ -35,8 +35,8 @@ namespace PscxUnitTests
 
             T drive = InvokeReturnOne<T>(cmd);
 
-            Assert.IsNotNull(drive);
-            Assert.IsTrue(TestPath(name + ":\\"));
+            Assert.That(drive, Is.Not.Null);
+            Assert.That(TestPath(name + ":\\"), Is.True);
 
             return drive;
         }
@@ -87,8 +87,8 @@ namespace PscxUnitTests
 
             T item = InvokeReturnOne<T>(newItem);
 
-            Assert.IsNotNull(item);
-            Assert.IsTrue(TestPath(path));
+            Assert.That(item, Is.Not.Null);
+            Assert.That(TestPath(path), Is.True);
 
             return item;
         }
@@ -101,7 +101,7 @@ namespace PscxUnitTests
             remove.Parameters.Add("Force");
             Invoke(remove);
 
-            Assert.IsFalse(TestPath(path));
+            Assert.That(TestPath(path), Is.False);
         }
 
         protected string RenameItem(string path, string newName)
@@ -114,8 +114,8 @@ namespace PscxUnitTests
             string parentPath = GetParentPath(path);
             string newPath = JoinPath(parentPath, newName);
 
-            Assert.IsFalse(TestPath(path));
-            Assert.IsTrue(TestPath(newPath));
+            Assert.That(TestPath(path), Is.False);
+            Assert.That(TestPath(newPath), Is.True);
 
             return newPath;
         }

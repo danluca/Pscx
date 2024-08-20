@@ -28,11 +28,11 @@ namespace Pscx.Commands
         private ProviderConstraintPolicy _defaultPolicy = ProviderConstraintPolicy.EnforceOne;
        
         /// <summary>
-        /// 
+        /// Retrieves an array of <see cref="PscxPathInfo"/> objects based on the provided paths.
         /// </summary>
-        /// <param name="paths"></param>
-        /// <param name="literalPaths"></param>
-        /// <returns></returns>
+        /// <param name="paths">An array of paths to be resolved.</param>
+        /// <param name="literalPaths">A boolean indicating whether the paths should be treated as literal paths.</param>
+        /// <returns>An array of <see cref="PscxPathInfo"/> objects representing the resolved paths.</returns>
         protected PscxPathInfo[] GetPscxPathInfos(string[] paths, bool literalPaths)
         {
             PscxPathInfo[] pscxPaths = PscxPathInfo.GetPscxPathInfos(this.SessionState, paths, literalPaths);

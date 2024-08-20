@@ -35,17 +35,17 @@ namespace PscxUnitTests.Drawing
 
                 Invoke(exportScript, original);
 
-                Assert.IsTrue(File.Exists(Path.Combine(tempPath, expectedPath)));
+                Assert.That(File.Exists(Path.Combine(tempPath, expectedPath)), Is.True);
 
                 string importScript = "Set-Location $Env:Temp; Import-Bitmap {0}";
                 importScript = string.Format(importScript, expectedPath);
 
                 using(Bitmap exported = Invoke(importScript)[0].BaseObject as Bitmap)
                 {
-                    Assert.IsNotNull(exported);
-                    Assert.AreEqual(original.Width, exported.Width);
-                    Assert.AreEqual(original.Height, exported.Height);
-                    Assert.AreEqual(pixelFormat ?? original.PixelFormat, exported.PixelFormat);
+                    Assert.That(exported, Is.Not.Null);
+                    Assert.That(original.Width, Is.EqualTo(exported.Width));
+                    Assert.That(original.Height, Is.EqualTo(exported.Height));
+                    Assert.That(pixelFormat ?? original.PixelFormat, Is.EqualTo(exported.PixelFormat));
                 }
 
                 File.Delete(expectedPath);
@@ -60,7 +60,7 @@ namespace PscxUnitTests.Drawing
                 string path = Path.Combine(Path.GetTempPath(), "neco.png");
                 original.Save(path, System.Drawing.Imaging.ImageFormat.Png);
 
-                Assert.IsTrue(File.Exists(path));
+                Assert.That(File.Exists(path), Is.True);
                 File.Delete(path);
             }
         }

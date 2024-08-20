@@ -26,10 +26,10 @@ namespace PscxUnitTests.Drawing
         protected Bitmap TestBitmap(Bitmap bmp, string command)
         {
             Collection<PSObject> results = Invoke(command, bmp);
-            Assert.AreEqual(1, results.Count);
+            Assert.That(1, Is.EqualTo(results.Count));
 
             Bitmap output = results[0].BaseObject as Bitmap;
-            Assert.IsNotNull(output);
+            Assert.That(output, Is.Not.Null);
 
             return output;
         }
