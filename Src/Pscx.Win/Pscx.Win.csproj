@@ -3,13 +3,13 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
 	<GenerateAssemblyInfo>false</GenerateAssemblyInfo>  
-    <AssemblyVersion>3.6.4</AssemblyVersion>
+    <AssemblyVersion>3.6.5</AssemblyVersion>
     <FileVersion>$(AssemblyVersion)</FileVersion>
     <Version>$(AssemblyVersion)</Version>
     <Company>PowerShell Core Community Team</Company>
     <Product>PowerShell Core Community Windows Extensions</Product>
     <Description>Set of Windows OS specific PowerShell extensions</Description>
-    <Copyright>Copyright © 2005-2023 Keith Hill, Oisin Grehan, Dan Luca, and contributors</Copyright>
+    <Copyright>Copyright © 2005-2024 Keith Hill, Oisin Grehan, Dan Luca, and contributors</Copyright>
     <Authors>https://github.com/pscx/Pscx; fork https://github.com/danluca/Pscx</Authors>
     <PackageId>Pscx.Win</PackageId>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>

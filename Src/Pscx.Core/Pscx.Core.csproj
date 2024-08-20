@@ -5,11 +5,11 @@
     <RootNamespace>Pscx</RootNamespace>
     <OldToolsVersion>3.5</OldToolsVersion>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <AssemblyVersion>3.6.4</AssemblyVersion>
+    <AssemblyVersion>3.6.5</AssemblyVersion>
     <Version>$(AssemblyVersion)</Version>
     <FileVersion>$(AssemblyVersion)</FileVersion>
     <Authors>https://github.com/pscx/Pscx; fork https://github.com/danluca/Pscx</Authors>
-    <Copyright>Copyright © 2005-2023 Keith Hill, Oisin Grehan, Dan Luca, and contributors</Copyright>
+    <Copyright>Copyright © 2005-2024 Keith Hill, Oisin Grehan, Dan Luca, and contributors</Copyright>
     <RepositoryUrl>git@github.com:danluca/Pscx.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <Title>Pscx.Core module</Title>

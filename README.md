@@ -271,6 +271,12 @@ Creates filesystem symbolic links. Requires Microsoft Windows 7 or later.
 ### New-Shortcut
 Creates shell shortcuts.
 
+### ConvertFrom-Yaml
+Converts a YAML file or string into object graph; navigate graph with dot notation. Comments are not retained.
+
+### ConvertTo-Yaml
+Converts an object graph - suitable for YAML representation - into YAML string or file.
+
 # Functions
 
 ## Cross platform

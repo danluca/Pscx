@@ -3,11 +3,11 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <AssemblyVersion>3.6.4</AssemblyVersion>
+    <AssemblyVersion>3.6.5</AssemblyVersion>
     <FileVersion>$(AssemblyVersion)</FileVersion>
     <Product>PowerShell Core Community Extensions</Product>
     <Description>PowerShell Core Community Extension Help Builder Module</Description>
-    <Copyright>Copyright © 2005-2023 Keith Hill, Oisin Grehan, Dan Luca, and contributors</Copyright>
+    <Copyright>Copyright © 2005-2024 Keith Hill, Oisin Grehan, Dan Luca, and contributors</Copyright>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
