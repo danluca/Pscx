@@ -19,7 +19,8 @@ using System.Management.Automation;
 namespace Pscx.Commands
 {
     /// <summary>
-    /// 
+    /// Provides a base class for cmdlets that operate on file system paths.
+    /// This class supports both literal and wildcard paths, allowing derived cmdlets to process files and directories.
     /// </summary>
     public abstract class PscxPathCommandBase : PscxCmdlet
     {

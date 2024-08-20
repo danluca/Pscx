@@ -1,18 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <AssemblyVersion>3.6.4</AssemblyVersion>
+    <AssemblyVersion>3.6.5</AssemblyVersion>
     <FileVersion>$(AssemblyVersion)</FileVersion>
     <Product>PowerShell Core Community Extensions</Product>
     <Description>PowerShell Core Community Extension Help Builder Module</Description>
-    <Copyright>Copyright © 2005-2023 Keith Hill, Oisin Grehan, Dan Luca, and contributors</Copyright>
+    <Copyright>Copyright © 2005-2024 Keith Hill, Oisin Grehan, Dan Luca, and contributors</Copyright>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Help\ConvertFromYaml.xml" />
+    <None Remove="Help\ConvertToYaml.xml" />
+  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="..\AssemblyInfo.Shared.cs">
@@ -27,6 +32,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Help\AddPathVariable.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Help\ConvertToYaml.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Help\ConvertFromYaml.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Help\ConvertFromBase64.xml">
@@ -284,8 +295,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NETCore.Platforms" Version="6.0.7" />
-    <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.2.8" />
+    <PackageReference Include="Microsoft.NETCore.Platforms" Version="7.0.4" />
+    <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.4.4" />
   </ItemGroup>
 
   <ItemGroup>

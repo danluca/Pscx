@@ -27,8 +27,8 @@ namespace PscxUnitTests.Drawing
             {
                 using (Bitmap result = TestBitmap(bmp, "$input | Set-BitmapSize -Percent 25"))
                 {
-                    Assert.AreEqual(bmp.Width / 4, result.Width, 0.01d);
-                    Assert.AreEqual(bmp.Height / 4, result.Height, 0.01d);
+                    Assert.That(bmp.Width / 4, Is.EqualTo(result.Width).Within(0.01d));
+                    Assert.That(bmp.Height / 4, Is.EqualTo(result.Height).Within(0.01d));
                 }
             }
         }
@@ -40,8 +40,8 @@ namespace PscxUnitTests.Drawing
             {
                 using (Bitmap result = TestBitmap(bmp, "$input | Set-BitmapSize -Height 60"))
                 {
-                    Assert.AreEqual(60, result.Height);
-                    Assert.AreEqual(bmp.Width, result.Width);
+                    Assert.That(60, Is.EqualTo(result.Height));
+                    Assert.That(bmp.Width, Is.EqualTo(result.Width));
                 }
             }
         }
@@ -53,8 +53,8 @@ namespace PscxUnitTests.Drawing
             {
                 using(Bitmap result = TestBitmap(bmp, "$input | Set-BitmapSize -Width 50 -KeepAspectRatio"))
                 {
-                    Assert.AreEqual(50, result.Width);
-                    Assert.AreEqual(100, result.Height);
+                    Assert.That(50, Is.EqualTo(result.Width));
+                    Assert.That(100, Is.EqualTo(result.Height));
                 }
             }
         }

@@ -33,8 +33,8 @@ namespace PscxUnitTests.Database
             var setter = new PropertySetter(typeof(TestClass));
             var testClass = new TestClass();
             setter.SetValues(testClass, new DataRowIndexer(row), false);
-            Assert.AreEqual(10, testClass.I);
-            Assert.AreEqual("Value", testClass.S);
+            Assert.That(10, Is.EqualTo(testClass.I));
+            Assert.That("Value", Is.EqualTo(testClass.S));
         }
 
         [Test]
@@ -48,8 +48,8 @@ namespace PscxUnitTests.Database
             var setter = new PropertySetter(typeof(TestClass));
             var testClass = new TestClass();
             setter.SetValues(testClass, new DataRowIndexer(row), false);
-            Assert.AreEqual(null, testClass.I);
-            Assert.AreEqual("Value", testClass.S);
+            Assert.That(null, Is.EqualTo(testClass.I));
+            Assert.That("Value", Is.EqualTo(testClass.S));
         }
     }
 }

@@ -1,6 +1,6 @@
 {
     "files.exclude": {
-        "**/*.sln": true,
+        "**/*.sln": false,
         "**/bin": true,
         "**/build": true,
         "**/obj": true

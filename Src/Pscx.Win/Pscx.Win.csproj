@@ -1,15 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
 	<GenerateAssemblyInfo>false</GenerateAssemblyInfo>  
-    <AssemblyVersion>3.6.4</AssemblyVersion>
+    <AssemblyVersion>3.6.5</AssemblyVersion>
     <FileVersion>$(AssemblyVersion)</FileVersion>
     <Version>$(AssemblyVersion)</Version>
     <Company>PowerShell Core Community Team</Company>
     <Product>PowerShell Core Community Windows Extensions</Product>
     <Description>Set of Windows OS specific PowerShell extensions</Description>
-    <Copyright>Copyright © 2005-2023 Keith Hill, Oisin Grehan, Dan Luca, and contributors</Copyright>
+    <Copyright>Copyright © 2005-2024 Keith Hill, Oisin Grehan, Dan Luca, and contributors</Copyright>
     <Authors>https://github.com/pscx/Pscx; fork https://github.com/danluca/Pscx</Authors>
     <PackageId>Pscx.Win</PackageId>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
@@ -38,12 +38,6 @@
     <Content Include="Modules\Wmi\Pscx.Wmi.psd1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Modules\Sudo\Pscx.Sudo.psm1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Modules\Sudo\Pscx.Sudo.psd1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <Content Include="PscxWin.psd1">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -65,16 +59,34 @@
     <Content Include="FormatData\Pscx.Archive.Format.ps1xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Modules\Sudo\gsudoModule.psm1">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Modules\Sudo\Invoke-gsudo.ps1">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Modules\Sudo\Pscx.Sudo.psd1">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="Modules\Vhd\Pscx.Vhd.psd1">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="Modules\Vhd\Pscx.Vhd.psm1">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NETCore.Platforms" Version="6.0.7" />
-    <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.2.8" />
-    <PackageReference Include="Squid-Box.SevenZipSharp" Version="1.5.0.366">
+    <PackageReference Include="Microsoft.NETCore.Platforms" Version="7.0.4" />
+    <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.4.4" />
+    <PackageReference Include="Squid-Box.SevenZipSharp" Version="1.6.2.24">
       <GeneratePathProperty>True</GeneratePathProperty>
     </PackageReference>
-    <PackageReference Include="System.DirectoryServices" Version="6.0.0" />
-    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="6.0.0" />
+    <PackageReference Include="System.DirectoryServices" Version="8.0.0" />
+    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="8.0.0" />
+    <PackageReference Include="YamlDotNet" Version="16.0.0">
+      <GeneratePathProperty>True</GeneratePathProperty>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
@@ -100,23 +112,12 @@
     </EmbeddedResource>
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Modules\Sudo\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="Modules\Vhd\Pscx.Vhd.psd1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Modules\Vhd\Pscx.Vhd.psm1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
       <!--some old(er) nuget packages do not copy their artifacts in output folder using newer project style - workaround based on https://github.com/NuGet/Home/issues/4837-->
-      <Copy SourceFiles="$(PkgSquid-Box_SevenZipSharp)/lib/netcoreapp3.1/SevenZipSharp.dll" DestinationFolder="$(TargetDir)"/>
-      <Copy SourceFiles="$(PkgSquid-Box_SevenZipSharp)/lib/netcoreapp3.1/SevenZipSharp.xml" DestinationFolder="$(TargetDir)"/>
+      <Copy SourceFiles="$(PkgSquid-Box_SevenZipSharp)/lib/netcoreapp3.1/SevenZipSharp.dll" DestinationFolder="$(TargetDir)" />
+      <Copy SourceFiles="$(PkgSquid-Box_SevenZipSharp)/lib/netcoreapp3.1/SevenZipSharp.xml" DestinationFolder="$(TargetDir)" />
+      <Copy SourceFiles="$(PkgYamlDotNet)/lib/$(TargetFramework)/YamlDotNet.dll" DestinationFolder="$(TargetDir)" />
+      <Copy SourceFiles="$(PkgYamlDotNet)/lib/$(TargetFramework)/YamlDotNet.xml" DestinationFolder="$(TargetDir)" />
     <Exec Command="pwsh -NoProfile -ExecutionPolicy RemoteSigned -NonInteractive -File ../Tools/pscxwin-postbuild.ps1 -outDir $(TargetDir) -configuration $(Configuration)" WorkingDirectory="$(SolutionDir)" />
   </Target>
 

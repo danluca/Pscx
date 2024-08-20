@@ -15,10 +15,10 @@ namespace PscxUnitTests.SimpleUnits {
             cmd.Parameters.Add("ToUnit", "km");
 
             Collection<PSObject> res = Invoke(cmd);
-            Assert.IsNotNull(res);
-            Assert.AreEqual(1, res.Count);
-            Assert.IsAssignableFrom(typeof(Measurement), res[0].BaseObject);
-            Assert.AreEqual(Length.Kilometer, ((Measurement)res[0].BaseObject).unit);
+            Assert.That(res, Is.Not.Null);
+            Assert.That(1, Is.EqualTo(res.Count));
+            Assert.That(res[0].BaseObject, Is.AssignableTo(typeof(Measurement)));
+            Assert.That(Length.Kilometer, Is.EqualTo((res[0].BaseObject as Measurement).unit));
         }
     }
 }

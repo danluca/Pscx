@@ -44,6 +44,7 @@
         Net               = $true     # register some format types
         TranscribeSession = $false    # Disabled by default for security and privacy reasons.
         Utility           = $true     # really useful
+        Sudo              = $true     # elevation
         Vhd               = $false    # limited need - disabled by default
         Wmi               = $false    # type accelerators only, from PscxWin only on Windows
     }

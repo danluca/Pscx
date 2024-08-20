@@ -1,5 +1,10 @@
 # PowerShell Community Extensions Light Changelog
 
+## 3.6.5 - August 2024
+* Upgraded to .NET 8.0, PowerShell Core 7.4
+* Upgraded gsudo to 2.5.1
+* Added YamlDotNet library to support marshalling to/from YAML format
+
 ## 3.6.4 - January 2023
 
 * GitHub CI/CD build pipeline (aka Actions) and published artifacts

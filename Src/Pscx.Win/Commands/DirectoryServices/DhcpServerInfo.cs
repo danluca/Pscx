@@ -6,7 +6,7 @@
 // Creation Date: 2006-12-20
 //---------------------------------------------------------------------
 
-
+//TODO: to remove in favor of cim commands, this not working well
 namespace Pscx.Win.Commands.DirectoryServices
 {
     public class DhcpServerInfo

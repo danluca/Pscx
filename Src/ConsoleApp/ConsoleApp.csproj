@@ -1,16 +1,16 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Version>$(AssemblyVersion)</Version>
     <Authors>https://github.com/pscx/Pscx; fork https://github.com/danluca/Pscx</Authors>
-    <Copyright>Copyright © 2005-2023 Keith Hill, Oisin Grehan, Dan Luca, and contributors</Copyright>
+    <Copyright>Copyright © 2005-2024 Keith Hill, Oisin Grehan, Dan Luca, and contributors</Copyright>
     <RepositoryUrl>git@github.com:danluca/Pscx.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <AssemblyVersion>3.6.4</AssemblyVersion>
+    <AssemblyVersion>3.6.5</AssemblyVersion>
     <FileVersion>$(AssemblyVersion)</FileVersion>
     <Title>PowerShell Core Community Extensions - Console Args Echo</Title>
     <Description>Echos to the console the arguments passed to this native application - useful in troubleshooting PowerShell argument wrapping, escaping, etc.</Description>

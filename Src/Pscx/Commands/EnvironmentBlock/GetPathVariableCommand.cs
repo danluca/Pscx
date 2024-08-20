@@ -15,6 +15,7 @@ namespace Pscx.Commands.EnvironmentBlock
     [Cmdlet(VerbsCommon.Get, PscxNouns.PathVariable), Description("Gets the specified path-like environment variable, defaults to PATH")]
     [RelatedLink(typeof(AddPathVariableCommand))]
     [RelatedLink(typeof(SetPathVariableCommand))]
+    [RelatedLink(typeof(RemovePathVariableCommand))]
     [RelatedLink(typeof(PopEnvironmentBlockCommand))]
     [RelatedLink(typeof(PushEnvironmentBlockCommand))]
     public class GetPathVariableCommand : PathVariableCommandBase

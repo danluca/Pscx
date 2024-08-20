@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <OutputType>Library</OutputType>
     <RootNamespace>Pscx</RootNamespace>
     <OldToolsVersion>3.5</OldToolsVersion>
@@ -8,10 +8,10 @@
     <ApplicationIcon>Pscx.ico</ApplicationIcon>
     <Version>$(AssemblyVersion)</Version>
     <Authors>https://github.com/pscx/Pscx; fork https://github.com/danluca/Pscx</Authors>
-    <Copyright>Copyright © 2005-2023 Keith Hill, Oisin Grehan, Dan Luca, and contributors</Copyright>
+    <Copyright>Copyright © 2005-2024 Keith Hill, Oisin Grehan, Dan Luca, and contributors</Copyright>
     <RepositoryUrl>git@github.com:danluca/Pscx.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <AssemblyVersion>3.6.4</AssemblyVersion>
+    <AssemblyVersion>3.6.5</AssemblyVersion>
     <FileVersion>$(AssemblyVersion)</FileVersion>
     <Title>PowerShell Core Community Extensions</Title>
   </PropertyGroup>
@@ -125,8 +125,8 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.NETCore.Platforms" Version="6.0.7" />
-    <PackageReference Include="NodaTime" Version="3.1.6" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.NETCore.Platforms" Version="7.0.4" />
+    <PackageReference Include="NodaTime" Version="3.1.11" GeneratePathProperty="true" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Pscx.ico">
@@ -135,8 +135,11 @@
   </ItemGroup>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
       <!--some old(er) nuget packages do not copy their artifacts in output folder using newer project style - workaround based on https://github.com/NuGet/Home/issues/4837-->
-      <Copy SourceFiles="$(PkgNodatime)/lib/$(TargetFramework)/NodaTime.dll" DestinationFolder="$(TargetDir)"/>
-      <Copy SourceFiles="$(PkgNodatime)/lib/$(TargetFramework)/NodaTime.xml" DestinationFolder="$(TargetDir)"/>
+      <!-- <Copy SourceFiles="$(PkgNodatime)/lib/$(TargetFramework)/NodaTime.dll" DestinationFolder="$(TargetDir)" /> -->
+      <!-- <Copy SourceFiles="$(PkgNodatime)/lib/$(TargetFramework)/NodaTime.xml" DestinationFolder="$(TargetDir)" /> -->
+      <!--Current version of NodaTime - 3.1.11 - does not have a net8.0 binary, only net6.0-->
+      <Copy SourceFiles="$(PkgNodatime)/lib/net6.0/NodaTime.dll" DestinationFolder="$(TargetDir)" />
+      <Copy SourceFiles="$(PkgNodatime)/lib/net6.0/NodaTime.xml" DestinationFolder="$(TargetDir)" />
     <Exec Command="pwsh -NoProfile -ExecutionPolicy RemoteSigned -NonInteractive -File ../Tools/pscx-postbuild.ps1 -outDir $(TargetDir) -configuration $(Configuration)" WorkingDirectory="$(SolutionDir)" />
   </Target>
 </Project>

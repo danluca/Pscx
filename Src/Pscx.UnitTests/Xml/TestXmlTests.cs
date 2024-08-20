@@ -18,9 +18,9 @@ namespace PscxUnitTests.Xml
             string script = String.Format("Test-Xml '{0}' -SchemaPath '{1}'", xmlPath, schemaPath);
             Collection<PSObject> results = this.Invoke(script);
 
-            Assert.AreEqual(1, results.Count);
+            Assert.That(1, Is.EqualTo(results.Count));
             bool result = (bool)results[0].BaseObject;
-            Assert.IsTrue(result);
+            Assert.That(result, Is.True);
         }
 
         [Test]
@@ -32,9 +32,9 @@ namespace PscxUnitTests.Xml
             string script = String.Format("Test-Xml '{0}' -SchemaPath '{1}'", xmlPath, schemaPath);
             Collection<PSObject> results = this.Invoke(script);
 
-            Assert.AreEqual(1, results.Count);
+            Assert.That(1, Is.EqualTo(results.Count));
             bool result = (bool)results[0].BaseObject;
-            Assert.IsFalse(result);
+            Assert.That(result, Is.False);
         }
     }
 }

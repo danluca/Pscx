@@ -29,16 +29,16 @@ namespace PscxUnitTests.IO {
         }
 
         protected void VerifyLinkOnResults(int numExpectedResults, Collection<PSObject> results) {
-            Assert.AreEqual(numExpectedResults, results.Count);
+            Assert.That(numExpectedResults, Is.EqualTo(results.Count));
             DirectoryInfo di = (DirectoryInfo)results[0].BaseObject;
-            Assert.True((di.Attributes & FileAttributes.ReparsePoint) != 0);
+            Assert.That((di.Attributes & FileAttributes.ReparsePoint) != 0, Is.True);
         }
 
         protected void VerifyLink(string folder, string linkName, string target, PSObject dir) {
             DirectoryInfo di = (DirectoryInfo) dir.BaseObject;
-            Assert.AreEqual(linkName, di.Name);
-            StringAssert.AreEqualIgnoringCase(folder, di.Parent.FullName);
-            Assert.AreEqual(target, dir.Properties["Target"].Value);
+            Assert.That(linkName, Is.EqualTo(di.Name));
+            Assert.That(folder, Is.EqualTo(di.Parent.FullName).IgnoreCase);
+            Assert.That(target, Is.EqualTo(dir.Properties["Target"].Value));
         }
 
         protected void RemoveLink(string folder, string linkName) {
