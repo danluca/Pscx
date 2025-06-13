@@ -24,9 +24,9 @@ if (!(Test-Path "Apps" -PathType Container)) {
     New-Item "Apps/macOS" -ItemType Directory -Force
     New-Item "Apps/Linux" -ItemType Directory -Force
 }
-Copy-Item $solDir/../Imports/Less-608/less*.* ./Apps/Win/
-Copy-Item $solDir/../Imports/Less-608/license ./Apps/Win/LICENSE_less_orig.txt
-Copy-Item $solDir/../Imports/Less-608/LICENSE_win.txt ./Apps/Win/LICENSE_less_win.txt
+Copy-Item $solDir/../Imports/Less-678/less*.* ./Apps/Win/
+Copy-Item $solDir/../Imports/Less-678/license ./Apps/Win/LICENSE_less_orig.txt
+Copy-Item $solDir/../Imports/Less-678/LICENSE_win.txt ./Apps/Win/LICENSE_less_win.txt
 Copy-Item $solDir/../Imports/gsudo/win/gsudo.exe ./Apps/Win/gsudo.exe
 Copy-Item $solDir/../Imports/gsudo/win/gsudo.exe ./Apps/Win/sudo.exe
 Copy-Item $solDir/../Imports/gsudo/win/Invoke-ElevatedCommand.ps1 ./Apps/Win/Invoke-Elevated.ps1

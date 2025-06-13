@@ -1,5 +1,5 @@
 @{
-    ModuleVersion    = '3.6.5'
+    ModuleVersion    = '3.7.0'
     FormatsToProcess = 'Pscx.DirectoryServices.Format.ps1xml'	    
     TypesToProcess   = 'Pscx.DirectoryServices.Type.ps1xml'
 }

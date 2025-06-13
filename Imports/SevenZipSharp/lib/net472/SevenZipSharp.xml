@@ -9,6 +9,14 @@
             The Stream extension class to emulate the archive part of a stream.
             </summary>
         </member>
+        <member name="M:SevenZip.ArchiveEmulationStreamProxy.#ctor(System.IO.Stream,System.Int32,System.Boolean)">
+            <summary>
+            Initializes a new instance of the ArchiveEmulationStream class.
+            </summary>
+            <param name="stream">The stream to wrap.</param>
+            <param name="offset">The stream offset.</param>
+            <param name="leaveOpen">Whether or not the stream should be closed after operation completes.</param>
+        </member>
         <member name="P:SevenZip.ArchiveEmulationStreamProxy.Offset">
             <summary>
             Gets the file offset.
@@ -19,12 +27,41 @@
             The source wrapped stream.
             </summary>
         </member>
-        <member name="M:SevenZip.ArchiveEmulationStreamProxy.#ctor(System.IO.Stream,System.Int32)">
-            <summary>
-            Initializes a new instance of the ArchiveEmulationStream class.
-            </summary>
-            <param name="stream">The stream to wrap.</param>
-            <param name="offset">The stream offset.</param>
+        <member name="P:SevenZip.ArchiveEmulationStreamProxy.CanRead">
+            <inheritdoc />
+        </member>
+        <member name="P:SevenZip.ArchiveEmulationStreamProxy.CanSeek">
+            <inheritdoc />
+        </member>
+        <member name="P:SevenZip.ArchiveEmulationStreamProxy.CanWrite">
+            <inheritdoc />
+        </member>
+        <member name="M:SevenZip.ArchiveEmulationStreamProxy.Flush">
+            <inheritdoc />
+        </member>
+        <member name="P:SevenZip.ArchiveEmulationStreamProxy.Length">
+            <inheritdoc />
+        </member>
+        <member name="P:SevenZip.ArchiveEmulationStreamProxy.Position">
+            <inheritdoc />
+        </member>
+        <member name="M:SevenZip.ArchiveEmulationStreamProxy.Read(System.Byte[],System.Int32,System.Int32)">
+            <inheritdoc />
+        </member>
+        <member name="M:SevenZip.ArchiveEmulationStreamProxy.Seek(System.Int64,System.IO.SeekOrigin)">
+            <inheritdoc />
+        </member>
+        <member name="M:SevenZip.ArchiveEmulationStreamProxy.SetLength(System.Int64)">
+            <inheritdoc />
+        </member>
+        <member name="M:SevenZip.ArchiveEmulationStreamProxy.Write(System.Byte[],System.Int32,System.Int32)">
+            <inheritdoc />
+        </member>
+        <member name="M:SevenZip.ArchiveEmulationStreamProxy.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="M:SevenZip.ArchiveEmulationStreamProxy.Close">
+            <inheritdoc />
         </member>
         <member name="T:SevenZip.ArchiveExtractCallback">
             <summary>
@@ -1386,11 +1423,6 @@
             Add data to the archive.
             </summary>
         </member>
-        <member name="T:SevenZip.ExtractFileCallback">
-            <summary>
-            Callback delegate for <see cref="M:SevenZip.SevenZipExtractor.ExtractFiles(SevenZip.ExtractFileCallback)"/>.
-            </summary>
-        </member>
         <member name="T:SevenZip.ExtractFileCallbackArgs">
             <summary>
             The arguments passed to <see cref="T:SevenZip.ExtractFileCallback"/>.
@@ -1489,7 +1521,7 @@
         </member>
         <member name="F:SevenZip.ExtractFileCallbackReason.Failure">
             <summary>
-            An exception occured during extraction of the file.
+            An exception occurred during extraction of the file.
             </summary>
         </member>
         <member name="T:SevenZip.FileInfoEventArgs">
@@ -1565,21 +1597,6 @@
         <member name="P:SevenZip.FileOverwriteEventArgs.FileName">
             <summary>
             Gets or sets the file name to extract to. Null means skip.
-            </summary>
-        </member>
-        <member name="T:SevenZip.ICancellable">
-            <summary>
-            The definition of the interface which supports the cancellation of a process.
-            </summary>
-        </member>
-        <member name="P:SevenZip.ICancellable.Cancel">
-            <summary>
-            Gets or sets whether to stop the current archive operation.
-            </summary>
-        </member>
-        <member name="P:SevenZip.ICancellable.Skip">
-            <summary>
-            Gets or sets whether to skip the current file.
             </summary>
         </member>
         <member name="T:SevenZip.IntEventArgs">
@@ -1683,7 +1700,7 @@
         </member>
         <member name="F:SevenZip.CompressionFailedException.DEFAULT_MESSAGE">
             <summary>
-            Exception dafault message which is displayed if no extra information is specified
+            Exception default message which is displayed if no extra information is specified
             </summary>
         </member>
         <member name="M:SevenZip.CompressionFailedException.#ctor">
@@ -1702,7 +1719,7 @@
             Initializes a new instance of the CompressionFailedException class
             </summary>
             <param name="message">Additional detailed message</param>
-            <param name="inner">Inner exception occured</param>
+            <param name="inner">Inner exception occurred</param>
         </member>
         <member name="M:SevenZip.CompressionFailedException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
             <summary>
@@ -1718,7 +1735,7 @@
         </member>
         <member name="F:SevenZip.ExtractionFailedException.DEFAULT_MESSAGE">
             <summary>
-            Exception dafault message which is displayed if no extra information is specified
+            Exception default message which is displayed if no extra information is specified
             </summary>
         </member>
         <member name="M:SevenZip.ExtractionFailedException.#ctor">
@@ -1737,7 +1754,7 @@
             Initializes a new instance of the ExtractionFailedException class
             </summary>
             <param name="message">Additional detailed message</param>
-            <param name="inner">Inner exception occured</param>
+            <param name="inner">Inner exception occurred</param>
         </member>
         <member name="M:SevenZip.ExtractionFailedException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
             <summary>
@@ -1753,7 +1770,7 @@
         </member>
         <member name="F:SevenZip.LzmaException.DEFAULT_MESSAGE">
             <summary>
-            Exception dafault message which is displayed if no extra information is specified
+            Exception default message which is displayed if no extra information is specified
             </summary>
         </member>
         <member name="M:SevenZip.LzmaException.#ctor">
@@ -1772,7 +1789,7 @@
             Initializes a new instance of the LzmaException class
             </summary>
             <param name="message">Additional detailed message</param>
-            <param name="inner">Inner exception occured</param>
+            <param name="inner">Inner exception occurred</param>
         </member>
         <member name="M:SevenZip.LzmaException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
             <summary>
@@ -1823,7 +1840,7 @@
         </member>
         <member name="F:SevenZip.SevenZipCompressionFailedException.DEFAULT_MESSAGE">
             <summary>
-            Exception dafault message which is displayed if no extra information is specified
+            Exception default message which is displayed if no extra information is specified
             </summary>
         </member>
         <member name="M:SevenZip.SevenZipCompressionFailedException.#ctor">
@@ -1842,7 +1859,7 @@
             Initializes a new instance of the SevenZipCompressionFailedException class
             </summary>
             <param name="message">Additional detailed message</param>
-            <param name="inner">Inner exception occured</param>
+            <param name="inner">Inner exception occurred</param>
         </member>
         <member name="M:SevenZip.SevenZipCompressionFailedException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
             <summary>
@@ -1885,14 +1902,14 @@
             </summary>
             <param name="defaultMessage">Default exception message</param>
             <param name="message">Additional detailed message</param>
-            <param name="inner">Inner exception occured</param>
+            <param name="inner">Inner exception occurred</param>
         </member>
         <member name="M:SevenZip.SevenZipException.#ctor(System.String,System.Exception)">
             <summary>
             Initializes a new instance of the SevenZipException class
             </summary>
             <param name="defaultMessage">Default exception message</param>
-            <param name="inner">Inner exception occured</param>
+            <param name="inner">Inner exception occurred</param>
         </member>
         <member name="M:SevenZip.SevenZipException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
             <summary>
@@ -1927,7 +1944,7 @@
             Initializes a new instance of the SevenZipExtractionFailedException class
             </summary>
             <param name="message">Additional detailed message</param>
-            <param name="inner">Inner exception occured</param>
+            <param name="inner">Inner exception occurred</param>
         </member>
         <member name="M:SevenZip.SevenZipExtractionFailedException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
             <summary>
@@ -1943,7 +1960,7 @@
         </member>
         <member name="F:SevenZip.SevenZipInvalidFileNamesException.DEFAULT_MESSAGE">
             <summary>
-            Exception dafault message which is displayed if no extra information is specified
+            Exception default message which is displayed if no extra information is specified
             </summary>
         </member>
         <member name="M:SevenZip.SevenZipInvalidFileNamesException.#ctor">
@@ -1962,7 +1979,7 @@
             Initializes a new instance of the SevenZipInvalidFileNamesException class
             </summary>
             <param name="message">Additional detailed message</param>
-            <param name="inner">Inner exception occured</param>
+            <param name="inner">Inner exception occurred</param>
         </member>
         <member name="M:SevenZip.SevenZipInvalidFileNamesException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
             <summary>
@@ -1978,7 +1995,7 @@
         </member>
         <member name="F:SevenZip.SevenZipLibraryException.DEFAULT_MESSAGE">
             <summary>
-            Exception dafault message which is displayed if no extra information is specified
+            Exception default message which is displayed if no extra information is specified
             </summary>
         </member>
         <member name="M:SevenZip.SevenZipLibraryException.#ctor">
@@ -1997,7 +2014,7 @@
             Initializes a new instance of the SevenZipLibraryException class
             </summary>
             <param name="message">Additional detailed message</param>
-            <param name="inner">Inner exception occured</param>
+            <param name="inner">Inner exception occurred</param>
         </member>
         <member name="M:SevenZip.SevenZipLibraryException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
             <summary>
@@ -2013,7 +2030,7 @@
         </member>
         <member name="F:SevenZip.SevenZipSfxValidationException.DefaultMessage">
             <summary>
-            Exception dafault message which is displayed if no extra information is specified
+            Exception default message which is displayed if no extra information is specified
             </summary>
         </member>
         <member name="M:SevenZip.SevenZipSfxValidationException.#ctor">
@@ -2032,7 +2049,7 @@
             Initializes a new instance of the SevenZipSfxValidationException class
             </summary>
             <param name="message">Additional detailed message</param>
-            <param name="inner">Inner exception occured</param>
+            <param name="inner">Inner exception occurred</param>
         </member>
         <member name="M:SevenZip.SevenZipSfxValidationException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
             <summary>
@@ -2040,6 +2057,11 @@
             </summary>
             <param name="info">All data needed for serialization or deserialization</param>
             <param name="context">Serialized stream descriptor</param>
+        </member>
+        <member name="T:SevenZip.ExtractFileCallback">
+            <summary>
+            Callback delegate for <see cref="M:SevenZip.SevenZipExtractor.ExtractFiles(SevenZip.ExtractFileCallback)"/>.
+            </summary>
         </member>
         <member name="T:SevenZip.FileChecker">
             <summary>
@@ -2148,6 +2170,12 @@
             Nullsoft installation package format.
             </summary>
             <remarks><a href="http://en.wikipedia.org/wiki/NSIS">Wikipedia information</a></remarks>
+        </member>
+        <member name="F:SevenZip.InArchiveFormat.Gpt">
+            <summary>
+            GUID Partition Table.
+            </summary>
+            <remarks><a href="https://en.wikipedia.org/wiki/GUID_Partition_Table">Wikipedia information</a></remarks>
         </member>
         <member name="F:SevenZip.InArchiveFormat.Rar">
             <summary>
@@ -2345,6 +2373,12 @@
             </summary>
             <remarks><a href="https://en.wikipedia.org/wiki/Mach-O">Wikipedia information</a></remarks>
         </member>
+        <member name="F:SevenZip.InArchiveFormat.Apfs">
+            <summary>
+            Apple File System Format.
+            </summary>
+            <remarks><a href="https://en.wikipedia.org/wiki/Apple_File_System">Wikipedia information</a></remarks>
+        </member>
         <member name="T:SevenZip.OutArchiveFormat">
             <summary>
             Writable archive format enumeration.
@@ -2373,6 +2407,12 @@
             Open Bzip2 archive format.
             </summary>
             <remarks><a href="http://en.wikipedia.org/wiki/Bzip2">Wikipedia information</a></remarks>
+        </member>
+        <member name="F:SevenZip.OutArchiveFormat.Wim">
+            <summary>
+            Microsoft Windows Imaging disk image format.
+            </summary>
+            <remarks><a href="http://en.wikipedia.org/wiki/Windows_Imaging_Format">Wikipedia information</a></remarks>
         </member>
         <member name="F:SevenZip.OutArchiveFormat.Tar">
             <summary>
@@ -2504,6 +2544,21 @@
             <returns>InArchiveFormat recognized by the file name extension</returns>
             <exception cref="T:System.ArgumentException"/>
         </member>
+        <member name="T:SevenZip.ICancellable">
+            <summary>
+            The definition of the interface which supports the cancellation of a process.
+            </summary>
+        </member>
+        <member name="P:SevenZip.ICancellable.Cancel">
+            <summary>
+            Gets or sets whether to stop the current archive operation.
+            </summary>
+        </member>
+        <member name="P:SevenZip.ICancellable.Skip">
+            <summary>
+            Gets or sets whether to skip the current file.
+            </summary>
+        </member>
         <member name="F:SevenZip.InternalCompressionMode.Create">
             <summary>
             Create a new archive; overwrite the existing one.
@@ -2634,7 +2689,7 @@
             7-zip library low-level wrapper.
             </summary>
         </member>
-        <member name="F:SevenZip.SevenZipLibraryManager._syncRoot">
+        <member name="F:SevenZip.SevenZipLibraryManager.SyncRoot">
             <summary>
             Synchronization root for all locking.
             </summary>
@@ -3259,11 +3314,6 @@
             </summary>
             <param name="password">The archive password.</param>
         </member>
-        <member name="M:SevenZip.SevenZipBase.Finalize">
-            <summary>
-            Removes the UniqueID from the list.
-            </summary>
-        </member>
         <member name="P:SevenZip.SevenZipBase.Password">
             <summary>
             Gets or sets the archive password
@@ -3736,6 +3786,12 @@
             <param name="fileFullNames">Array of file names.</param>
             <returns>Array of file names with full paths.</returns>
         </member>
+        <member name="M:SevenZip.SevenZipCompressor.UpdateCompressorPassword(System.String)">
+            <summary>
+            Check and update password in SevenZipCompressor
+            </summary>
+            <param name="password">The password to use.</param>
+        </member>
         <member name="M:SevenZip.SevenZipCompressor.BeginCompressFiles(System.String,System.String[])">
             <summary>
             Packs files into the archive asynchronously.
@@ -3984,12 +4040,22 @@
             Use SevenZipExtractor(string) to extract from disk, though it is not necessary.</param>
             <remarks>The archive format is guessed by the signature.</remarks>
         </member>
-        <member name="M:SevenZip.SevenZipExtractor.#ctor(System.IO.Stream,SevenZip.InArchiveFormat)">
+        <member name="M:SevenZip.SevenZipExtractor.#ctor(System.IO.Stream,System.Boolean)">
             <summary>
             Initializes a new instance of SevenZipExtractor class.
             </summary>
             <param name="archiveStream">The stream to read the archive from.
             Use SevenZipExtractor(string) to extract from disk, though it is not necessary.</param>
+            <param name="leaveOpen">Leaves the base stream open.</param>
+            <remarks>The archive format is guessed by the signature.</remarks>
+        </member>
+        <member name="M:SevenZip.SevenZipExtractor.#ctor(System.IO.Stream,System.Boolean,SevenZip.InArchiveFormat)">
+            <summary>
+            Initializes a new instance of SevenZipExtractor class.
+            </summary>
+            <param name="archiveStream">The stream to read the archive from.
+            Use SevenZipExtractor(string) to extract from disk, though it is not necessary.</param>
+            <param name="leaveOpen">Leaves the base stream open.</param>        
             <param name="format">Manual archive format setup. You SHOULD NOT normally specify it this way.
             Instead, use SevenZipExtractor(Stream archiveStream), that constructor
             automatically detects the archive format.</param>
@@ -4034,12 +4100,22 @@
             <param name="password">Password for an encrypted archive.</param>
             <remarks>The archive format is guessed by the signature.</remarks>
         </member>
-        <member name="M:SevenZip.SevenZipExtractor.#ctor(System.IO.Stream,System.String,SevenZip.InArchiveFormat)">
+        <member name="M:SevenZip.SevenZipExtractor.#ctor(System.IO.Stream,System.String,System.Boolean)">
             <summary>
             Initializes a new instance of SevenZipExtractor class.
             </summary>
             <param name="archiveStream">The stream to read the archive from.</param>
             <param name="password">Password for an encrypted archive.</param>
+            <param name="leaveOpen">Leaves the base stream open.</param>
+            <remarks>The archive format is guessed by the signature.</remarks>
+        </member>
+        <member name="M:SevenZip.SevenZipExtractor.#ctor(System.IO.Stream,System.String,System.Boolean,SevenZip.InArchiveFormat)">
+            <summary>
+            Initializes a new instance of SevenZipExtractor class.
+            </summary>
+            <param name="archiveStream">The stream to read the archive from.</param>
+            <param name="password">Password for an encrypted archive.</param>
+            <param name="leaveOpen">Leaves the base stream open.</param>
             <param name="format">Manual archive format setup. You SHOULD NOT normally specify it this way.
             Instead, use SevenZipExtractor(Stream archiveStream, string password), that constructor
             automatically detects the archive format.</param>

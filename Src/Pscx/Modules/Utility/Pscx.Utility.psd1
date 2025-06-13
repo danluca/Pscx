@@ -1,5 +1,5 @@
 @{
-    ModuleVersion    = '3.6.5'
+    ModuleVersion    = '3.7.0'
     ModuleToProcess  = 'Pscx.Utility.psm1'
     FormatsToProcess = 'Pscx.Utility.Format.ps1xml'
     AliasesToExport = '*'

@@ -7,7 +7,7 @@ This repository is a fork of the official PowerShell Community Extensions hosted
 version [4.0.0-beta4](https://github.com/Pscx/Pscx/releases/tag/v3.3.2) (commit [6980fdf0](https://github.com/Pscx/Pscx/commit/698efdf0ba9cb29b326eb93e4a25ac841cc302dd)).
 
 The customizations made in this fork include:
-* upgrade to PowerShell Core 7.2, .Net (Core) 6.0
+* upgrade to PowerShell Core 7.5, .Net (Core) 9.0
 * compatibility with MacOS and other *nix OS
 * build upgraded to VS2022
 * packaging and build improvements throughout

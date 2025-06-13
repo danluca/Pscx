@@ -17,6 +17,7 @@ namespace Pscx.EnvironmentBlock {
         public PathVariable(string name, EnvironmentVariableTarget target) {
             _name = name;
             _target = target;
+            
         }
 
         public string Name {
@@ -42,10 +43,16 @@ namespace Pscx.EnvironmentBlock {
             EnsureValuesLoaded();
 
             value = Environment.ExpandEnvironmentVariables(value.Trim());
-
-            if (value.Length > 0 && !Contains(value)) {
-                _values.Add(value);
+            
+            if (string.IsNullOrEmpty(value)) {
+                return; // nothing to append
             }
+            // if value is already in the list, nothing to do
+            if (Contains(value)) {
+                return;
+            }
+
+            _values.Add(value);
         }
 
         public void Prepend(string[] values) {
@@ -56,16 +63,37 @@ namespace Pscx.EnvironmentBlock {
                 Prepend(values[i]);
             }
         }
-
+        
+        /// <summary>
+        /// Prepends a specified value to the beginning of the environment variable's path.
+        /// </summary>
+        /// <param name="value">
+        /// The value to prepend to the path. If the value is already present in the path, 
+        /// it will be moved to the beginning. If the value is empty or null, no action is taken.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="value"/> is <c>null</c> or an empty string.
+        /// </exception>
         public void Prepend(string value) {
             PscxArgumentException.ThrowIfIsNullOrEmpty(value);
             EnsureValuesLoaded();
 
             value = Environment.ExpandEnvironmentVariables(value.Trim());
-
-            if (value.Length > 0 && !Contains(value)) {
-                _values.Insert(0, value);
+            
+            if (string.IsNullOrEmpty(value)) {
+                return; // nothing to prepend
             }
+
+            // Check if the value is already at the start to avoid unnecessary operations
+            if (_values.Count > 0 && Comparer.Equals(_values[0], value)) {
+                return;
+            }
+            // if value is already in the list, we remove it first such that we can add it to the front
+            if (Contains(value)) {
+                Remove(value);
+            }
+
+            _values.Insert(0, value);
         }
 
         public void Remove(string[] values) {

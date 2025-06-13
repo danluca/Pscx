@@ -1,5 +1,5 @@
 @{
-    ModuleVersion    = '3.6.5'
+    ModuleVersion    = '3.7.0'
     ModuleToProcess  = 'Pscx.CD.psm1'
     FunctionsToExport = @(
         'Set-PscxLocation'

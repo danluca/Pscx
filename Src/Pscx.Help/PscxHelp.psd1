@@ -8,7 +8,7 @@
 
 @{
     RootModule = 'PscxHelp.psm1'
-    ModuleVersion ="3.6.5"
+    ModuleVersion ="3.7.0"
     GUID = 'e50d3425-cdb8-4ab7-8241-c6253c7dd625'
     Author = 'PowerShell Core Community Extensions Team'
     CompanyName = 'PowerShell Core Community Extensions'
