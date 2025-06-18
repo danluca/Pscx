@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <OutputType>Library</OutputType>
     <RootNamespace>Pscx</RootNamespace>
     <OldToolsVersion>3.5</OldToolsVersion>
@@ -8,10 +8,10 @@
     <ApplicationIcon>Pscx.ico</ApplicationIcon>
     <Version>$(AssemblyVersion)</Version>
     <Authors>https://github.com/pscx/Pscx; fork https://github.com/danluca/Pscx</Authors>
-    <Copyright>Copyright © 2005-2024 Keith Hill, Oisin Grehan, Dan Luca, and contributors</Copyright>
+    <Copyright>Copyright © 2005-2025 Keith Hill, Oisin Grehan, Dan Luca, and contributors</Copyright>
     <RepositoryUrl>git@github.com:danluca/Pscx.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <AssemblyVersion>3.6.5</AssemblyVersion>
+    <AssemblyVersion>3.7.0</AssemblyVersion>
     <FileVersion>$(AssemblyVersion)</FileVersion>
     <Title>PowerShell Core Community Extensions</Title>
   </PropertyGroup>
@@ -126,7 +126,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.Platforms" Version="7.0.4" />
-    <PackageReference Include="NodaTime" Version="3.1.11" GeneratePathProperty="true" />
+    <PackageReference Include="NodaTime" Version="3.2.2" GeneratePathProperty="true" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Pscx.ico">

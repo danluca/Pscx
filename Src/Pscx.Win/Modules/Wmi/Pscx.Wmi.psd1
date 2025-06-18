@@ -1,5 +1,5 @@
 @{
-    ModuleVersion    = '3.6.5'
+    ModuleVersion    = '3.7.0'
     ModuleToProcess = 'Pscx.Wmi.psm1'
     FunctionsToExport = 'GetDhcpServer', 'GetWin32Processes'
 

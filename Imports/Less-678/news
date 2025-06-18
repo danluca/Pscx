@@ -829,7 +829,7 @@
 
 * Henry Spencer's regexp.c is now included, for systems which do not
   have a regular expression library.
-  regexp.c is Copyright (c) 1986 by University of Toronto.
+  regexp.c is Copyright (c) 1986,2025 by University of Toronto.
 
 * New line-editing keys, including command history (arrow keys) and 
   filename completion (TAB).

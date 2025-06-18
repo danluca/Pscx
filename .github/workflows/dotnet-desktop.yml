@@ -57,7 +57,7 @@ jobs:
 
     env:
       Solution_Dir: Src\                                            # Replace with your solution name, i.e. MyWpfApp.sln.
-      Build_Version: 3.6.5.${{ github.run_number }}
+      Build_Version: 3.7.0.${{ github.run_number }}
       Test_Project_Path: Src\Pscx.UnitTests\Pscx.UnitTests.csproj   # Replace with the path to your test project, i.e. MyWpfApp.Tests\MyWpfApp.Tests.csproj.
       Wap_Project_Directory: \Output                                # Replace with the Wap project directory relative to the solution, i.e. MyWpfApp.Package.
 
@@ -72,7 +72,7 @@ jobs:
     - name: Install .NET Core
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 9.0.x
 
     # Add  MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
     - name: Setup MSBuild.exe
