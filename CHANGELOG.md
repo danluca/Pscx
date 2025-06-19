@@ -1,5 +1,15 @@
 # PowerShell Community Extensions Light Changelog
 
+## 3.7.0 - June 2025
+* Upgraded to .NET 9.0, PowerShell Core 7.5
+* Upgraded gsudo to 2.6
+* Upgraded auxilary apps
+  * less to 6.7.8
+  * sevenzipsharp to 1.6
+  * 7zip to 24.09
+* Fixed Add-PathVariable to force prepend to bring the path location to the front of the variable when location already exists in the variable
+
+
 ## 3.6.5 - August 2024
 * Upgraded to .NET 8.0, PowerShell Core 7.4
 * Upgraded gsudo to 2.5.1
