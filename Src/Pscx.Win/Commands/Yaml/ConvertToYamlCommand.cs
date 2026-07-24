@@ -11,6 +11,7 @@ using System.Text;
 using System.Linq;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.TypeResolvers;
+using Pscx;
 
 namespace Pscx.Win.Commands.Yaml {
     [Cmdlet(VerbsData.ConvertTo, PscxWinNouns.Yaml)]
@@ -53,7 +54,7 @@ namespace Pscx.Win.Commands.Yaml {
             builder = StringQuotingEmitter.Add(builder);
             var serializer = builder.Build();
 
-            var data = ConvertPsObjectToGenericObject(InputObject);
+            var data = PSObjectHelper.ConvertToGenericObject(InputObject);
 
             if (OutputPath == null) {
                 var yaml = serializer.Serialize(data);
@@ -62,38 +63,6 @@ namespace Pscx.Win.Commands.Yaml {
                 using var writer = new StreamWriter(OutputPath.ProviderPath);
                 serializer.Serialize(writer, data);
             }
-        }
-
-        private static object ConvertPsObjectToGenericObject(object data) {
-            if (data == null) {
-                return null;
-            }
-
-            return data switch {
-                PSObject psobj => ConvertPsCustomObjectToDictionary(psobj),
-                IDictionary dictionary => ConvertDictionaryToDictionary(dictionary),
-                IList list => ConvertListToGenericList(list),
-                _ => Convert.ChangeType(data, data.GetType()),
-            };
-        }
-
-        private static Dictionary<string, object> ConvertPsCustomObjectToDictionary(PSObject psObject) {
-            return psObject?.BaseObject switch {
-                OrderedDictionary orderedDictionary => ConvertDictionaryToDictionary(orderedDictionary),
-                IDictionary dictionary => ConvertDictionaryToDictionary(dictionary),
-                _ => new Dictionary<string, object>() { { "base", Convert.ChangeType(psObject?.BaseObject, psObject?.BaseObject?.GetType() ?? typeof(string)) } }
-            };
-        }
-
-        private static Dictionary<string, object> ConvertDictionaryToDictionary(IDictionary dict) {
-            return dict.Keys.Cast<string>().ToDictionary(
-                key => key,
-                key => ConvertPsObjectToGenericObject(dict[key])
-            );
-        }
-
-        private static List<object> ConvertListToGenericList(IList list) {
-            return list.Cast<object>().Select(ConvertPsObjectToGenericObject).ToList();
         }
     }
 }

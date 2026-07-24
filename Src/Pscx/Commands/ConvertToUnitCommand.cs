@@ -1,4 +1,11 @@
-﻿using Pscx.SimpleUnits;
+﻿//
+// ConvertToUnitCommand.cs
+// Converts units into different compatible units - e.g. metric to non-metric, different multiplier, etc.
+// Author: Dan Luca
+// Creation Date: 2023-03-10
+//
+
+using Pscx.SimpleUnits;
 using System;
 using System.ComponentModel;
 using System.Management.Automation;

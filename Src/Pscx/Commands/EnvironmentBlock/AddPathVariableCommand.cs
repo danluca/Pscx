@@ -1,3 +1,6 @@
+// Copyright © 2026 PowerShell Core Community Extensions Team. All rights reserved.
+// Licensed under MIT license.
+
 using Pscx.EnvironmentBlock;
 using System.ComponentModel;
 using System.Management.Automation;
