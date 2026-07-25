@@ -1,21 +1,24 @@
-﻿using NodaTime;
+﻿// Copyright © 2026 PowerShell Core Community Extensions Team. All rights reserved.
+// Licensed under MIT license.
+
+using NodaTime;
 using NodaTime.Extensions;
 using System;
 
 namespace Pscx.Time {
     /// <summary>
-    /// Surrogate <see cref="NodaTime.ZonedDateTime"/> but with a better API than what Noda project decided to provide.
-    /// Most API will delegate back to Noda's wrapped type or integrate seamlessly with original type API
+    ///     Surrogate <see cref="NodaTime.ZonedDateTime" /> but with a better API than what Noda project decided to provide.
+    ///     Most API will delegate back to Noda's wrapped type or integrate seamlessly with original type API
     /// </summary>
     public sealed class ZonedDateTime {
-        private NodaTime.ZonedDateTime dateTime;
+        private readonly NodaTime.ZonedDateTime dateTime;
 
         public NodaTime.ZonedDateTime DateTime {
             get { return dateTime; }
         }
 
         public long UnixEpochMillis {
-            get { return dateTime.ToInstant().ToUnixTimeMilliseconds();  }
+            get { return dateTime.ToInstant().ToUnixTimeMilliseconds(); }
         }
 
         #region Constructors
@@ -31,6 +34,7 @@ namespace Pscx.Time {
         public ZonedDateTime(OffsetDateTime lt, string zoneId) => dateTime = of(zoneId, lt.ToDateTime());
 
         #endregion
+
         #region static utils
 
         public static NodaTime.ZonedDateTime of(string zoneId, params int[] fields) => of(getZone(zoneId), fields);
@@ -38,13 +42,14 @@ namespace Pscx.Time {
         public static NodaTime.ZonedDateTime of(DateTimeZone zone, params int[] fields) {
             NodaTime.LocalDateTime local = fields.Length switch {
                 0 => SystemClock.Instance.GetCurrentInstant().InUtc().LocalDateTime,
-                1 => new NodaTime.LocalDate(fields[0], 1, 1).AtMidnight(),
-                2 => new NodaTime.LocalDate(fields[0], fields[1], 1).AtMidnight(),
-                3 => new NodaTime.LocalDate(fields[0], fields[1], fields[2]).AtMidnight(),
+                1 => new LocalDate(fields[0], 1, 1).AtMidnight(),
+                2 => new LocalDate(fields[0], fields[1], 1).AtMidnight(),
+                3 => new LocalDate(fields[0], fields[1], fields[2]).AtMidnight(),
                 4 => new NodaTime.LocalDateTime(fields[0], fields[1], fields[2], fields[3], 0),
                 5 => new NodaTime.LocalDateTime(fields[0], fields[1], fields[2], fields[3], fields[4]),
                 6 => new NodaTime.LocalDateTime(fields[0], fields[1], fields[2], fields[3], fields[4], fields[5]),
-                >= 7 => new NodaTime.LocalDateTime(fields[0], fields[1], fields[2], fields[3], fields[4], fields[5], fields[6])
+                >= 7 => new NodaTime.LocalDateTime(fields[0], fields[1], fields[2], fields[3], fields[4], fields[5], fields[6]),
+                _ => throw new NotImplementedException("Unsupported number of parameters " + fields.Length)
             };
 
             return local.InZoneLeniently(zone);
@@ -63,7 +68,7 @@ namespace Pscx.Time {
         public static NodaTime.ZonedDateTime of(NodaTime.LocalDateTime localTime) => localTime.InZoneLeniently(DateTimeZoneProviders.Tzdb.GetSystemDefault());
 
         public static NodaTime.ZonedDateTime of(DateTimeZone zone, NodaTime.LocalDateTime localTime) => localTime.InZoneLeniently(zone);
-        
+
         public static NodaTime.ZonedDateTime of(string zoneId, NodaTime.LocalDateTime localTime) => of(getZone(zoneId), localTime);
 
         public static NodaTime.ZonedDateTime now() => now(DateTimeZoneProviders.Tzdb.GetSystemDefault());
@@ -77,11 +82,13 @@ namespace Pscx.Time {
         public static NodaTime.ZonedDateTime utcNow() => now(DateTimeZone.Utc);
 
         public static NodaTime.ZonedDateTime operator +(ZonedDateTime time) => time.dateTime;
-        
+
         public static NodaTime.ZonedDateTime operator +(ZonedDateTime time1, Duration dur) => time1.dateTime.Plus(dur);
+
         #endregion
 
         #region instance utils
+
         public NodaTime.ZonedDateTime Plus(Duration dur) => dateTime.Plus(dur);
 
         public NodaTime.ZonedDateTime PlusHours(int hours) => dateTime.PlusHours(hours);
@@ -94,16 +101,18 @@ namespace Pscx.Time {
 
         public NodaTime.ZonedDateTime Minus(Duration dur) => dateTime.Minus(dur);
 
-        public NodaTime.Duration Minus(ZonedDateTime dTime) => dateTime.Minus(dTime.dateTime);
+        public Duration Minus(ZonedDateTime dTime) => dateTime.Minus(dTime.dateTime);
 
-        public NodaTime.Duration Minus(NodaTime.ZonedDateTime dTime) => dateTime.Minus(dTime);
+        public Duration Minus(NodaTime.ZonedDateTime dTime) => dateTime.Minus(dTime);
 
         public override string ToString() {
             return dateTime.ToString();
         }
+
         #endregion
 
         #region Converters
+
         public Instant ToInstant() => dateTime.ToInstant();
 
         public DateTime ToDateTime() => dateTime.ToDateTimeUnspecified();
@@ -115,8 +124,10 @@ namespace Pscx.Time {
 
         private static DateTimeZone getZone(string zoneId) {
             DateTimeZone zone = DateTimeZoneProviders.Tzdb.GetZoneOrNull(zoneId);
-            if (zone == null) 
+            if (zone == null) {
                 throw new ArgumentException($"Invalid time zone ID - {zoneId}");
+            }
+
             return zone;
         }
 
@@ -127,7 +138,7 @@ namespace Pscx.Time {
 
             throw new ArgumentException($"The native TimeZoneInfo object with id {tzi.Id} is not supported by IANA TZDB");
         }
-        #endregion
 
+        #endregion
     }
 }

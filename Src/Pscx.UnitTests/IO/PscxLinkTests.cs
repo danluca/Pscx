@@ -1,14 +1,17 @@
-﻿using NUnit.Framework;
-using Pscx;
+﻿// Copyright © 2026 PowerShell Core Community Extensions Team. All rights reserved.
+// Licensed under MIT license.
+
+using NUnit.Framework;
 using Pscx.Core;
 using Pscx.Win.Interop;
 using System.Collections.ObjectModel;
-using System.Globalization;
 using System.IO;
 using System.Management.Automation;
+using System.Runtime.Versioning;
 
 namespace PscxUnitTests.IO {
     [TestFixture]
+    [SupportedOSPlatform("windows")]
     internal class PscxLinkTests : PscxCmdletTest {
         [Test]
         public void NewSymlink_1() {
@@ -35,7 +38,7 @@ namespace PscxUnitTests.IO {
         }
 
         protected void VerifyLink(string folder, string linkName, string target, PSObject dir) {
-            DirectoryInfo di = (DirectoryInfo) dir.BaseObject;
+            DirectoryInfo di = (DirectoryInfo)dir.BaseObject;
             Assert.That(linkName, Is.EqualTo(di.Name));
             Assert.That(folder, Is.EqualTo(di.Parent.FullName).IgnoreCase);
             Assert.That(target, Is.EqualTo(dir.Properties["Target"].Value));

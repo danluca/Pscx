@@ -1,55 +1,36 @@
-//---------------------------------------------------------------------
-// Author: Keith Hill
-//
-// Description: Base class for cmdlet unit tests.  This handles opening
-//              a runspace, loading the Pscx snapin and preparing a 
-//              pipeline for each and every test.
-//
-// Creation Date: Dec 27, 2006
-//---------------------------------------------------------------------
+// Copyright © 2026 PowerShell Core Community Extensions Team. All rights reserved.
+// Licensed under MIT license.
+
+using Microsoft.PowerShell;
+using NUnit.Framework;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.IO;
 using System.Management.Automation;
 using System.Management.Automation.Runspaces;
-using NUnit.Framework;
 using System.Text;
-using Microsoft.PowerShell;
 
-namespace PscxUnitTests
-{
+namespace PscxUnitTests {
     [Serializable]
-    public class PipelineErrorsException : Exception
-    {
-        private readonly IList _errors;
-
+    public class PipelineErrorsException : Exception {
         public PipelineErrorsException() { }
         public PipelineErrorsException(string message) : base(message) { }
         public PipelineErrorsException(string message, Exception inner) : base(message, inner) { }
 
         internal PipelineErrorsException(IList errors)
-            : base("Pipeline invocation has returned errors.")
-        {
-            _errors = errors;
+            : base("Pipeline invocation has returned errors.") {
+            List = errors;
         }
 
-        public IList List
-        {
-            get { return _errors; }
-        } 
+        public IList List { get; }
 
-        public override string Message
-        {
-            get
-            {
-                StringBuilder msg = new StringBuilder();
-                foreach (object err in _errors)
-                {
-                    if (err != null)
-                    {
+        public override string Message {
+            get {
+                StringBuilder msg = new();
+                foreach (object err in List) {
+                    if (err != null) {
                         msg.AppendLine(err.ToString());
                         msg.AppendLine();
                     }
@@ -58,41 +39,15 @@ namespace PscxUnitTests
                 return msg.ToString();
             }
         }
-
-        protected PipelineErrorsException(
-          System.Runtime.Serialization.SerializationInfo info,
-          System.Runtime.Serialization.StreamingContext context)
-            : base(info, context) { }
     }
 
-    public class PscxCmdletTest
-    {
-        private Runspace _runspace;
+    public class PscxCmdletTest {
         private PowerShell _runspaceInvoke;
 
-        public Runspace Runspace
-        {
-            get { return _runspace; }
-        }
+        public Runspace Runspace { get; private set; }
 
-        public Collection<PSObject> Invoke(string script, params object[] input)
-        {
-            _runspaceInvoke.AddScript(script);
-            Collection<PSObject> output = _runspaceInvoke.Invoke(input);
-            IList errors = _runspaceInvoke.Streams.Error;
-
-            if (errors != null && errors.Count > 0)
-            {
-                throw new PipelineErrorsException(errors);
-            }
-
-            return output;
-        }
-
-        public string Configuration
-        {
-            get
-            {
+        public string Configuration {
+            get {
 #if DEBUG
                 return "Debug\\net8.0";
 #else
@@ -101,48 +56,52 @@ namespace PscxUnitTests
             }
         }
 
-        public string ProjectDir
-        {
-            get
-            {
-                string testDllPath = this.GetType().Assembly.Location;
-                if (testDllPath.StartsWith("file:///", StringComparison.OrdinalIgnoreCase))
-                {
+        public string ProjectDir {
+            get {
+                string testDllPath = GetType().Assembly.Location;
+                if (testDllPath.StartsWith("file:///", StringComparison.OrdinalIgnoreCase)) {
                     testDllPath = testDllPath.Remove(0, 8);
                 }
+
                 string projectDir = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(testDllPath), @"..\..\.."));
                 return projectDir;
             }
         }
 
-        public string SolutionDir
-        {
-            get
-            {
-                string testDllPath = this.GetType().Assembly.Location;
-                if (testDllPath.StartsWith("file:///", StringComparison.OrdinalIgnoreCase))
-                {
+        public string SolutionDir {
+            get {
+                string testDllPath = GetType().Assembly.Location;
+                if (testDllPath.StartsWith("file:///", StringComparison.OrdinalIgnoreCase)) {
                     testDllPath = testDllPath.Remove(0, 8);
                 }
+
                 string solutionDir = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(testDllPath), @"..\..\..\.."));
                 return solutionDir;
             }
         }
 
-        public Collection<PSObject> Invoke(params Command[] commands)
-        {
-            using (Pipeline pipe = _runspace.CreatePipeline())
-            {
-                foreach (Command cmd in commands)
-                {
+        public Collection<PSObject> Invoke(string script, params object[] input) {
+            _runspaceInvoke.AddScript(script);
+            Collection<PSObject> output = _runspaceInvoke.Invoke(input);
+            IList errors = _runspaceInvoke.Streams.Error;
+
+            if (errors != null && errors.Count > 0) {
+                throw new PipelineErrorsException(errors);
+            }
+
+            return output;
+        }
+
+        public Collection<PSObject> Invoke(params Command[] commands) {
+            using (Pipeline pipe = Runspace.CreatePipeline()) {
+                foreach (Command cmd in commands) {
                     pipe.Commands.Add(cmd);
                 }
 
                 pipe.Input.Close();
                 Collection<PSObject> output = pipe.Invoke();
 
-                if (!pipe.Error.EndOfPipeline)
-                {
+                if (!pipe.Error.EndOfPipeline) {
                     throw new PipelineErrorsException(pipe.Error.ReadToEnd());
                 }
 
@@ -150,68 +109,56 @@ namespace PscxUnitTests
             }
         }
 
-        public PSObject InvokeReturnOne(string script, params object[] input)
-        {
-            return SelectFirst<PSObject>(Invoke(script, input));
+        public PSObject InvokeReturnOne(string script, params object[] input) {
+            return SelectFirst(Invoke(script, input));
         }
 
-        public PSObject InvokeReturnOne(params Command[] commands)
-        {
-            return SelectFirst<PSObject>(Invoke(commands));
-
+        public PSObject InvokeReturnOne(params Command[] commands) {
+            return SelectFirst(Invoke(commands));
         }
 
-        public T InvokeReturnOne<T>(string script, params object[] input)
-        {
+        public T InvokeReturnOne<T>(string script, params object[] input) {
             return GetBaseObject<T>(InvokeReturnOne(script, input));
         }
 
-        public T InvokeReturnOne<T>(params Command[] commands) 
-        {
+        public T InvokeReturnOne<T>(params Command[] commands) {
             return GetBaseObject<T>(InvokeReturnOne(commands));
         }
 
-        public T GetBaseObject<T>(PSObject obj)
-        {
-            if (obj != null)
-            {
+        public T GetBaseObject<T>(PSObject obj) {
+            if (obj != null) {
                 return (T)obj.BaseObject;
             }
 
-            return default(T);
+            return default;
         }
 
-        public T SelectFirst<T>(IList<T> objects)
-        {
-            if (objects.Count > 0)
-            {
+        public T SelectFirst<T>(IList<T> objects) {
+            if (objects.Count > 0) {
                 return objects[0];
             }
 
-            return default(T);
+            return default;
         }
 
-        protected void AssertDoesNotContain(object expected, IList collection) 
-        {
+        protected void AssertDoesNotContain(object expected, IList collection) {
             Assert.That(collection.Contains(expected), Is.False);
         }
 
         [OneTimeSetUpAttribute]
-        public virtual void SetUp()
-        {
-            string pathToModule = Path.Combine(this.ProjectDir, @"bin\" + this.Configuration + @"\Pscx.psd1");
+        public virtual void SetUp() {
+            string pathToModule = Path.Combine(ProjectDir, @"bin\" + Configuration + @"\Pscx.psd1");
             var initialSession = InitialSessionState.CreateDefault();
             initialSession.ExecutionPolicy = ExecutionPolicy.RemoteSigned;
-            initialSession.ImportPSModule(new[] {pathToModule});
-            _runspace = RunspaceFactory.CreateRunspace(initialSession);
-            _runspace.Open();
-            _runspaceInvoke = PowerShell.Create(_runspace);
+            initialSession.ImportPSModule(pathToModule);
+            Runspace = RunspaceFactory.CreateRunspace(initialSession);
+            Runspace.Open();
+            _runspaceInvoke = PowerShell.Create(Runspace);
         }
 
         [OneTimeTearDown]
-        public virtual void TearDown()
-        {
-            _runspace.Close();
+        public virtual void TearDown() {
+            Runspace.Close();
         }
     }
 }

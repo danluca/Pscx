@@ -1,30 +1,20 @@
-//---------------------------------------------------------------------
-// Author: Keith Hill
-//
-// Description: Base class for tests using bitmaps.
-//
-// Creation Date: Dec 30, 2006
-//---------------------------------------------------------------------
+// Copyright © 2026 PowerShell Core Community Extensions Team. All rights reserved.
+// Licensed under MIT license.
+
+using NUnit.Framework;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Management.Automation;
-using System.Management.Automation.Runspaces;
-using System.Security.Cryptography;
-using System.Text;
-using NUnit.Framework;
-using Pscx.Commands;
 
-namespace PscxUnitTests.Drawing
-{
-    public class BitmapTestBase : PscxCmdletTest
-    {
-        protected Bitmap TestBitmap(Bitmap bmp, string command)
-        {
+namespace PscxUnitTests.Drawing {
+    public class BitmapTestBase : PscxCmdletTest {
+        protected Bitmap TestBitmap(Bitmap bmp, string command) {
+            if (!OperatingSystem.IsWindows()) {
+                Assert.Inconclusive("This test is only applicable on Windows.");
+            }
+
             Collection<PSObject> results = Invoke(command, bmp);
             Assert.That(1, Is.EqualTo(results.Count));
 
@@ -34,11 +24,9 @@ namespace PscxUnitTests.Drawing
             return output;
         }
 
-        protected Bitmap OpenTestBitmap()
-        {
+        protected Bitmap OpenTestBitmap() {
             Stream stream = GetType().Assembly.GetManifestResourceStream("PscxUnitTests.Drawing.TestBitmap.jpg");
             return new Bitmap(stream);
         }
     }
 }
-

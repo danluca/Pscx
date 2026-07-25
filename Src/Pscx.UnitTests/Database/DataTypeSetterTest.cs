@@ -1,33 +1,27 @@
-//---------------------------------------------------------------------
-// Author: Harley Green
-//
-// Description: Cmdlet to get data from Sql Server databases
-//
-// Creation Date: 2008/3/8
-//---------------------------------------------------------------------
-using System;
-using System.Data;
+// Copyright © 2026 PowerShell Core Community Extensions Team. All rights reserved.
+// Licensed under MIT license.
+
 using NUnit.Framework;
 using Pscx.Win.Reflection.DynamicType;
+using System;
+using System.Data;
+using System.Runtime.Versioning;
 
-namespace PscxUnitTests.Database
-{
+namespace PscxUnitTests.Database {
     [TestFixture]
-    public class DataTypeSetterTest
-    {
-        public class TestClass
-        {
+    [SupportedOSPlatform("windows")]
+    public class DataTypeSetterTest {
+        public class TestClass {
             public int? I { get; set; }
 
             public string S { get; set; }
         }
 
         [Test]
-        public void SetValues_SetsProperties()
-        {
+        public void SetValues_SetsProperties() {
             var table = new DataTable();
-            table.Columns.Add(new DataColumn("I", typeof (int)));
-            table.Columns.Add(new DataColumn("S", typeof (string)));
+            table.Columns.Add(new DataColumn("I", typeof(int)));
+            table.Columns.Add(new DataColumn("S", typeof(string)));
             DataRow row = table.Rows.Add(10, "Value");
 
             var setter = new PropertySetter(typeof(TestClass));
@@ -38,11 +32,10 @@ namespace PscxUnitTests.Database
         }
 
         [Test]
-        public void SetValues_SetsDBNull()
-        {
+        public void SetValues_SetsDBNull() {
             var table = new DataTable();
-            table.Columns.Add(new DataColumn("I", typeof (int)));
-            table.Columns.Add(new DataColumn("S", typeof (string)));
+            table.Columns.Add(new DataColumn("I", typeof(int)));
+            table.Columns.Add(new DataColumn("S", typeof(string)));
             DataRow row = table.Rows.Add(DBNull.Value, "Value");
 
             var setter = new PropertySetter(typeof(TestClass));

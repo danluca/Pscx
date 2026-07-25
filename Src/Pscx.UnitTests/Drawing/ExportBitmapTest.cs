@@ -1,33 +1,35 @@
+// Copyright © 2026 PowerShell Core Community Extensions Team. All rights reserved.
+// Licensed under MIT license.
+
+using NUnit.Framework;
 using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using NUnit.Framework;
+using System.Runtime.Versioning;
 
-namespace PscxUnitTests.Drawing
-{
+namespace PscxUnitTests.Drawing {
     [TestFixture]
-    public class ExportBitmapTest : BitmapTestBase
-    {
-        protected void TestExportBitmap(string path, string format)
-        {
+    [SupportedOSPlatform("windows")]
+    public class ExportBitmapTest : BitmapTestBase {
+        protected void TestExportBitmap(string path, string format) {
             TestExportBitmap(path, path, format, null, null);
         }
 
-        protected void TestExportBitmap(string path, string format, PixelFormat? pixelFormat)
-        {
+        protected void TestExportBitmap(string path, string format, PixelFormat? pixelFormat) {
             TestExportBitmap(path, path, format, null, pixelFormat);
         }
 
-        protected void TestExportBitmap(string path, string expectedPath, string format, string quality)
-        {
+        protected void TestExportBitmap(string path, string expectedPath, string format, string quality) {
             TestExportBitmap(path, expectedPath, format, quality, null);
         }
 
-        protected void TestExportBitmap(string path, string expectedPath, string format, string quality, PixelFormat? pixelFormat)
-        {
-            using(Bitmap original = OpenTestBitmap())
-            {
+        protected void TestExportBitmap(string path, string expectedPath, string format, string quality, PixelFormat? pixelFormat) {
+            if (!OperatingSystem.IsWindows()) {
+                Assert.Inconclusive("This test is only applicable on Windows.");
+            }
+
+            using (Bitmap original = OpenTestBitmap()) {
                 string tempPath = Path.GetTempPath();
 
                 string exportScript = "Set-Location $Env:Temp;  Export-Bitmap -Bitmap @($input)[0] -Path {0} {1} {2}";
@@ -40,8 +42,7 @@ namespace PscxUnitTests.Drawing
                 string importScript = "Set-Location $Env:Temp; Import-Bitmap {0}";
                 importScript = string.Format(importScript, expectedPath);
 
-                using(Bitmap exported = Invoke(importScript)[0].BaseObject as Bitmap)
-                {
+                using (Bitmap exported = Invoke(importScript)[0].BaseObject as Bitmap) {
                     Assert.That(exported, Is.Not.Null);
                     Assert.That(original.Width, Is.EqualTo(exported.Width));
                     Assert.That(original.Height, Is.EqualTo(exported.Height));
@@ -53,12 +54,14 @@ namespace PscxUnitTests.Drawing
         }
 
         [Test]
-        public void SaveBitmap()
-        {
-            using (Bitmap original = OpenTestBitmap())
-            {
+        public void SaveBitmap() {
+            if (!OperatingSystem.IsWindows()) {
+                Assert.Inconclusive("This test is only applicable on Windows.");
+            }
+
+            using (Bitmap original = OpenTestBitmap()) {
                 string path = Path.Combine(Path.GetTempPath(), "neco.png");
-                original.Save(path, System.Drawing.Imaging.ImageFormat.Png);
+                original.Save(path, ImageFormat.Png);
 
                 Assert.That(File.Exists(path), Is.True);
                 File.Delete(path);
@@ -66,32 +69,31 @@ namespace PscxUnitTests.Drawing
         }
 
         [Test]
-        public void ExportBmp()
-        {
+        public void ExportBmp() {
             TestExportBitmap("test.bmp", "bmp");
         }
 
         [Test]
-        public void ExportJpeg()
-        {
+        public void ExportJpeg() {
             TestExportBitmap("jpegicek", "jpegicek.jpeg", "jpeg", "10");
         }
 
         [Test]
-        public void ExportTiff()
-        {
+        public void ExportTiff() {
             TestExportBitmap("tifficek.tif", "tiff");
         }
 
         [Test]
-        public void ExportPng()
-        {
+        public void ExportPng() {
             TestExportBitmap("png", "png.png", "png", "100");
         }
-        
+
         [Test]
-        public void ExportGif()
-        {
+        public void ExportGif() {
+            if (!OperatingSystem.IsWindows()) {
+                Assert.Inconclusive("This test is only applicable on Windows.");
+            }
+
             TestExportBitmap("gifecek.gif", "gif", PixelFormat.Format8bppIndexed);
         }
     }

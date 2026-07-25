@@ -1,53 +1,48 @@
-﻿//---------------------------------------------------------------------
-// Author: Keith Hill
-//
-// Description: Edits a file, replacing the specified pattern text with 
-//              specified replacement text.
-//
-// Creation Date: Aug 20, 2014
-//---------------------------------------------------------------------
+﻿// Copyright © 2026 PowerShell Core Community Extensions Team. All rights reserved.
+// Licensed under MIT license.
+
+using Microsoft.PowerShell.Commands;
+using Pscx.Core;
+using Pscx.Core.IO;
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Management.Automation;
 using System.Security;
 using System.Text;
 using System.Text.RegularExpressions;
-using Microsoft.PowerShell.Commands;
-using Pscx.Core;
-using Pscx.Core.IO;
-using System.ComponentModel;
 
 namespace Pscx.Commands.IO {
-    [Cmdlet(PscxVerbs.Edit, PscxNouns.File, DefaultParameterSetName = ParameterSetNoFile, SupportsShouldProcess = true), 
-     Description("Edit file with configured editor - VSCode, Notepad++/TextMate, default for OS")]
+    [Cmdlet(PscxVerbs.Edit, PscxNouns.File, DefaultParameterSetName = ParameterSetNoFile, SupportsShouldProcess = true)]
+    [Description("Edit file with configured editor - VSCode, Notepad++/TextMate, default for OS")]
     [ProviderConstraint(typeof(FileSystemProvider))]
     public class EditFileCommand : PscxPathCommandBase {
         private const string ParameterSetPathReplace = "PathReplace";
         private const string ParameterSetLiteralPathReplace = "LiteralPathReplace";
         private const string ParameterSetNoFile = "NoFile";
         private const string TextEditorKey = "TextEditor";
+        private readonly string _defaultEditor;
+        private string _editor;
+        private bool _hasBeenInitialized;
+        private string _patternArrayAsString;
 
         private Regex[] _regexes;
-        private string _defaultEditor;
-        private string _editor;
-        private string _patternArrayAsString;
         private string _replacementArrayAsString;
-        private bool _hasBeenInitialized;
 
         /// <summary>
-        /// Initializes the editor with sensible default for the operating system
+        ///     Initializes the editor with sensible default for the operating system
         /// </summary>
         public EditFileCommand() {
             _defaultEditor = PscxContext.DefaultTextEditor;
             _editor = _defaultEditor;
         }
 
-        [Parameter( ParameterSetName = ParameterSetPath, Position = 0, Mandatory = true, ValueFromPipeline = true, ValueFromPipelineByPropertyName = true,
+        [Parameter(ParameterSetName = ParameterSetPath, Position = 0, Mandatory = true, ValueFromPipeline = true, ValueFromPipelineByPropertyName = true,
             HelpMessage = "Specifies the path to the file to process. Wildcard syntax is allowed."
         )]
-        [Parameter( ParameterSetName = ParameterSetPathReplace, Position = 0, Mandatory = true, ValueFromPipeline = true, ValueFromPipelineByPropertyName = true,
+        [Parameter(ParameterSetName = ParameterSetPathReplace, Position = 0, Mandatory = true, ValueFromPipeline = true, ValueFromPipelineByPropertyName = true,
             HelpMessage = "Specifies the path to the file to process. Wildcard syntax is allowed."
         )]
         [AcceptsWildcards(true)]
@@ -57,11 +52,13 @@ namespace Pscx.Commands.IO {
             set { _paths = value; }
         }
 
-        [Parameter( ParameterSetName = ParameterSetLiteralPath, Mandatory = true, ValueFromPipeline = false, ValueFromPipelineByPropertyName = true,
-            HelpMessage = "Specifies a path to the item. The value of -LiteralPath is used exactly as it is typed. No characters are interpreted as wildcards. If the path includes escape characters, enclose it in single quotation marks. Single quotation marks tell Windows PowerShell not to interpret any characters as escape sequences."
+        [Parameter(ParameterSetName = ParameterSetLiteralPath, Mandatory = true, ValueFromPipeline = false, ValueFromPipelineByPropertyName = true,
+            HelpMessage =
+                "Specifies a path to the item. The value of -LiteralPath is used exactly as it is typed. No characters are interpreted as wildcards. If the path includes escape characters, enclose it in single quotation marks. Single quotation marks tell Windows PowerShell not to interpret any characters as escape sequences."
         )]
-        [Parameter( ParameterSetName = ParameterSetLiteralPathReplace, Mandatory = true, ValueFromPipeline = false, ValueFromPipelineByPropertyName = true,
-            HelpMessage = "Specifies a path to the item. The value of -LiteralPath is used exactly as it is typed. No characters are interpreted as wildcards. If the path includes escape characters, enclose it in single quotation marks. Single quotation marks tell Windows PowerShell not to interpret any characters as escape sequences."
+        [Parameter(ParameterSetName = ParameterSetLiteralPathReplace, Mandatory = true, ValueFromPipeline = false, ValueFromPipelineByPropertyName = true,
+            HelpMessage =
+                "Specifies a path to the item. The value of -LiteralPath is used exactly as it is typed. No characters are interpreted as wildcards. If the path includes escape characters, enclose it in single quotation marks. Single quotation marks tell Windows PowerShell not to interpret any characters as escape sequences."
         )]
         [Alias("PSPath")]
         [PscxPath(NoGlobbing = true, Tag = "PathCommand.LiteralPath")]
@@ -84,7 +81,7 @@ namespace Pscx.Commands.IO {
 
         [Parameter(ParameterSetName = ParameterSetPathReplace)]
         [Parameter(ParameterSetName = ParameterSetLiteralPathReplace)]
-        [ValidateSet(new[] { "unknown", "string", "unicode", "bigendianunicode", "utf8", "utf7", "utf32", "ascii", "default", "oem" })]
+        [ValidateSet("unknown", "string", "unicode", "bigendianunicode", "utf8", "utf7", "utf32", "ascii", "default", "oem")]
         [ValidateNotNullOrEmpty]
         public string Encoding { get; set; }
 
@@ -116,26 +113,27 @@ namespace Pscx.Commands.IO {
         private void MyBeginProcessing() {
             _hasBeenInitialized = true;
 
-            if ((this.ParameterSetName == ParameterSetPathReplace) || (this.ParameterSetName == ParameterSetLiteralPathReplace)) {
-                if (this.Pattern.Length != this.Replacement.Length) {
-                    this.ErrorHandler.ThrowIncompatibleArrayParameters("Pattern", "Replacement", "The array length must be the same for both parameters.");
+            if (ParameterSetName == ParameterSetPathReplace || ParameterSetName == ParameterSetLiteralPathReplace) {
+                if (Pattern.Length != Replacement.Length) {
+                    ErrorHandler.ThrowIncompatibleArrayParameters("Pattern", "Replacement", "The array length must be the same for both parameters.");
                 }
 
                 var patternStrBld = new StringBuilder();
                 var replacementStrBld = new StringBuilder();
 
-                _regexes = new Regex[this.Pattern.Length];
-                for (int i = 0; i < this.Pattern.Length; i++) {
-                    string pattern = this.SimpleMatch ? Regex.Escape(this.Pattern[i]) : this.Pattern[i];
-                    RegexOptions regexOptions = this.CaseSensitive ? RegexOptions.None : RegexOptions.IgnoreCase;
+                _regexes = new Regex[Pattern.Length];
+                for (int i = 0; i < Pattern.Length; i++) {
+                    string pattern = SimpleMatch ? Regex.Escape(Pattern[i]) : Pattern[i];
+                    RegexOptions regexOptions = CaseSensitive ? RegexOptions.None : RegexOptions.IgnoreCase;
                     _regexes[i] = new Regex(pattern, regexOptions);
 
                     if (i != 0) {
                         patternStrBld.Append(",");
                         replacementStrBld.AppendFormat(",");
                     }
-                    patternStrBld.AppendFormat("'{0}'", this.Pattern[i]);
-                    replacementStrBld.AppendFormat("'{0}'", this.Replacement[i]);
+
+                    patternStrBld.AppendFormat("'{0}'", Pattern[i]);
+                    replacementStrBld.AppendFormat("'{0}'", Replacement[i]);
                 }
 
                 _patternArrayAsString = patternStrBld.ToString();
@@ -169,8 +167,9 @@ namespace Pscx.Commands.IO {
         }
 
         protected override PscxPathInfo[] GetSelectedPathParameter(string parameterSetName) {
-            return (this.ParameterSetName == ParameterSetPath || this.ParameterSetName == ParameterSetPathReplace)
-                   ? _paths : _literalPaths;
+            return ParameterSetName == ParameterSetPath || ParameterSetName == ParameterSetPathReplace
+                ? _paths
+                : _literalPaths;
         }
 
         protected override bool OnValidatePscxPath(string parameterName, IPscxPathSettings settings) {
@@ -181,44 +180,56 @@ namespace Pscx.Commands.IO {
                 // allow derived classes to tweak path validation
                 OnValidatePath(settings);
             }
+
             return base.OnValidatePscxPath(parameterName, settings);
         }
 
         protected override PscxPathInfo[] GetResolvedPscxPathInfos(string path) {
-            return GetPscxPathInfos(new[] { path }, (ParameterSetName == ParameterSetLiteralPath || ParameterSetName == ParameterSetLiteralPathReplace));
+            return GetPscxPathInfos(new[] { path }, ParameterSetName == ParameterSetLiteralPath || ParameterSetName == ParameterSetLiteralPathReplace);
         }
 
         protected override void ProcessRecord() {
-            if (!_hasBeenInitialized) MyBeginProcessing();
+            if (!_hasBeenInitialized) {
+                MyBeginProcessing();
+            }
 
-            if (this.ParameterSetName != ParameterSetNoFile) {
+            if (ParameterSetName != ParameterSetNoFile) {
                 base.ProcessRecord();
             }
         }
 
         protected override void ProcessPath(PscxPathInfo pscxPath) {
-            if (this.ParameterSetName == ParameterSetNoFile) return;
+            if (ParameterSetName == ParameterSetNoFile) {
+                return;
+            }
 
             //enclose path in double quotes to account for space or other characters that need escaped
             string path = $"\"{pscxPath.ProviderPath}\"";
 
             try {
-                if (this.ParameterSetName == ParameterSetPath || this.ParameterSetName == ParameterSetLiteralPath) {
-                    if (this.ShouldProcess(pscxPath.ProviderPath, "Edit-File interactive")) {
-                        if (this.Force) MakeFileWritable(path);
+                if (ParameterSetName == ParameterSetPath || ParameterSetName == ParameterSetLiteralPath) {
+                    if (ShouldProcess(pscxPath.ProviderPath, "Edit-File interactive")) {
+                        if (Force) {
+                            MakeFileWritable(path);
+                        }
+
                         Process.Start(_editor, path);
                     }
                 } else {
-                    if (this.ShouldProcess(pscxPath.ProviderPath, "Edit-File replacing pattern " + _patternArrayAsString + " with " + _replacementArrayAsString)) {
-                        if (this.Force) MakeFileWritable(path);
+                    if (ShouldProcess(pscxPath.ProviderPath, "Edit-File replacing pattern " + _patternArrayAsString + " with " + _replacementArrayAsString)) {
+                        if (Force) {
+                            MakeFileWritable(path);
+                        }
 
                         // Get threshold value to determine whether to use backing file instead of in MemoryStream to contain
                         // the modified file contents until they can be copied back to the source file (after regex processing).
                         var editFileBackingFileThresholdPreference = PscxContext.Instance.Preferences[PscxContext.EditFileBackingFileThreshold];
-                        int backingFileThreshold = (editFileBackingFileThresholdPreference is int backingFileThresholdPreference) ? backingFileThresholdPreference : PscxContext.EditFileBackingFileThresholdDefaultValue;
+                        int backingFileThreshold = editFileBackingFileThresholdPreference is int backingFileThresholdPreference
+                            ? backingFileThresholdPreference
+                            : PscxContext.EditFileBackingFileThresholdDefaultValue;
 
                         var fileData = new FileData(path);
-                        if (this.SingleString) {
+                        if (SingleString) {
                             EditFileAsSingleString(fileData);
                         } else if (fileData.Length >= backingFileThreshold) {
                             EditFileByLineFileBacked(fileData);
@@ -228,7 +239,7 @@ namespace Pscx.Commands.IO {
                     }
                 }
 
-                if (this.PassThru) {
+                if (PassThru) {
                     Collection<PSObject> results = SessionState.InvokeProvider.Item.Get(path);
                     if (results.Count > 0) {
                         WriteObject(results[0]);
@@ -248,7 +259,7 @@ namespace Pscx.Commands.IO {
         }
 
         protected override void EndProcessing() {
-            if (this.ParameterSetName == ParameterSetNoFile) {
+            if (ParameterSetName == ParameterSetNoFile) {
                 Process.Start(_editor);
             }
 
@@ -257,14 +268,16 @@ namespace Pscx.Commands.IO {
 
         private void EditFileAsSingleString(FileData fileData) {
             using (var fileStream = new FileStream(fileData.Path, FileMode.Open, FileAccess.ReadWrite, FileShare.Read)) {
-                if (this.Encoding == null) WriteVerboseEncodingInfo(fileData);
+                if (Encoding == null) {
+                    WriteVerboseEncodingInfo(fileData);
+                }
 
-                Encoding encoding = this.Encoding != null ? EncodingConversion.Convert(this, Encoding, "Encoding") : fileData.Encoding;
+                Encoding encoding = Encoding != null ? EncodingConversion.Convert(this, Encoding, "Encoding") : fileData.Encoding;
                 var streamReader = new StreamReader(fileStream, encoding);
                 var content = streamReader.ReadToEnd();
 
                 for (int i = 0; i < _regexes.Length; i++) {
-                    content = _regexes[i].Replace(content, this.Replacement[i]);
+                    content = _regexes[i].Replace(content, Replacement[i]);
                 }
 
                 streamReader.DiscardBufferedData();
@@ -282,8 +295,8 @@ namespace Pscx.Commands.IO {
             // If file length is within 10% of LOH size or higher, jump up to next order ot magnitude
             // to limit the number of different sized LOH segments created.  Keeping in mind that the 
             // edit operation can make the file larger.
-            if (fileData.Length >= (lohThreshold / 1.2)) {
-                memoryStreamCapacity = (int)Math.Pow(10, (int)(Math.Ceiling(Math.Log10(fileData.Length))));
+            if (fileData.Length >= lohThreshold / 1.2) {
+                memoryStreamCapacity = (int)Math.Pow(10, (int)Math.Ceiling(Math.Log10(fileData.Length)));
             } else {
                 memoryStreamCapacity = (int)Math.Max(10, fileData.Length);
             }
@@ -296,7 +309,7 @@ namespace Pscx.Commands.IO {
 
         private void EditFileByLineFileBacked(FileData fileData) {
             string tempPath = System.IO.Path.GetTempFileName();
-            WriteVerbose(String.Format("Edit-File using temp file '{0}' for '{1}'", tempPath, fileData.Path));
+            WriteVerbose(string.Format("Edit-File using temp file '{0}' for '{1}'", tempPath, fileData.Path));
 
             try {
                 using (var sourceFileStream = new FileStream(fileData.Path, FileMode.Open, FileAccess.ReadWrite, FileShare.Read))
@@ -309,19 +322,24 @@ namespace Pscx.Commands.IO {
         }
 
         private void EditFileByLineImpl(FileData fileData, FileStream sourceFileStream, Stream editResultsStream) {
-            if (this.Encoding == null) WriteVerboseEncodingInfo(fileData);
+            if (Encoding == null) {
+                WriteVerboseEncodingInfo(fileData);
+            }
 
-            Encoding writeEncoding = this.Encoding != null ? EncodingConversion.Convert(this, Encoding, "Encoding") : fileData.Encoding;
+            Encoding writeEncoding = Encoding != null ? EncodingConversion.Convert(this, Encoding, "Encoding") : fileData.Encoding;
             var streamReader = new StreamReader(sourceFileStream);
             var streamWriter = new StreamWriter(editResultsStream, writeEncoding);
 
             string prevLine = null;
             string line;
             while ((line = streamReader.ReadLine()) != null) {
-                if (prevLine != null) streamWriter.WriteLine(prevLine);
+                if (prevLine != null) {
+                    streamWriter.WriteLine(prevLine);
+                }
+
                 prevLine = line;
                 for (int i = 0; i < _regexes.Length; i++) {
-                    prevLine = _regexes[i].Replace(prevLine, this.Replacement[i]);
+                    prevLine = _regexes[i].Replace(prevLine, Replacement[i]);
                 }
             }
 
@@ -331,6 +349,7 @@ namespace Pscx.Commands.IO {
             } else {
                 streamWriter.Write(prevLine ?? "");
             }
+
             streamWriter.Flush();
 
             // Resets results stream and source file stream to beginning to prep for copy operation.
@@ -351,32 +370,34 @@ namespace Pscx.Commands.IO {
         }
 
         private void WriteVerboseEncodingInfo(FileData fileData) {
-            var msg = String.Format("Edit-File detected encoding of {0} with {1}BOM for '{2}'{3}",
-                                    fileData.Encoding.EncodingName,
-                                    (fileData.EncoderEmitsUtf8Identifier ? "" : "no "),
-                                    fileData.Path,
-                                    ((this.Encoding == null) ? "" : " but overriden with " + this.Encoding + " encoding."));
+            var msg = string.Format("Edit-File detected encoding of {0} with {1}BOM for '{2}'{3}",
+                fileData.Encoding.EncodingName,
+                fileData.EncoderEmitsUtf8Identifier ? "" : "no ",
+                fileData.Path,
+                Encoding == null ? "" : " but overriden with " + Encoding + " encoding.");
             WriteVerbose(msg);
         }
 
         internal class FileData {
-            private readonly byte[] _utf8Bom = { 0xEF, 0xBB, 0xBF };
             private readonly char[] _tempReadEncodingBuffer = new char[256];
+            private readonly byte[] _utf8Bom = { 0xEF, 0xBB, 0xBF };
 
             public FileData(string path) {
-                if (String.IsNullOrWhiteSpace(path)) throw new ArgumentNullException("path");
+                if (string.IsNullOrWhiteSpace(path)) {
+                    throw new ArgumentNullException("path");
+                }
 
-                this.Path = path;
-                this.EncoderEmitsUtf8Identifier = true;
+                Path = path;
+                EncoderEmitsUtf8Identifier = true;
 
                 using (var fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read)) {
-                    this.Length = fileStream.Length;
+                    Length = fileStream.Length;
 
                     // According to MSDN topic, stream reader can't return accurate encoding until after the first read,
                     // so read some bytes if stream position indicates no reading has been done.
-                    var streamReader = new StreamReader(fileStream, detectEncodingFromByteOrderMarks: true);
+                    var streamReader = new StreamReader(fileStream, true);
                     streamReader.Read(_tempReadEncodingBuffer, 0, _tempReadEncodingBuffer.Length);
-                    this.Encoding = streamReader.CurrentEncoding;
+                    Encoding = streamReader.CurrentEncoding;
 
                     // Do not use streamReader after this point. If so, you need to call streamReader.DiscardBufferedData()
                     // to resync buffer with the underlying stream.
@@ -387,46 +408,46 @@ namespace Pscx.Commands.IO {
                         fileStream.Seek(-2, SeekOrigin.End);
                         endBytes = new byte[2];
                         fileStream.Read(endBytes, 0, 2);
-                        this.LastLineEndsWithNewline = (endBytes[0] == '\n') || (endBytes[0] == '\r') || (endBytes[1] == '\n') || (endBytes[1] == '\r');
+                        LastLineEndsWithNewline = endBytes[0] == '\n' || endBytes[0] == '\r' || endBytes[1] == '\n' || endBytes[1] == '\r';
                     } else if (fileStream.Length == 1) {
                         fileStream.Seek(-1, SeekOrigin.End);
                         endBytes = new byte[1];
                         fileStream.Read(endBytes, 0, 1);
-                        this.LastLineEndsWithNewline = (endBytes[0] == '\n') || (endBytes[0] == '\r');
+                        LastLineEndsWithNewline = endBytes[0] == '\n' || endBytes[0] == '\r';
                     }
 
                     // Just because StreamReader says it is UTF8, that doesn't mean the original
                     // file has a UTF-8 BOM, this code attempts to detect that configure the returned
                     // encoding to only write a BOM if the original file had a BOM.
-                    if (this.Encoding.Equals(Encoding.UTF8)) {
+                    if (Encoding.Equals(Encoding.UTF8)) {
                         if (fileStream.Length < _utf8Bom.Length) {
                             // Can't have a BOM if file length is less than that of BOM
-                            this.EncoderEmitsUtf8Identifier = false;
-                            this.Encoding = new UTF8Encoding(this.EncoderEmitsUtf8Identifier, throwOnInvalidBytes: true);
+                            EncoderEmitsUtf8Identifier = false;
+                            Encoding = new UTF8Encoding(EncoderEmitsUtf8Identifier, true);
                         } else {
                             var fileBytes = new byte[_utf8Bom.Length];
                             fileStream.Seek(0L, SeekOrigin.Begin);
-                            fileStream.Read(fileBytes, 0, fileBytes.Length);
+                            fileStream.ReadExactly(fileBytes, 0, fileBytes.Length);
                             for (int i = 0; i < _utf8Bom.Length; i++) {
                                 if (fileBytes[i] != _utf8Bom[i]) {
-                                    this.EncoderEmitsUtf8Identifier = false;
-                                    this.Encoding = new UTF8Encoding(this.EncoderEmitsUtf8Identifier, throwOnInvalidBytes: true);
+                                    EncoderEmitsUtf8Identifier = false;
+                                    Encoding = new UTF8Encoding(EncoderEmitsUtf8Identifier, true);
                                 }
                             }
                         }
                     } else if (fileStream.Length < 2) {
                         // No BOM at all so default to UTF8 with no BOM for output
-                        this.EncoderEmitsUtf8Identifier = false;
-                        this.Encoding = new UTF8Encoding(this.EncoderEmitsUtf8Identifier, throwOnInvalidBytes: true);
+                        EncoderEmitsUtf8Identifier = false;
+                        Encoding = new UTF8Encoding(EncoderEmitsUtf8Identifier, true);
                     }
                 }
             }
 
-            public string Path { get; private set; }
-            public long Length { get; private set; }
-            public Encoding Encoding { get; private set; }
-            public bool EncoderEmitsUtf8Identifier { get; private set; }
-            public bool LastLineEndsWithNewline { get; private set; }
+            public string Path { get; }
+            public long Length { get; }
+            public Encoding Encoding { get; }
+            public bool EncoderEmitsUtf8Identifier { get; }
+            public bool LastLineEndsWithNewline { get; }
         }
     }
 }
