@@ -1,69 +1,124 @@
 # Pscx - PowerShell Community Extensions Light
 
-This PowerShell module is aimed at providing a widely useful set of additional cmdlets, providers, aliases, filters, functions and
-scripts for PowerShell Core that members of the community have expressed interest in.
+This PowerShell module provides a broadly useful set of additional cmdlets,
+providers, aliases, filters, functions, and scripts for PowerShell.
 
-This repository is a fork of the official PowerShell Community Extensions hosted and [maintained](https://github.com/Pscx/Pscx#maintainers) at GitHub. The fork has been made from 
-version [4.0.0-beta4](https://github.com/Pscx/Pscx/releases/tag/v3.3.2) (commit [6980fdf0](https://github.com/Pscx/Pscx/commit/698efdf0ba9cb29b326eb93e4a25ac841cc302dd)).
+This repository is a lightweight fork of the
+[PowerShell Community Extensions](https://github.com/Pscx/Pscx), based on
+upstream commit
+[`698efdf0`](https://github.com/Pscx/Pscx/commit/698efdf0ba9cb29b326eb93e4a25ac841cc302dd).
 
 The customizations made in this fork include:
-* upgrade to PowerShell Core 7.5, .Net (Core) 9.0
-* compatibility with MacOS and other *nix OS
-* build upgraded to VS2022
-* packaging and build improvements throughout
-* removed cmdlets with low value, seldomly used
-* GitHub CI/CD build
+
+- current development version 3.8.0 targeting .NET 10 and the PowerShell 7.6 SDK;
+- a cross-platform core for Windows, macOS, and Linux, with a Windows companion
+  module for platform-specific commands;
+- modern .NET SDK/Visual Studio 2022-compatible projects;
+- packaging and build improvements;
+- removal of a number of obsolete or low-value commands;
+- a GitHub Actions build.
+
+> [!NOTE]
+> The development projects currently target .NET 10 and PowerShell SDK 7.6.4,
+> while some module manifests still contain the older PowerShell 7.2 metadata.
+> Aligning the compatibility contract, build, manifests, and CI is a priority in
+> the modernization roadmap. Published releases may have different requirements
+> from the current development branch.
 
 ## Release notes
 
-See [Changelog.md](CHANGELOG.md) for more detailed information. 
+See [CHANGELOG.md](CHANGELOG.md) for detailed release information.
+
+## Roadmap
+
+See the [PSCX modernization plan](PSCX_MODERNIZATION_PLAN.md) for the proposed
+stabilization work, unified test strategy, documentation migration, package
+boundaries, and PSCX 4.0 direction.
+
+Repository contributors and coding agents should also read
+[AGENTS.md](AGENTS.md) for collaboration, review, testing, and commit policy.
 
 ## License
-PSCX is licensed under MIT license. This work includes other open-source projects licensed under their respective licenses, attached as appropriate. 
-See the PSCX [LICENSE](./LICENSE) file as well [Imports](./Imports/) folder for respective license files of the projects distributed/leveraged.
+
+PSCX is licensed under the MIT license. This work includes other open-source
+projects licensed under their respective licenses. See [LICENSE](LICENSE) and
+the [Imports](Imports/) folder for the applicable license files.
 
 ## Install Pscx
 
 ### Pre-requisites
 
-* Install [latest PowerShell Core version](https://github.com/PowerShell/PowerShell/releases/latest)
-* Create a profile - may also want to have a look at the _awesome_ [ompgit](https://gitlab.com/danluca/ohmyposhgit) profile & prompt enhancer, especially if you use git SCM (shameless plug :stuck_out_tongue_winking_eye: )
+- Install a PowerShell version compatible with the PSCX release you are using.
+  The current development branch targets PowerShell 7.6 and .NET 10.
+- A PowerShell profile is optional. Add `Import-Module Pscx` to a profile only
+  if PSCX should load in every interactive session.
 
 ### Installation
-* Download the [latest artifact](https://github.com/danluca/Pscx/releases/latest) from GitHub
-  * note this artifact may in fact be a double zip of the `Pscx-{version}.zip` file - this is an artifact of GitHub. A solution/work-around may surface, but for the time being this is not seen as a major inconvenience.
-* Unzip the `Pscx-{version}.zip` file to `~/Documents/PowerShell/Modules` folder
-* Import module PSCX in your PowerShell profile file `import-module pscx`
+
+1. Download the package from the
+   [latest GitHub release](https://github.com/danluca/Pscx/releases/latest).
+2. If the download is a GitHub artifact wrapper, extract it first to obtain
+   `Pscx-{version}.zip`.
+3. Extract the module into a directory listed in `$env:PSModulePath`. Common
+   current-user locations are:
+   - Windows: `~/Documents/PowerShell/Modules`
+   - macOS/Linux: `~/.local/share/powershell/Modules`
+4. Import and verify the module:
+
+   ```powershell
+   Import-Module Pscx
+   Get-Module Pscx
+   ```
 
 ## Maintainers
- - @danluca and other maintainers in this GitHub repository
 
-### Design constraints
-#### C# Cmdlet C#
-Required Annotations:
-* `Cmdlet` using appropriate PscxVerbs and PscxNouns per the containing module. Do not use plain strings as this interferes with the tooling (see below)
-* `Description` specify a summary of what the cmdlet accomplishes. This supports the tooling as well.
-* (optional) `DetailedDescription` for more detailed information. While the format is not as flexible as the documentation comments in a `ps1` file, it is in keeping of the best practice of having documentation as close to the code as possible, for contextual/sustaining benefits
+@danluca and other maintainers of this GitHub repository.
+
+## Developer guidance
+
+### Compiled C# cmdlets
+
+Required annotations:
+
+- `Cmdlet`, using the appropriate `PscxVerbs` and `PscxNouns` constants for the
+  containing module. Plain strings interfere with the repository tooling.
+- `Description`, containing a summary of what the cmdlet accomplishes.
+- Optionally, `DetailedDescription` for additional context.
 
 Place a new C# cmdlet in the OS appropriate project - `Pscx` for cross-platform, `Pscx.Win` for Windows specific. `Pscx.Core` is a framework level library that both `Pscx` and `Pscx.Win` projects depend upon; it is not intended to contain exportable cmdlets but their base classes and utilities. 
 
 When this OS based functionality separation is not self evident and a class is not entirely cross-platform nor OS specific, at a minimum do annotate the functions that are OS specific with `SupportedOSPlatform` attribute. Refactoring the design where the OS specific classes extend a basic common functionality is encouraged.
 
-When new C# cmdlets are added, remember to add corresponding help file in `Pscx.Help` project.
+Under the current build, new compiled cmdlets also require a corresponding help
+file in `Pscx.Help`. The modernization plan proposes replacing that legacy
+generator with Markdown and PlatyPS.
 
 
 ### Tooling
+
 Several conveniences are made available in support of release process:
-* `Tools\version_update.ps1` - consistently updates the version across all assembly info classes, psd1 files, etc.
-* `Tools\find_cmdlets.ps1` - reports all the cmdlets and functions found throughout the PSCX solution (all projects and modules) (based on the _Cmdlet_ annotations discussed above). This aids in creating the `psd1` module files. It also helps with creating the content of the _Cmdlets_ and _Functions_ sections below - it pulls the cmdlet name and description (non-MD formatted, but it could be) such that it can be pasted directly into the section and apply MD formatting.
-  * alternatively, all the PSD1 module manifest files would list the functions to export as '*' wildcard. Each PSM1 module file would then use `Export-ModuleMember` statements to explicitly list functions exported from that module. The parent module must include all the functions exported by the child/nested modules (leverage `Import-Module -PassThru` to get a module object and loop through `ExportedFunctions` property)
+
+- `Tools/version_update.ps1` currently synchronizes the version across assembly
+  metadata and module manifests. The roadmap proposes replacing this with one
+  authoritative semantic-version source.
+- `Tools/find_cmdlets.ps1` reports cmdlets and functions throughout the solution
+  and assists with manifest and documentation maintenance.
 
 ## Included cmdlets and functions
 
-Cmdlets and functions below are sorted by noun. As always, you can get full Powershell help including examples using `get-help [command]`
+The following is the current manually maintained catalog. It may include optional
+submodules and is scheduled to become generated/validated as part of the
+modernization work. Use `Get-Command -Module Pscx` after import for the
+authoritative commands available on the current platform and configuration. Use
+`Get-Help <command> -Full` for installed help and examples.
 
 # Cmdlets
-## PSCX cross-platform core module
+
+## PSCX core module
+
+This assembly is intended to be cross-platform. The foreground-window commands
+listed below currently use Windows APIs; moving them into the Windows companion
+module is tracked in the modernization plan.
 
 ### Set-FileTime
 Sets a file or folder's created and last accessed/write times.
@@ -114,10 +169,12 @@ Converts a measurement from one unit into another (compatible) unit.
 Converts the line endings in the specified file to Unix line endings \"\\n\".
 
 ### Set-ForegroundWindow
-Given an hWnd or window handle, brings that window to the foreground. Useful for restoring a window to uppermost after an application which seizes the foreground is invoked. See also Get-ForegroundWindow
+Given an hWnd or window handle, brings that window to the foreground on Windows.
+See also `Get-ForegroundWindow`.
 
 ### Get-ForegroundWindow
-Returns the hWnd or handle of the window in the foreground on the current desktop. See also Set-ForegroundWindow.
+Returns the hWnd or handle of the foreground window on the current Windows
+desktop. See also `Set-ForegroundWindow`.
 
 ### Test-Script
 Test script for validity
@@ -165,6 +222,9 @@ Displays contents of files for byte streams in hex.
 Joins an array of strings into a single string.
 
 ## PSCX Windows companion module
+
+The Windows companion assembly and its applicable optional submodules are loaded
+only on Windows.
 
 ### Get-MountPoint
 Returns all mount points defined for a specific root path.
@@ -279,86 +339,78 @@ Converts an object graph - suitable for YAML representation - into YAML string o
 
 # Functions
 
-## Cross platform
-### SubModule CD
-Set-PscxLocation
+Some function submodules are optional. Their defaults are defined in
+`Pscx.UserPreferences.ps1` and can be overridden when importing PSCX.
 
+## Cross-platform
 
-### SubModule FileSystem
-Add-DirectoryLength
+### CD submodule
 
-Add-ShortPath
+- `Set-PscxLocation`
 
+### FileSystem submodule
 
-### SubModule TranscribeSession
-'Search-Transcript'
+Disabled by default:
 
+- `Add-DirectoryLength`
+- `Add-ShortPath`
 
-### SubModule Utility
-AddAccelerator
+### TranscribeSession submodule
 
-PscxHelp
+Disabled by default for security and privacy:
 
-PscxLess
+- `Search-Transcript`
 
-Edit-Profile
+### Utility submodule
 
-Edit-HostProfile
+- `AddAccelerator`
+- `RemoveAccelerator`
+- `PscxHelp`
+- `PscxLess`
+- `Edit-Profile`
+- `Edit-HostProfile`
+- `Resolve-ErrorRecord`
+- `QuoteList`
+- `QuoteString`
+- `Invoke-GC`
+- `Get-ViewDefinition`
+- `Get-ScreenCss`
+- `Get-ScreenHtml`
+- `Invoke-Method`
+- `Set-Writable`
+- `Set-FileAttributes`
+- `Set-ReadOnly`
+- `Show-Tree`
+- `Get-Parameter`
+- `Get-ExecutionTime`
+- `AddRegex`
 
-Resolve-ErrorRecord
+## Windows only
 
-Resolve-HResult
+### Functions loaded by the Windows companion module
 
-Resolve-WindowsError
+- `Resolve-HResult`
+- `Resolve-WindowsError`
+- `Invoke-BatchFile`
+- `Stop-RemoteProcess`
+- `Import-VisualStudioVars`
 
-QuoteList
+### Sudo submodule
 
-QuoteString
+- `gsudo`
+- `Invoke-Gsudo`
+- `Test-IsGsudoCacheAvailable`
+- `Test-IsProcessElevated`
+- `Test-IsAdminMember`
 
-Invoke-GC
+### VHD submodule
 
-Invoke-BatchFile
+Disabled by default:
 
-Get-ViewDefinition
+- `Mount-PscxVHD`
+- `Dismount-PscxVHD`
 
-Stop-RemoteProcess
+### WMI submodule
 
-Get-ScreenCss
-
-Get-ScreenHtml
-
-Invoke-Method
-
-Set-Writable
-
-Set-FileAttributes
-
-Set-ReadOnly
-
-Show-Tree
-
-Get-Parameter
-
-Import-VisualStudioVars
-
-Get-ExecutionTime
-
-AddRegex
-
-## Windows Only
-
-### SubModule Sudo
-
-Invoke-Sudo
-
-sudo
-
-
-### SubModule Vhd
-Mount-PscxVHD
-
-Dismount-PscxVHD
-
-
-### SubModule Wmi
-AddAccelerator
+Disabled by default. This submodule registers type accelerators and does not add
+a distinct public function beyond the shared accelerator helpers.
