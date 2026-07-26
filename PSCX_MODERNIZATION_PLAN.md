@@ -17,7 +17,7 @@ The plan is intentionally incremental. Compatibility-breaking removals and packa
 
 1. **Keep distinctive shell functionality.** Prefer features that are difficult to reproduce correctly with a short built-in PowerShell command.
 2. **Use modern PowerShell first.** Do not retain a PSCX command solely to duplicate an established built-in command.
-3. **Keep the default import lightweight.** Large native tools, Windows administration libraries, and specialized frameworks belong in optional modules.
+3. **Keep the default import focused.** Windows distributions may retain deliberately selected CLI utilities such as gsudo and less. Large specialized frameworks and unrelated administration libraries belong in optional modules.
 4. **Make platform support explicit.** A cross-platform claim must be covered by CI and package-import tests on Windows, Linux, and macOS.
 5. **Treat the manifest as a contract.** Every exported command must exist, be documented, and be tested. Nothing should be exported accidentally.
 6. **Generate repeatable artifacts.** Versions, compatibility information, command catalogs, help coverage, and packages should be validated or generated rather than manually synchronized.
@@ -29,12 +29,13 @@ The proposed package family is:
 
 | Package | Purpose | Typical contents |
 | --- | --- | --- |
-| `Pscx` | Cross-platform CLI essentials | PATH/environment tools, file metadata, editor integration, XML tools, units, reflection/PE inspection, error helpers |
-| `Pscx.Archive` | Optional cross-platform archive support | Read, create, and expand archives; 7-Zip integration or another selected backend |
+| `Pscx` | Platform-aware CLI essentials | PATH/environment tools, file metadata, editor integration, XML tools, units, reflection/PE inspection, error helpers; gsudo and less in the default Windows payload |
+| `Pscx.Archive` | Optional archive support beginning with PSCX 4.0; exact platform contract to be proven | Read, create, and expand archives; 7-Zip integration or another selected backend |
 | `Pscx.WindowsAdmin` | Optional Windows administration | AD, DHCP, SQL/OLE DB, privileges, terminal services, VHD, COM, shortcuts, mount/reparse-point operations |
-| `Pscx.Time` | Optional date/time helpers, if retained | NodaTime-backed types and accelerators with a documented supported API |
+| `Pscx.Time` | Optional date/time helpers beginning with PSCX 4.0 | NodaTime-backed types and accelerators with a documented supported API |
 
-`Pscx.Time` should only be created if usage and maintenance justify a separate package. Otherwise, remove the custom wrappers after a deprecation period.
+`Pscx.Time` will be packaged separately so consumers explicitly choose whether
+to install and import its NodaTime-backed API.
 
 ## Release strategy
 
@@ -58,22 +59,28 @@ Use three release stages:
 
 **Goal:** Establish measurable current behavior and settle compatibility choices before restructuring.
 
+**Tracking:** [#16 Define supported PowerShell/.NET baseline and version policy](https://github.com/danluca/Pscx/issues/16)
+
 ### Tasks
 
-- [ ] Capture the current exported command, function, alias, provider, type, and format-data inventory from a packaged build.
-- [ ] Record package size by component and imported native binary.
-- [ ] Record module import time on Windows, Linux, and macOS.
-- [ ] Record the current test count and code coverage.
-- [ ] Decide the minimum supported PowerShell version.
-- [ ] Decide the target .NET version and whether PSCX follows PowerShell's runtime rather than the newest standalone .NET runtime.
-- [ ] Decide whether the next breaking release is PSCX 4.0.
-- [ ] Decide whether `Pscx.Time` is retained as a supported feature or deprecated.
-- [ ] Decide whether archive binaries will be bundled, downloaded separately, or replaced with a managed/system backend.
-- [ ] Open one tracked issue per phase and link those issues from this document.
+- [x] Capture the current exported command, function, alias, provider, type, and format-data inventory from a packaged build.
+- [x] Record package size by component and imported native binary.
+- [x] Record Windows module import time and defer Linux/macOS measurements to the clean CI environments in Phase 2.1.
+- [x] Record the current test count and code coverage. Coverage is currently not configured.
+- [x] Set PowerShell 7.6 LTS as the minimum supported version, beginning with PSCX 3.8.
+- [x] Target the associated .NET 10 runtime and PowerShell 7.6 API dependencies.
+- [x] Confirm PSCX 4.0 as the next breaking release.
+- [x] Decide to package `Pscx.Time` as an optional module in PSCX 4.0 so consumers activate it explicitly.
+- [x] Defer archive backend and platform decisions to the `Pscx.Archive` module work in Phase 5.
+- [x] Open and link the initial tracked issues for the Phase 0 decisions and the first Phase 1/2 work.
 
-### Recommended compatibility decision
+### Approved compatibility decision
 
-Target the .NET runtime used by the minimum supported PowerShell release. Do not claim PowerShell 7.2 compatibility for assemblies targeting .NET 10. The following must agree:
+Beginning with PSCX 3.8, require PowerShell 7.6 LTS and target its associated
+.NET 10 runtime and API dependencies. The 3.7-to-3.8 minor-version change is
+the approved representation of this dependency-baseline update. Do not claim
+PowerShell 7.2 compatibility for assemblies targeting .NET 10. The following
+must agree:
 
 - `README.md`;
 - `CHANGELOG.md`;
@@ -85,9 +92,9 @@ Target the .NET runtime used by the minimum supported PowerShell release. Do not
 
 ### Exit criteria
 
-- [ ] Compatibility and packaging decisions are written down.
-- [ ] A baseline API inventory is committed and can be regenerated.
-- [ ] Breaking changes are assigned to a major release.
+- [x] Compatibility and packaging decisions are written down.
+- [x] A baseline API inventory is version-controlled and can be regenerated.
+- [x] Breaking changes are assigned to PSCX 4.0.
 
 ---
 
@@ -96,6 +103,8 @@ Target the .NET runtime used by the minimum supported PowerShell release. Do not
 **Goal:** Make the existing product safe to build and validate before changing its architecture.
 
 ### 1.1 Correct known defects
+
+**Tracking:** [#17 Fix and test NodaTime arithmetic defects](https://github.com/danluca/Pscx/issues/17)
 
 - [ ] Fix `PlusSeconds()` in:
   - `Src/Pscx/Time/LocalDateTime.cs`;
@@ -106,6 +115,8 @@ Target the .NET runtime used by the minimum supported PowerShell release. Do not
 - [ ] Review all adjacent date/time forwarding methods for copy/paste errors.
 
 ### 1.2 Resolve dependency warnings
+
+**Tracking:** [#18 Resolve vulnerable transitive dependencies](https://github.com/danluca/Pscx/issues/18)
 
 - [ ] Identify which direct dependency introduces the vulnerable `System.Security.Cryptography.Xml` version.
 - [ ] Upgrade or override the affected dependency graph.
@@ -119,6 +130,8 @@ Target the .NET runtime used by the minimum supported PowerShell release. Do not
 Replace `.github/workflows/dotnet-desktop.yml`; do not treat the current desktop-application template as the foundation of the new pipeline. PSCX is a PowerShell module with managed and optional native components, not a WPF/Windows Forms desktop application.
 
 #### Establish one build entry point
+
+**Tracking:** [#19 Create the unified repository build/test entry point](https://github.com/danluca/Pscx/issues/19)
 
 - [ ] Add one cross-platform repository build entry point, such as `build.ps1`, with explicit operations for:
   - clean;
@@ -135,6 +148,8 @@ Replace `.github/workflows/dotnet-desktop.yml`; do not treat the current desktop
 - [ ] Ensure each operation can run independently when its prerequisites already exist.
 
 #### Use one authoritative version
+
+**Tracking:** [#20 Centralize semantic versioning and CI build identity](https://github.com/danluca/Pscx/issues/20)
 
 - [ ] Choose one committed file as the sole source of the user-controlled semantic version, preferably `Directory.Build.props` or a small dedicated version file.
 - [ ] Store only the semantic release portion there, for example `4.0.0` or `4.0.0-preview.1`.
@@ -174,6 +189,8 @@ The maintainer controls the semantic version. CI controls the unique build ident
 - [ ] Verify that package filenames, embedded module versions, assembly metadata, release tags, and release notes refer to the same build.
 
 #### Replace the workflow structure
+
+**Tracking:** [#21 Replace the legacy GitHub Actions workflow](https://github.com/danluca/Pscx/issues/21)
 
 - [ ] Replace `dotnet-desktop.yml` with clearly named workflows, for example:
   - `ci.yml` for pull requests and branch pushes;
@@ -240,6 +257,7 @@ The maintainer controls the semantic version. CI controls the unique build ident
 - [ ] Build Windows-specific projects on Windows.
 - [ ] Test the minimum supported PowerShell version.
 - [ ] Test the current stable PowerShell version.
+- [ ] Capture module import time on Windows, Linux, and macOS from clean packaged-module test jobs.
 - [ ] Optionally test the latest preview without making preview failures release-blocking.
 - [ ] Cache NuGet dependencies without caching build output.
 
@@ -289,6 +307,8 @@ Both suites run through one repository command, produce standard test-result fil
 
 ### 2.3 Pester public-contract suite
 
+**Tracking:** [#22 Establish packaged-module Pester tests](https://github.com/danluca/Pscx/issues/22)
+
 - [ ] Replace `Tests/ItIsLoneyHere-NeedSomePesterTests.txt` with a real Pester test project.
 - [ ] Test importing from the final packaged directory, not only build output.
 - [ ] Verify every declared export resolves after import.
@@ -333,6 +353,8 @@ Both suites run through one repository command, produce standard test-result fil
 ## Phase 3: Align metadata, documentation, and release automation
 
 **Goal:** Make the published compatibility and feature story accurate and self-maintaining.
+
+- [ ] Before Phase 3 begins, decompose the remaining roadmap into reviewable GitHub issues and link each issue to its corresponding section.
 
 ### 3.1 Correct current documentation drift
 
@@ -485,11 +507,16 @@ For every retained command:
 
 ### 5.2 Move to `Pscx.Archive`
 
+Backend selection and the supported-platform contract are intentionally
+deferred until this module is designed. Cross-platform support must be
+demonstrated rather than assumed.
+
 - [ ] `Write-PscxArchive`.
 - [ ] `Read-PscxArchive`.
 - [ ] `Expand-PscxArchive`.
 - [ ] Select and document the archive backend.
-- [ ] Verify archive creation, listing, and extraction on all supported platforms.
+- [ ] Define the supported-platform contract from demonstrated backend behavior.
+- [ ] Verify archive creation, listing, and extraction on every claimed platform.
 - [ ] Add zip-slip/path-traversal tests.
 - [ ] Add symbolic-link and permission-handling tests.
 - [ ] Decide whether encrypted archives are supported and test password handling without exposing secrets.
@@ -511,7 +538,7 @@ Candidate groups:
 - [ ] Windows foreground-window APIs.
 - [ ] Windows-native error decoding.
 - [ ] Visual Studio environment import.
-- [ ] Elevation/gsudo integration, if retained.
+- [x] Keep elevation/gsudo integration in the default Windows core rather than moving it into this optional module.
 
 For each group:
 
@@ -544,7 +571,7 @@ For each group:
 | `New-Junction` | Deprecate | `New-Item -ItemType Junction` |
 | `Invoke-GC` | Remove | Manual garbage collection is rarely appropriate |
 | `PscxHelp` | Make optional or remove | Modern help and pager behavior |
-| `PscxLess` | Make optional or remove | External pager integration should not require bundling a pager |
+| `PscxLess` | Retain in the default Windows core; review its API and integration | The bundled pager is considered a valuable Windows CLI utility |
 | Screen CSS/HTML helpers | Review for removal | Narrow and unrelated surface |
 | WMI accelerator module | Review for removal | WMI-era compatibility surface needs a current use case |
 
@@ -575,11 +602,9 @@ For each group:
 - [ ] Stop committing generated `Output` packages to the repository.
 - [ ] Prefer NuGet/package restore over committing third-party managed assemblies.
 - [ ] Do not redistribute PowerShell runtime assemblies unless there is a demonstrated runtime requirement.
-- [ ] Decide whether gsudo should be:
-  - an external prerequisite;
-  - an optional downloaded dependency with checksum verification;
-  - removed in favor of documented native installation.
-- [ ] Decide whether less should be an external pager rather than a bundled executable.
+- [x] Retain bundled gsudo in the default Windows core package.
+- [x] Retain bundled less in the default Windows core package.
+- [ ] Determine whether the byte-identical `gsudo.exe` and `sudo.exe` files are both required for command-name compatibility or can share one payload safely.
 - [ ] Package only the archive binary for the user's operating system and architecture.
 - [ ] Add checksums and provenance records for every redistributed executable.
 - [ ] Automate third-party update detection.
@@ -721,7 +746,7 @@ The following issues are small enough to begin independently:
 
 | Phase | Status | Completion |
 | --- | --- | --- |
-| 0. Baseline and decisions | Not started | 0% |
+| 0. Baseline and decisions | Complete | 100% |
 | 1. Correctness, security, builds | Not started | 0% |
 | 2. Tests and CI | Not started | 0% |
 | 3. Metadata, docs, releases | Not started | 0% |
