@@ -95,9 +95,9 @@ namespace Pscx.Time {
 
         public NodaTime.ZonedDateTime PlusMinutes(int minutes) => dateTime.PlusMinutes(minutes);
 
-        public NodaTime.ZonedDateTime PlusSeconds(int seconds) => dateTime.PlusMinutes(seconds);
+        public NodaTime.ZonedDateTime PlusSeconds(int seconds) => dateTime.PlusSeconds(seconds);
 
-        public NodaTime.ZonedDateTime PlusMilliseconds(int milliseconds) => dateTime.PlusMinutes(milliseconds);
+        public NodaTime.ZonedDateTime PlusMilliseconds(int milliseconds) => dateTime.PlusMilliseconds(milliseconds);
 
         public NodaTime.ZonedDateTime Minus(Duration dur) => dateTime.Minus(dur);
 

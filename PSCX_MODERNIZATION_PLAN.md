@@ -106,13 +106,13 @@ must agree:
 
 **Tracking:** [#17 Fix and test NodaTime arithmetic defects](https://github.com/danluca/Pscx/issues/17)
 
-- [ ] Fix `PlusSeconds()` in:
+- [x] Fix `PlusSeconds()` in:
   - `Src/Pscx/Time/LocalDateTime.cs`;
   - `Src/Pscx/Time/OffsetDateTime.cs`;
   - `Src/Pscx/Time/ZonedDateTime.cs`.
-- [ ] Fix `PlusMilliseconds()` in the same three classes.
-- [ ] Add tests covering positive, zero, negative, boundary, and daylight-saving-time cases where applicable.
-- [ ] Review all adjacent date/time forwarding methods for copy/paste errors.
+- [x] Fix `PlusMilliseconds()` in the same three classes.
+- [x] Add tests covering positive, zero, negative, boundary, and daylight-saving-time cases where applicable.
+- [x] Review all adjacent date/time forwarding methods for copy/paste errors; no additional unit-forwarding defects were found.
 
 ### 1.2 Resolve dependency warnings
 
@@ -285,6 +285,7 @@ Both suites run through one repository command, produce standard test-result fil
 
 #### Migration tasks
 
+- [ ] Configure an NUnit test adapter so the existing managed tests are discovered and fail the build when no expected tests run.
 - [ ] Create one cross-platform repository command such as `./build.ps1 -Test` that:
   1. restores and builds;
   2. packages PSCX into an isolated test directory;
@@ -747,7 +748,7 @@ The following issues are small enough to begin independently:
 | Phase | Status | Completion |
 | --- | --- | --- |
 | 0. Baseline and decisions | Complete | 100% |
-| 1. Correctness, security, builds | Not started | 0% |
+| 1. Correctness, security, builds | In progress | 10% |
 | 2. Tests and CI | Not started | 0% |
 | 3. Metadata, docs, releases | Not started | 0% |
 | 4. Explicit public API | Not started | 0% |

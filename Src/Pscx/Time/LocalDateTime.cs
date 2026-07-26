@@ -65,9 +65,9 @@ namespace Pscx.Time {
 
         public NodaTime.LocalDateTime PlusMinutes(int minutes) => dateTime.PlusMinutes(minutes);
 
-        public NodaTime.LocalDateTime PlusSeconds(int seconds) => dateTime.PlusMinutes(seconds);
+        public NodaTime.LocalDateTime PlusSeconds(int seconds) => dateTime.PlusSeconds(seconds);
 
-        public NodaTime.LocalDateTime PlusMilliseconds(int milliseconds) => dateTime.PlusMinutes(milliseconds);
+        public NodaTime.LocalDateTime PlusMilliseconds(int milliseconds) => dateTime.PlusMilliseconds(milliseconds);
 
         public NodaTime.LocalDateTime Minus(Period dur) => dateTime.Minus(dur);
 
