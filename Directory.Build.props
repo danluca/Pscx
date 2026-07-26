@@ -1,0 +1,26 @@
+<Project>
+  <PropertyGroup>
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <NuGetAuditLevel>high</NuGetAuditLevel>
+    <WarningsAsErrors>$(WarningsAsErrors);NU1903;NU1904</WarningsAsErrors>
+    <SystemSecurityCryptographyXmlVersion
+      Condition="'$(SystemSecurityCryptographyXmlVersion)' == ''">10.0.10</SystemSecurityCryptographyXmlVersion>
+  </PropertyGroup>
+
+  <ItemGroup Condition="
+      '$(MSBuildProjectName)' == 'Pscx' Or
+      '$(MSBuildProjectName)' == 'Pscx.Core' Or
+      '$(MSBuildProjectName)' == 'Pscx.Help' Or
+      '$(MSBuildProjectName)' == 'Pscx.UnitTests' Or
+      '$(MSBuildProjectName)' == 'Pscx.Win'">
+    <!--
+      Microsoft.PowerShell.SDK 7.6.4 resolves the vulnerable 10.0.6 version
+      transitively. Keep this explicit override until the SDK dependency graph
+      selects a non-vulnerable version on its own.
+    -->
+    <PackageReference
+      Include="System.Security.Cryptography.Xml"
+      Version="$(SystemSecurityCryptographyXmlVersion)" />
+  </ItemGroup>
+</Project>

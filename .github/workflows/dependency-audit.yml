@@ -1,0 +1,38 @@
+name: Dependency audit
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+  schedule:
+    - cron: "23 8 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore and enforce vulnerability policy
+        run: dotnet restore Src/Pscx.sln
+
+      - name: Report vulnerable direct and transitive packages
+        run: >-
+          dotnet package list
+          --project Src/Pscx.sln
+          --include-transitive
+          --vulnerable
+          --no-restore

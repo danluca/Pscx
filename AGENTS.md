@@ -94,6 +94,7 @@ Treat the modernization plan as direction, not blanket authorization to implemen
 - Document intentional breaking changes and provide migration guidance.
 - Do not suppress warnings or tests merely to make CI pass; resolve the cause or document and obtain approval for a narrowly scoped exception.
 - Do not add fallback behavior that hides missing dependencies, unsupported platforms, or corrupted state.
+- In commit messages include the GitHub issue number the commit relates to, provided there is an issue filed. Ask the user to provide an optional issue number if one cannot be inferred from the plan.
 
 ## PSCX architecture and API guidance
 

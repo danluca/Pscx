@@ -118,12 +118,12 @@ must agree:
 
 **Tracking:** [#18 Resolve vulnerable transitive dependencies](https://github.com/danluca/Pscx/issues/18)
 
-- [ ] Identify which direct dependency introduces the vulnerable `System.Security.Cryptography.Xml` version.
-- [ ] Upgrade or override the affected dependency graph.
-- [ ] Add `dotnet list package --vulnerable --include-transitive` or its current supported equivalent to CI.
-- [ ] Fail CI on high or critical known vulnerabilities, with a documented exception process.
-- [ ] Add automated dependency-update tooling.
-- [ ] Inventory licenses for every redistributed binary and NuGet dependency.
+- [x] Identify `Microsoft.PowerShell.SDK` 7.6.4 as the direct dependency that resolves the vulnerable `System.Security.Cryptography.Xml` 10.0.6 version.
+- [x] Override the affected dependency graph with `System.Security.Cryptography.Xml` 10.0.10 until the PowerShell SDK selects a non-vulnerable version.
+- [x] Add `dotnet package list --vulnerable --include-transitive` to a dedicated CI audit workflow.
+- [x] Fail restore and CI on high or critical known vulnerabilities, with a documented maintainer-approved exception process.
+- [x] Add Dependabot for NuGet and GitHub Actions dependency updates.
+- [x] Inventory licenses for all resolved NuGet dependencies and redistributed native binaries.
 
 ### 1.3 Modernize the build and GitHub Actions workflow
 
@@ -748,7 +748,7 @@ The following issues are small enough to begin independently:
 | Phase | Status | Completion |
 | --- | --- | --- |
 | 0. Baseline and decisions | Complete | 100% |
-| 1. Correctness, security, builds | In progress | 10% |
+| 1. Correctness, security, builds | In progress | 25% |
 | 2. Tests and CI | Not started | 0% |
 | 3. Metadata, docs, releases | Not started | 0% |
 | 4. Explicit public API | Not started | 0% |
