@@ -1,0 +1,15 @@
+<Project>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'Pscx.Core'">
+    <Compile Include="$(IntermediateOutputPath)PscxVersion.g.cs" />
+  </ItemGroup>
+
+  <Target
+    Name="GeneratePscxVersionSource"
+    BeforeTargets="CoreCompile"
+    Condition="'$(MSBuildProjectName)' == 'Pscx.Core'">
+    <WriteLinesToFile
+      File="$(IntermediateOutputPath)PscxVersion.g.cs"
+      Overwrite="true"
+      Lines="namespace Pscx.Properties { public static partial class PscxAssemblyInfo { public const string AssemblyVersion = &quot;$(AssemblyVersion)&quot;%3B public const string FileVersion = &quot;$(FileVersion)&quot;%3B public const string InformationalVersion = &quot;$(InformationalVersion)&quot;%3B } }" />
+  </Target>
+</Project>

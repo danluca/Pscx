@@ -20,7 +20,7 @@ convertto-yaml $f
             Assert.That(yamlOutput.Contains("    runs-on: windows-latest"), Is.True);
             Assert.That(yamlOutput.Contains("    - name: Checkout"), Is.True);
             Assert.That(yamlOutput.Contains("      run: |"), Is.True);
-            Assert.That(yamlOutput.Contains("        .\\Tools\\version_update.ps1 \"$env:Build_Version\""), Is.True);
+            Assert.That(yamlOutput.Contains("        .\\build.ps1 -Task CI -BuildNumber $env:GITHUB_RUN_NUMBER -CommitSha $env:GITHUB_SHA"), Is.True);
         }
     }
 }

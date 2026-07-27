@@ -19,20 +19,17 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: 10.0.x
+          global-json-file: global.json
 
       - name: Restore and enforce vulnerability policy
-        run: dotnet restore Src/Pscx.sln
+        shell: pwsh
+        run: ./build.ps1 -Task Restore
 
       - name: Report vulnerable direct and transitive packages
-        run: >-
-          dotnet package list
-          --project Src/Pscx.sln
-          --include-transitive
-          --vulnerable
-          --no-restore
+        shell: pwsh
+        run: ./build.ps1 -Task Audit

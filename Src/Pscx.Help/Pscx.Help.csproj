@@ -3,8 +3,6 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <AssemblyVersion>3.8.0</AssemblyVersion>
-    <FileVersion>$(AssemblyVersion)</FileVersion>
     <Product>PowerShell Core Community Extensions</Product>
     <Description>PowerShell Core Community Extension Help Builder Module</Description>
     <Copyright>Copyright © 2005-2026 Keith Hill, Oisin Grehan, Dan Luca, and contributors</Copyright>
@@ -316,9 +314,5 @@
   <ItemGroup>
     <Folder Include="SnapinHelp\" />
   </ItemGroup>
-
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="pwsh -NoProfile -ExecutionPolicy RemoteSigned -NonInteractive -File ../Tools/pscxhelp-postbuild.ps1 -outDir $(TargetDir) -configuration $(Configuration)" WorkingDirectory="$(SolutionDir)" />
-  </Target>
 
 </Project>

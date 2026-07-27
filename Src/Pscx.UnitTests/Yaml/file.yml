@@ -85,7 +85,7 @@ jobs:
     # Run the .Net build
     - name: Assemble the library
       run: |
-        .\Tools\version_update.ps1 "$env:Build_Version"
+        .\build.ps1 -Task CI -BuildNumber $env:GITHUB_RUN_NUMBER -CommitSha $env:GITHUB_SHA
         set-location "$env:Solution_Dir"
         dotnet restore -property:Configuration=$env:Configuration
         dotnet msbuild -property:Configuration=$env:Configuration

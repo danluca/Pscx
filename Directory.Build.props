@@ -1,5 +1,23 @@
 <Project>
   <PropertyGroup>
+    <!--
+      The maintainer controls this semantic version. Build systems may add a
+      CI prerelease/build identity, but must not rewrite this value.
+    -->
+    <PscxVersionPrefix>3.8.0</PscxVersionPrefix>
+    <PscxVersionCore>$([System.Text.RegularExpressions.Regex]::Match('$(PscxVersionPrefix)', '^\d+\.\d+\.\d+').Value)</PscxVersionCore>
+
+    <PscxBuildNumber Condition="'$(PscxBuildNumber)' == ''">0</PscxBuildNumber>
+    <PscxCommitSha Condition="'$(PscxCommitSha)' == ''">local</PscxCommitSha>
+    <PscxPackageVersion
+      Condition="'$(PscxPackageVersion)' == ''">$(PscxVersionPrefix)</PscxPackageVersion>
+    <Version>$(PscxPackageVersion)</Version>
+    <VersionPrefix>$(PscxVersionCore)</VersionPrefix>
+    <AssemblyVersion>$(PscxVersionCore).0</AssemblyVersion>
+    <FileVersion>$(PscxVersionCore).$(PscxBuildNumber)</FileVersion>
+    <InformationalVersion
+      Condition="'$(InformationalVersion)' == ''">$(PscxPackageVersion)+build.$(PscxBuildNumber).sha.$(PscxCommitSha)</InformationalVersion>
+
     <NuGetAudit>true</NuGetAudit>
     <NuGetAuditMode>all</NuGetAuditMode>
     <NuGetAuditLevel>high</NuGetAuditLevel>

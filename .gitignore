@@ -3,6 +3,7 @@
 bin/
 obj/
 Output/
+artifacts/
 
 # MSTest test Results
 [Tt]est[Rr]esult*/

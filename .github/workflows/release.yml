@@ -1,0 +1,65 @@
+name: Release preparation
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Build stable release candidate
+        if: ${{ github.ref_type == 'tag' }}
+        timeout-minutes: 25
+        shell: pwsh
+        run: >-
+          ./build.ps1
+          -Task CI,PublishPrep
+          -Configuration Release
+          -BuildNumber ${{ github.run_number }}
+          -CommitSha ${{ github.sha }}
+          -Release
+          -ExpectedTag ${{ github.ref_name }}
+
+      - name: Build manual prerelease candidate
+        if: ${{ github.ref_type != 'tag' }}
+        timeout-minutes: 25
+        shell: pwsh
+        run: >-
+          ./build.ps1
+          -Task CI,PublishPrep
+          -Configuration Release
+          -BuildNumber ${{ github.run_number }}
+          -CommitSha ${{ github.sha }}
+
+      - name: Upload release candidate
+        if: ${{ always() }}
+        timeout-minutes: 5
+        uses: actions/upload-artifact@v4
+        with:
+          name: pscx-release-${{ github.run_number }}
+          path: artifacts/packages/*.zip
+          if-no-files-found: error
+          retention-days: 30

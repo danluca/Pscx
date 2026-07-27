@@ -8,7 +8,8 @@
 
 @{
     RootModule = 'PscxHelp.psm1'
-    ModuleVersion ="3.8.0"
+    # Build-time tool; stamped when copied into an isolated help workspace.
+    ModuleVersion = "0.0.0"
     GUID = 'e50d3425-cdb8-4ab7-8241-c6253c7dd625'
     Author = 'PowerShell Core Community Extensions Team'
     CompanyName = 'PowerShell Core Community Extensions'

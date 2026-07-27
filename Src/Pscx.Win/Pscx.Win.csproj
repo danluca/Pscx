@@ -3,9 +3,6 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
 	<GenerateAssemblyInfo>false</GenerateAssemblyInfo>  
-    <AssemblyVersion>3.8.0</AssemblyVersion>
-    <FileVersion>$(AssemblyVersion)</FileVersion>
-    <Version>$(AssemblyVersion)</Version>
     <Company>PowerShell Core Community Team</Company>
     <Product>PowerShell Core Community Windows Extensions</Product>
     <Description>Set of Windows OS specific PowerShell extensions</Description>
@@ -121,7 +118,6 @@
       <!-- <Copy SourceFiles="$(PkgYamlDotNet)/lib/$(TargetFramework)/YamlDotNet.xml" DestinationFolder="$(TargetDir)" /> -->
       <Copy SourceFiles="$(PkgYamlDotNet)/lib/net8.0/YamlDotNet.dll" DestinationFolder="$(TargetDir)" />
       <Copy SourceFiles="$(PkgYamlDotNet)/lib/net8.0/YamlDotNet.xml" DestinationFolder="$(TargetDir)" />
-    <Exec Command="pwsh -NoProfile -ExecutionPolicy RemoteSigned -NonInteractive -File ../Tools/pscxwin-postbuild.ps1 -outDir $(TargetDir) -configuration $(Configuration)" WorkingDirectory="$(SolutionDir)" />
   </Target>
 
 </Project>

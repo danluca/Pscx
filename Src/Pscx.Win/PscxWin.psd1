@@ -6,7 +6,8 @@
     Description        = 'PowerShell Core Community Extensions (PSCX) module which implements Windows OS specific set of Cmdlets.'
     PowerShellVersion  = '7.2'
     CLRVersion         = '6.0'
-    ModuleVersion      = '3.8.0'
+    # Stamped from Directory.Build.props when the package is assembled.
+    ModuleVersion      = '0.0.0'
     RequiredAssemblies = 'Pscx.Win.dll'
     RootModule         = 'PscxWin.psm1'
     NestedModules      = @('Pscx.Win.dll', 'SevenZipSharp.dll')

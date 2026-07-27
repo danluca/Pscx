@@ -1,5 +1,14 @@
 # PowerShell Community Extensions Light Changelog
 
+## 3.8.0 - Unreleased
+
+* Updated the runtime baseline to PowerShell 7.6 LTS and .NET 10.
+* Corrected NodaTime date/time arithmetic forwarding defects.
+* Enforced high/critical NuGet vulnerability policy and resolved the current
+  vulnerable transitive dependency.
+* Centralized version identity and replaced the legacy desktop workflow and
+  post-build packaging scripts with one local/CI build entry point.
+
 ## 3.7.0 - June 2025
 * Upgraded to .NET 9.0, PowerShell Core 7.5
 * Upgraded gsudo to 2.6

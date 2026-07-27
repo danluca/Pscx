@@ -76,6 +76,38 @@ the [Imports](Imports/) folder for the applicable license files.
 
 ## Developer guidance
 
+### Build, test, and package
+
+Use the repository entry point from any working directory:
+
+```powershell
+./build.ps1 -Task CI
+```
+
+`CI` performs a clean restore, compile, managed regression test, package, help
+generation, and package validation. Individual operations can also be run when
+their prerequisites already exist:
+
+```powershell
+./build.ps1 -Task Restore,Compile
+./build.ps1 -Task Test
+./build.ps1 -Task Package,Validate
+./build.ps1 -Task Audit
+```
+
+Build output is written beneath the ignored `artifacts` directory. Pass
+`-ArtifactsPath` to use another directory. `Test` currently runs the reliable
+NodaTime arithmetic regression slice. `TestAll` exposes the full legacy NUnit
+suite, whose environment-dependent tests remain scheduled for classification
+and migration in Phase 2.
+
+The maintainer-controlled semantic version is `PscxVersionPrefix` in
+`Directory.Build.props`. Local stable builds use that value directly. CI adds
+`ci.<run-number>` to prerelease package and manifest metadata, puts the run
+number in `FileVersion`, and adds the run number plus short commit SHA to
+informational metadata. Source manifests intentionally contain `0.0.0`; staged
+package manifests are stamped without rewriting tracked source files.
+
 ### Compiled C# cmdlets
 
 Required annotations:
@@ -98,9 +130,8 @@ generator with Markdown and PlatyPS.
 
 Several conveniences are made available in support of release process:
 
-- `Tools/version_update.ps1` currently synchronizes the version across assembly
-  metadata and module manifests. The roadmap proposes replacing this with one
-  authoritative semantic-version source.
+- `build.ps1` is the local and CI entry point for restoring, compiling, testing,
+  packaging, validating, auditing, and preparing release artifacts.
 - `Tools/find_cmdlets.ps1` reports cmdlets and functions throughout the solution
   and assists with manifest and documentation maintenance.
 

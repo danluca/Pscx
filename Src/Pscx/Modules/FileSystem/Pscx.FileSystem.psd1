@@ -1,5 +1,5 @@
 @{
-    ModuleVersion   = '3.8.0'
+ModuleVersion   = '0.0.0' # Stamped from Directory.Build.props during packaging.
     ModuleToProcess = 'Pscx.FileSystem.psm1'
     TypesToProcess  = 'Pscx.FileSystem.Type.ps1xml'
     FormatsToProcess = 'Pscx.FileSystem.Format.ps1xml'

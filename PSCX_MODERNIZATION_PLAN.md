@@ -133,7 +133,7 @@ Replace `.github/workflows/dotnet-desktop.yml`; do not treat the current desktop
 
 **Tracking:** [#19 Create the unified repository build/test entry point](https://github.com/danluca/Pscx/issues/19)
 
-- [ ] Add one cross-platform repository build entry point, such as `build.ps1`, with explicit operations for:
+- [x] Add one cross-platform repository build entry point, such as `build.ps1`, with explicit operations for:
   - clean;
   - restore;
   - compile;
@@ -142,35 +142,35 @@ Replace `.github/workflows/dotnet-desktop.yml`; do not treat the current desktop
   - package;
   - validate package;
   - publish preparation.
-- [ ] Make GitHub Actions invoke the same entry point developers use locally.
-- [ ] Avoid duplicating build, test, version, and packaging logic inside workflow YAML.
-- [ ] Make the build script noninteractive and fail fast with actionable errors.
-- [ ] Ensure each operation can run independently when its prerequisites already exist.
+- [x] Make GitHub Actions invoke the same entry point developers use locally.
+- [x] Avoid duplicating build, test, version, and packaging logic inside workflow YAML.
+- [x] Make the build script noninteractive and fail fast with actionable errors.
+- [x] Ensure each operation can run independently when its prerequisites already exist.
 
 #### Use one authoritative version
 
 **Tracking:** [#20 Centralize semantic versioning and CI build identity](https://github.com/danluca/Pscx/issues/20)
 
-- [ ] Choose one committed file as the sole source of the user-controlled semantic version, preferably `Directory.Build.props` or a small dedicated version file.
-- [ ] Store only the semantic release portion there, for example `4.0.0` or `4.0.0-preview.1`.
-- [ ] Remove independently maintained versions from:
+- [x] Choose one committed file as the sole source of the user-controlled semantic version, preferably `Directory.Build.props` or a small dedicated version file.
+- [x] Store only the semantic release portion there, for example `4.0.0` or `4.0.0-preview.1`.
+- [x] Remove independently maintained versions from:
   - individual `.csproj` files;
   - shared and project-specific assembly-info files;
   - module manifests;
   - workflow environment variables;
   - packaging scripts;
   - artifact names.
-- [ ] Generate or stamp output manifests and assembly metadata from the authoritative version during the build.
-- [ ] Add a validation task that fails when a committed compatibility/version field cannot be derived from the authoritative source.
-- [ ] Retire `Tools/version_update.ps1` once output generation makes multi-file source rewriting unnecessary, or reduce it to the one deliberate operation that changes the authoritative semantic version.
+- [x] Generate or stamp output manifests and assembly metadata from the authoritative version during the build.
+- [x] Add a validation task that fails when a committed compatibility/version field cannot be derived from the authoritative source.
+- [x] Retire `Tools/version_update.ps1` once output generation makes multi-file source rewriting unnecessary, or reduce it to the one deliberate operation that changes the authoritative semantic version.
 
 #### Derive CI build identity automatically
 
 The maintainer controls the semantic version. CI controls the unique build identity. Define the mapping explicitly because PowerShell manifests, .NET assemblies, NuGet-style package versions, and filenames do not all accept exactly the same version syntax.
 
-- [ ] Derive the CI build number from `github.run_number` or another monotonic workflow value.
-- [ ] Include the short commit SHA in informational metadata.
-- [ ] Use a documented mapping such as:
+- [x] Derive the CI build number from `github.run_number` or another monotonic workflow value.
+- [x] Include the short commit SHA in informational metadata.
+- [x] Use a documented mapping such as:
 
   | Target | Example derived value |
   | --- | --- |
@@ -182,64 +182,64 @@ The maintainer controls the semantic version. CI controls the unique build ident
   | Informational version | `4.0.0+build.1234.sha.abcdef0` |
   | Artifact filename | `Pscx-4.0.0-ci.1234.zip` |
 
-- [ ] For PowerShell manifests, map prerelease text through `PrivateData.PSData.Prerelease` rather than forcing a nonconforming value into `ModuleVersion`.
-- [ ] Keep `AssemblyVersion` stable according to an explicit binary-compatibility policy; do not change it merely to make each CI build unique.
-- [ ] Put the CI build number in `FileVersion`, informational version, prerelease metadata, and artifact names.
-- [ ] Ensure a tagged stable release produces exactly the user-controlled semantic version without an accidental CI prerelease suffix.
-- [ ] Verify that package filenames, embedded module versions, assembly metadata, release tags, and release notes refer to the same build.
+- [x] For PowerShell manifests, map prerelease text through `PrivateData.PSData.Prerelease` rather than forcing a nonconforming value into `ModuleVersion`.
+- [x] Keep `AssemblyVersion` stable according to an explicit binary-compatibility policy; do not change it merely to make each CI build unique.
+- [x] Put the CI build number in `FileVersion`, informational version, prerelease metadata, and artifact names.
+- [x] Ensure a tagged stable release produces exactly the user-controlled semantic version without an accidental CI prerelease suffix.
+- [x] Verify that package filenames, embedded module versions, assembly metadata, release tags, and release notes refer to the same build.
 
 #### Replace the workflow structure
 
 **Tracking:** [#21 Replace the legacy GitHub Actions workflow](https://github.com/danluca/Pscx/issues/21)
 
-- [ ] Replace `dotnet-desktop.yml` with clearly named workflows, for example:
+- [x] Replace `dotnet-desktop.yml` with clearly named workflows, for example:
   - `ci.yml` for pull requests and branch pushes;
   - `release.yml` for approved tags/releases.
-- [ ] Pin the .NET SDK to the version required by the projects, from a single source such as `global.json`.
-- [ ] Remove the hard-coded .NET 9 setup when projects target a different runtime.
-- [ ] Remove the hard-coded `Build_Version: 3.7.0...` workflow value.
-- [ ] Remove unused signing, WAP/MSIX, and desktop-application template comments and variables.
-- [ ] Use least-privilege GitHub token permissions.
-- [ ] Add workflow concurrency so superseded builds on the same branch are cancelled.
+- [x] Pin the .NET SDK to the version required by the projects, from a single source such as `global.json`.
+- [x] Remove the hard-coded .NET 9 setup when projects target a different runtime.
+- [x] Remove the hard-coded `Build_Version: 3.7.0...` workflow value.
+- [x] Remove unused signing, WAP/MSIX, and desktop-application template comments and variables.
+- [x] Use least-privilege GitHub token permissions.
+- [x] Add workflow concurrency so superseded builds on the same branch are cancelled.
 - [ ] Add dependency caching only for immutable/restorable dependencies, not compiled output.
-- [ ] Set job and step timeouts.
+- [x] Set job and step timeouts.
 - [ ] Upload test results, coverage, logs, and packages even when a validation step fails, where useful for diagnosis.
-- [ ] Pin third-party actions to reviewed major versions or commit SHAs according to the project's supply-chain policy.
+- [x] Pin third-party actions to reviewed major versions or commit SHAs according to the project's supply-chain policy.
 
 #### Make builds location-independent
 
-- [ ] Remove the assumption that `$(SolutionDir)` is always defined.
+- [x] Remove the assumption that `$(SolutionDir)` is always defined.
 - [ ] Make these workflows succeed independently:
   - `dotnet build Src/Pscx.sln`;
   - `dotnet build <individual project>`;
   - `dotnet test Src/Pscx.UnitTests/Pscx.UnitTests.csproj`;
   - a clean package build from the repository root.
-- [ ] Replace legacy pre/post-build event behavior with explicit, named MSBuild targets or the repository build script where practical.
-- [ ] Ensure generated output is not required as source input for a clean build.
-- [ ] Write all temporary and staged output beneath one configurable artifacts directory.
-- [ ] Ensure a clean checkout can build without a pre-existing `Output/Pscx` directory.
+- [x] Replace legacy pre/post-build event behavior with explicit, named MSBuild targets or the repository build script where practical.
+- [x] Ensure generated output is not required as source input for a clean build.
+- [x] Write all temporary and staged output beneath one configurable artifacts directory.
+- [x] Ensure a clean checkout can build without a pre-existing `Output/Pscx` directory.
 
 #### Streamline test execution
 
 - [ ] Make the build entry point execute the unified test architecture defined in Phase 2.
 - [ ] Build and package once per relevant runtime/platform, then run appropriate tests against that artifact rather than rebuilding separately for every test command.
-- [ ] Run fast, platform-neutral checks early.
+- [x] Run fast, platform-neutral checks early.
 - [ ] Run Windows-only tests only on Windows and report intentional skips clearly.
 - [ ] Run packaged-module import and public-contract tests on Windows, Linux, and macOS.
 - [ ] Publish one overall pass/fail status with separate Pester and managed-test diagnostics.
-- [ ] Make the exact CI test command reproducible locally without GitHub-specific environment variables.
+- [x] Make the exact CI test command reproducible locally without GitHub-specific environment variables.
 
 ### Exit criteria
 
-- [ ] Clean restore, build, test, and package commands succeed locally.
-- [ ] The old desktop-template workflow is removed.
-- [ ] One repository command implements the same build and test path used by CI.
-- [ ] The semantic version is maintained in exactly one committed location.
-- [ ] CI supplies build identity without rewriting the maintainer-controlled semantic version.
-- [ ] CI and local builds produce equivalent package contents given the same version and commit.
-- [ ] No high or critical dependency vulnerability is unaddressed.
-- [ ] Known time arithmetic defects have regression tests.
-- [ ] No build requires Visual Studio-specific implicit properties unless explicitly documented.
+- [x] Clean restore, build, test, and package commands succeed locally.
+- [x] The old desktop-template workflow is removed.
+- [x] One repository command implements the same build and test path used by CI.
+- [x] The semantic version is maintained in exactly one committed location.
+- [x] CI supplies build identity without rewriting the maintainer-controlled semantic version.
+- [x] CI and local builds produce equivalent package contents given the same version and commit.
+- [x] No high or critical dependency vulnerability is unaddressed.
+- [x] Known time arithmetic defects have regression tests.
+- [x] No build requires Visual Studio-specific implicit properties unless explicitly documented.
 
 ---
 
@@ -285,7 +285,7 @@ Both suites run through one repository command, produce standard test-result fil
 
 #### Migration tasks
 
-- [ ] Configure an NUnit test adapter so the existing managed tests are discovered and fail the build when no expected tests run.
+- [x] Configure an NUnit test adapter so the existing managed tests are discovered and fail the build when no expected tests run.
 - [ ] Create one cross-platform repository command such as `./build.ps1 -Test` that:
   1. restores and builds;
   2. packages PSCX into an isolated test directory;

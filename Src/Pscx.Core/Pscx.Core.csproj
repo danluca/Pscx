@@ -5,9 +5,6 @@
     <RootNamespace>Pscx</RootNamespace>
     <OldToolsVersion>3.5</OldToolsVersion>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <AssemblyVersion>3.8.0</AssemblyVersion>
-    <Version>$(AssemblyVersion)</Version>
-    <FileVersion>$(AssemblyVersion)</FileVersion>
     <Authors>https://github.com/pscx/Pscx; fork https://github.com/danluca/Pscx</Authors>
     <Copyright>Copyright © 2005-2026 Keith Hill, Oisin Grehan, Dan Luca, and contributors</Copyright>
     <RepositoryUrl>git@github.com:danluca/Pscx.git</RepositoryUrl>
@@ -52,10 +49,4 @@
     <PackageReference Include="Microsoft.PowerShell.Commands.Management" Version="7.6.4" />
     <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.6.4" />
   </ItemGroup>
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="pwsh -NoProfile -ExecutionPolicy RemoteSigned -NonInteractive -File ../Tools/pscxcore-postbuild.ps1 -outDir $(TargetDir) -configuration $(Configuration)" WorkingDirectory="$(SolutionDir)" />
-  </Target>
-  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-	<Exec Command="pwsh -NoProfile -ExecutionPolicy RemoteSigned -NonInteractive -File ../Tools/pscxcore-prebuild.ps1 -outDir $(TargetDir) -configuration $(Configuration)" WorkingDirectory="$(SolutionDir)" />
-  </Target>
 </Project>
