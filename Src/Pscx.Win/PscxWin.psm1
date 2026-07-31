@@ -313,7 +313,7 @@ Set-Alias ln    Pscx\New-HardLink           -Description "PSCX alias"
 $acceleratorsType = [psobject].Assembly.GetType('System.Management.Automation.TypeAccelerators')
 
 # If these accelerators have already been defined, don't override (and don't error)
-function AddAccelerator($name, $type)
+function AddPscxWinAccelerator($name, $type)
 {
     if (!$acceleratorsType::Get.ContainsKey($name))
     {
@@ -321,8 +321,8 @@ function AddAccelerator($name, $type)
     }
 }
 
-AddAccelerator "yaml" ([Pscx.Win.Fwk.TypeAccelerators.Yaml])
-AddAccelerator "yml"  ([Pscx.Win.Fwk.TypeAccelerators.Yaml])
+AddPscxWinAccelerator "yaml" ([Pscx.Win.Fwk.TypeAccelerators.Yaml])
+AddPscxWinAccelerator "yml"  ([Pscx.Win.Fwk.TypeAccelerators.Yaml])
 
 
 # -----------------------------------------------------------------------

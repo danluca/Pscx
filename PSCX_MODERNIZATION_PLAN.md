@@ -312,16 +312,16 @@ Both suites run through one repository command, produce standard test-result fil
 
 - [x] Replace `Tests/ItIsLoneyHere-NeedSomePesterTests.txt` with a real Pester test project.
 - [x] Test importing from the final packaged directory, not only build output.
-- [ ] Verify every declared export resolves after import.
-- [ ] Verify no undeclared function, cmdlet, provider, or alias leaks from the module.
-- [ ] Verify `Get-Help` is available for every public command.
-- [ ] Verify examples in help and README where feasible.
-- [ ] Test pipeline binding and output object types.
-- [ ] Test `-Path` and `-LiteralPath`, including wildcard and special-character paths.
-- [ ] Test `-WhatIf`/`-Confirm` for mutating commands.
-- [ ] Test error IDs, categories, and non-terminating versus terminating behavior.
-- [ ] Test import with default preferences and with each optional feature enabled.
-- [ ] Verify importing PSCX does not replace global commands or aliases unless explicitly opted in.
+- [x] Verify every declared export resolves after import.
+- [x] Verify no undeclared function, cmdlet, provider, or alias leaks from the module.
+- [x] Verify `Get-Help` is available for every public command.
+- [x] Verify examples in help and README where feasible.
+- [x] Test pipeline binding and output object types.
+- [x] Test `-Path` and `-LiteralPath`, including wildcard and special-character paths.
+- [x] Test `-WhatIf`/`-Confirm` for mutating commands.
+- [x] Test error IDs, categories, and non-terminating versus terminating behavior.
+- [x] Test import with default preferences and with each optional feature enabled.
+- [x] Verify importing PSCX does not replace global commands or aliases unless explicitly opted in.
 
 ### 2.4 Focused .NET unit suite
 
@@ -749,7 +749,7 @@ The following issues are small enough to begin independently:
 | --- | --- | --- |
 | 0. Baseline and decisions | Complete | 100% |
 | 1. Correctness, security, builds | In progress | 25% |
-| 2. Tests and CI | Not started | 0% |
+| 2. Tests and CI | In progress | 62% |
 | 3. Metadata, docs, releases | Not started | 0% |
 | 4. Explicit public API | Not started | 0% |
 | 5. Feature classification | Not started | 0% |

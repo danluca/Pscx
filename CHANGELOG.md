@@ -15,6 +15,11 @@
   status.
 * Split pure logic tests into `Pscx.InternalTests`, classified the remaining
   legacy fixtures, and removed a non-reproducible external lab fixture.
+* Expanded packaged-module Pester coverage for exports, help, aliases,
+  providers, optional features, and representative public command behavior.
+* Restored the declared `AddRegex` function, prevented a Windows helper from
+  shadowing `AddAccelerator`, and included the optional VHD module in Windows
+  packages.
 
 ## 3.7.0 - June 2025
 * Upgraded to .NET 9.0, PowerShell Core 7.5

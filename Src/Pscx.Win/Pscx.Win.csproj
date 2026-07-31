@@ -65,10 +65,10 @@
     <Content Include="Modules\Sudo\Pscx.Sudo.psd1">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Update="Modules\Vhd\Pscx.Vhd.psd1">
+    <Content Include="Modules\Vhd\Pscx.Vhd.psd1">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Update="Modules\Vhd\Pscx.Vhd.psm1">
+    <Content Include="Modules\Vhd\Pscx.Vhd.psm1">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

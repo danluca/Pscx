@@ -82,6 +82,13 @@ https://github.com/gerardog/gsudo
 }
 
 function Test-IsGsudoCacheAvailable {
+    <#
+.SYNOPSIS
+Tests whether the gsudo credentials cache is available.
+.EXAMPLE
+Test-IsGsudoCacheAvailable
+Returns true when gsudo reports that its credentials cache is available.
+#>
     return ('true' -eq (gsudo status CacheAvailable))
 }
 
@@ -92,7 +99,8 @@ function Test-IsProcessElevated {
 .Description
     Returns true if the current process is elevated.
 .Example
-    Test-IsAdmin
+    Test-IsProcessElevated
+    Returns true when the current process is elevated.
 #>	
     if ($PSVersionTable.Platform -eq 'Unix') {
         return (id -u) -eq 0
@@ -108,6 +116,9 @@ function Test-IsAdminMember {
     <#
 .SYNOPSIS
 The function Test-IsAdminMember checks if the currently logged-in user is a member of the local administrators group, regardless of the elevation level of the current process.
+.EXAMPLE
+Test-IsAdminMember
+Returns true when the current user belongs to the local Administrators group.
 #>
     $userName = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
     $adminGroupSid = "S-1-5-32-544"

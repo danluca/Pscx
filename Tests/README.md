@@ -12,7 +12,10 @@ the package, and fails if either suite or its independent coverage gate fails.
 
 - `Pscx.InternalTests` owns cross-platform pure algorithms and value objects.
 - `Pscx.Package.Tests.ps1` owns module and public PowerShell behavior against
-  the staged package.
+  the staged package. It enforces manifest exports, aliases, providers, help,
+  README example syntax, representative parameter/pipeline/error behavior, and
+  default plus optional-feature imports. Import variants run in fresh child
+  processes to prevent session state from leaking between cases.
 - `Pscx.LegacyTests` is a non-release-blocking migration source. Run it
   explicitly with `./build.ps1 -Task TestAll -BuildScope Full`.
 
@@ -20,6 +23,11 @@ the package, and fails if either suite or its independent coverage gate fails.
 PowerShell coverage gates. Results are written beneath
 `artifacts/test-results` as TRX, NUnit 3 XML, Cobertura XML, framework JSON, and
 one aggregate JSON status.
+
+`Pscx.PublicContract.psd1` temporarily records aliases and providers because
+the legacy manifests cannot declare providers and still use wildcard alias
+exports. Phase 4 will make aliases explicit in the manifests; the contract file
+should then retain only data that cannot be expressed by module metadata.
 
 ## Test-only dependencies
 

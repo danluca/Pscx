@@ -4,7 +4,19 @@
 ## Functions
 #######################################
 
-# If these accelerators have already been defined, don't override (and don't error)
+<#
+.SYNOPSIS
+    Adds a PowerShell type accelerator without replacing an existing accelerator.
+.DESCRIPTION
+    Existing accelerators are not overwritten; the function writes a warning instead.
+.PARAMETER name
+    The accelerator name to register.
+.PARAMETER type
+    The .NET type the accelerator represents.
+.EXAMPLE
+    AddAccelerator -name uri -type ([System.Uri])
+    Registers `[uri]` as an accelerator for System.Uri when that name is available.
+#>
 function AddAccelerator($name, $type) {
     if (!$acceleratorsType::Get.ContainsKey($name)) {
         $acceleratorsType::Add($name, $type)
@@ -13,6 +25,15 @@ function AddAccelerator($name, $type) {
     }
 }
 
+<#
+.SYNOPSIS
+    Removes a PowerShell type accelerator when it exists.
+.PARAMETER name
+    The accelerator name to remove.
+.EXAMPLE
+    RemoveAccelerator -name uri
+    Removes the `uri` accelerator when it is registered.
+#>
 function RemoveAccelerator($name) {
     if ($acceleratorsType::Get.ContainsKey($name)) {
         $acceleratorsType::Remove($name)
@@ -1793,19 +1814,31 @@ Set-Alias rver  Pscx\Resolve-ErrorRecord    -Description "PSCX alias"
 Set-Alias sro   Pscx\Set-ReadOnly           -Description "PSCX alias"
 Set-Alias swr   Pscx\Set-Writable           -Description "PSCX alias"
 
-# Initialize the PSCX RegexLib object.
-& {
-    $RegexLib = new-object psobject
+<#
+.SYNOPSIS
+    Adds a named regular-expression pattern to the PSCX RegexLib object.
+.DESCRIPTION
+    Extends the module-scoped RegexLib object initialized when the Utility module loads.
+.PARAMETER name
+    The property name used to retrieve the pattern from `$Pscx:RegexLib`.
+.PARAMETER regex
+    The regular-expression pattern to store.
+.EXAMPLE
+    AddRegex -name SemanticVersion -regex '^\d+\.\d+\.\d+$'
+    Adds a pattern available as `$Pscx:RegexLib.SemanticVersion`.
+#>
+function AddRegex($name, $regex) {
+    Add-Member -InputObject $Pscx:RegexLib -MemberType NoteProperty -Name $name -Value $regex
+}
 
-    function AddRegex($name, $regex) {
-      Add-Member -Input $RegexLib NoteProperty $name $regex
-    }
+& {
+    $Pscx:RegexLib = new-object psobject
 
     AddRegex CDQString           '(?<CDQString>"\\.|[^\\"]*")'
     AddRegex CSQString           "(?<CSQString>'\\.|[^'\\]*')"
     AddRegex CMultilineComment   '(?<CMultilineComment>/\*[^*]*\*+(?:[^/*][^*]*\*+)*/)'
     AddRegex CppEndOfLineComment '(?<CppEndOfLineComment>//[^\n]*)'
-    AddRegex CComment            "(?:$($RegexLib.CDQString)|$($RegexLib.CSQString))|(?<CComment>$($RegexLib.CMultilineComment)|$($RegexLib.CppEndOfLineComment))"
+    AddRegex CComment            "(?:$($Pscx:RegexLib.CDQString)|$($Pscx:RegexLib.CSQString))|(?<CComment>$($Pscx:RegexLib.CMultilineComment)|$($Pscx:RegexLib.CppEndOfLineComment))"
 
     AddRegex PSComment          '(?<PSComment>#[^\n]*)'
     AddRegex PSNonCommentedLine '(?<PSNonCommentedLine>^(?>\s*)(?!#|$))'
@@ -1818,7 +1851,6 @@ Set-Alias swr   Pscx\Set-Writable           -Description "PSCX alias"
     AddRegex DecimalNumber      '(?<DecimalNumber>[+-]?(?:\d+\.?\d*|\d*\.?\d+))'
     AddRegex ScientificNotation '(?<ScientificNotation>[+-]?(?<Significand>\d+\.?\d*|\d*\.?\d+)[\x20]?(?<Exponent>[eE][+\-]?\d+)?)'
 
-    $Pscx:RegexLib = $RegexLib
 }
 
 $acceleratorsType = [psobject].Assembly.GetType('System.Management.Automation.TypeAccelerators')
