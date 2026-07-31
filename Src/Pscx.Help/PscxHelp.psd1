@@ -15,9 +15,8 @@
     CompanyName = 'PowerShell Core Community Extensions'
     Copyright = 'Copyright (c) 2005-2023 PowerShell Core Community Extensions Team. All rights reserved.'
     Description = 'PSCX Help module and utilities'
-    PowerShellVersion = '7.2'
-    DotNetFrameworkVersion = '6.0'
-    ClrVersion = '6.0'
+    # Build-time tool; stamped when copied into an isolated help workspace.
+    PowerShellVersion = '0.0'
     RequiredAssemblies = @('Pscx.Help.dll')
     NestedModules = @('Pscx.Help.dll')
 

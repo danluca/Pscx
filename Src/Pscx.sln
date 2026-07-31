@@ -27,6 +27,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{C7B8B3B8-F837-44E1-A37B-D0B4C768788A}"
 	ProjectSection(SolutionItems) = preProject
 		..\Tools\generate-markdown-docs.ps1 = ..\Tools\generate-markdown-docs.ps1
+		..\Tools\Get-CiMatrix.ps1 = ..\Tools\Get-CiMatrix.ps1
 		..\Tools\Generate-PscxHelp.ps1 = ..\Tools\Generate-PscxHelp.ps1
 		..\Tools\SignScripts.ps1 = ..\Tools\SignScripts.ps1
 		..\Tools\Test-PscxPackage.ps1 = ..\Tools\Test-PscxPackage.ps1

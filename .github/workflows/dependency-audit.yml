@@ -26,10 +26,6 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Restore and enforce vulnerability policy
-        shell: pwsh
-        run: ./build.ps1 -Task Restore
-
-      - name: Report vulnerable direct and transitive packages
+      - name: Restore and report vulnerable direct and transitive packages
         shell: pwsh
         run: ./build.ps1 -Task Audit

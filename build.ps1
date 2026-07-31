@@ -7,6 +7,7 @@ param(
         'Help',
         'Test',
         'TestAll',
+        'ImportTest',
         'Package',
         'Validate',
         'Audit',
@@ -18,6 +19,9 @@ param(
     [ValidateSet('Debug', 'Release')]
     [string] $Configuration = 'Release',
 
+    [ValidateSet('Auto', 'Core', 'Full')]
+    [string] $BuildScope = 'Auto',
+
     [ValidateRange(0, 65535)]
     [int] $BuildNumber = 0,
 
@@ -27,7 +31,11 @@ param(
 
     [switch] $Release,
 
-    [string] $ExpectedTag
+    [string] $ExpectedTag,
+
+    [string] $PowerShellPath = 'pwsh',
+
+    [string] $ExpectedPowerShellVersion
 )
 
 Set-StrictMode -Version Latest
@@ -37,6 +45,7 @@ $PSStyle.OutputRendering = [System.Management.Automation.OutputRendering]::Plain
 
 $repositoryRoot = $PSScriptRoot
 $solutionPath = Join-Path $repositoryRoot 'Src/Pscx.sln'
+$coreProjectPath = Join-Path $repositoryRoot 'Src/Pscx/Pscx.csproj'
 $testProjectPath = Join-Path $repositoryRoot 'Src/Pscx.UnitTests/Pscx.UnitTests.csproj'
 $versionFilePath = Join-Path $repositoryRoot 'Directory.Build.props'
 $artifactsRoot = [System.IO.Path]::GetFullPath($ArtifactsPath)
@@ -44,6 +53,22 @@ $moduleRoot = Join-Path $artifactsRoot 'module/Pscx'
 $helpOutputPath = Join-Path $artifactsRoot 'help'
 $packageOutputPath = Join-Path $artifactsRoot 'packages'
 $testResultsPath = Join-Path $artifactsRoot 'test-results'
+$resolvedBuildScope = if ($BuildScope -eq 'Auto') {
+    if ($IsWindows) { 'Full' } else { 'Core' }
+}
+else {
+    $BuildScope
+}
+$buildTargetPath = if ($resolvedBuildScope -eq 'Full') {
+    $solutionPath
+}
+else {
+    $coreProjectPath
+}
+
+if ($resolvedBuildScope -eq 'Full' -and -not $IsWindows) {
+    throw 'Full builds include Pscx.Win and are supported only on Windows. Use -BuildScope Core on this platform.'
+}
 
 function Write-Step {
     param([string] $Message)
@@ -148,7 +173,8 @@ function Set-ManifestVersion {
     param(
         [string] $Path,
         [string] $ModuleVersion,
-        [string] $Prerelease
+        [string] $Prerelease,
+        [string] $RequiredPowerShellVersion
     )
 
     $content = Get-Content -LiteralPath $Path -Raw
@@ -160,6 +186,12 @@ function Set-ManifestVersion {
         $content,
         '(?m)^(\s*ModuleVersion\s*=\s*)[''"][^''"]+[''"](?<suffix>.*)$',
         "`${1}'$ModuleVersion'`${suffix}",
+        1
+    )
+    $content = [regex]::Replace(
+        $content,
+        '(?m)^(\s*PowerShellVersion\s*=\s*)[''"][^''"]+[''"](?<suffix>.*)$',
+        "`${1}'$RequiredPowerShellVersion'`${suffix}",
         1
     )
 
@@ -198,8 +230,8 @@ function Invoke-Clean {
 }
 
 function Invoke-Restore {
-    Write-Step 'Restore'
-    Invoke-NativeCommand dotnet @('restore', $solutionPath, '--nologo')
+    Write-Step "Restore $resolvedBuildScope build"
+    Invoke-NativeCommand dotnet @('restore', $buildTargetPath, '--nologo')
 }
 
 function Get-MSBuildVersionArguments {
@@ -212,10 +244,10 @@ function Get-MSBuildVersionArguments {
 }
 
 function Invoke-Compile {
-    Write-Step "Compile $packageVersion"
+    Write-Step "Compile $packageVersion ($resolvedBuildScope)"
     $arguments = @(
         'build',
-        $solutionPath,
+        $buildTargetPath,
         '--configuration',
         $Configuration,
         '--no-restore',
@@ -248,14 +280,16 @@ function New-ModuleStage {
         Copy-RequiredItem (Join-Path $coreOutput $_) $moduleRoot
     }
 
-    @('Pscx.Win.dll', 'PscxWin.psd1', 'PscxWin.psm1') | ForEach-Object {
-        Copy-RequiredItem (Join-Path $windowsOutput $_) $moduleRoot
-    }
+    if ($resolvedBuildScope -eq 'Full') {
+        @('Pscx.Win.dll', 'PscxWin.psd1', 'PscxWin.psm1') | ForEach-Object {
+            Copy-RequiredItem (Join-Path $windowsOutput $_) $moduleRoot
+        }
 
-    Copy-MatchingItem $windowsOutput 'SevenZipSharp.*' $moduleRoot
-    Copy-MatchingItem $windowsOutput 'YamlDotNet.*' $moduleRoot
-    @('FormatData', 'Modules', 'TypeData') | ForEach-Object {
-        Copy-RequiredItem (Join-Path $windowsOutput $_) $moduleRoot
+        Copy-MatchingItem $windowsOutput 'SevenZipSharp.*' $moduleRoot
+        Copy-MatchingItem $windowsOutput 'YamlDotNet.*' $moduleRoot
+        @('FormatData', 'Modules', 'TypeData') | ForEach-Object {
+            Copy-RequiredItem (Join-Path $windowsOutput $_) $moduleRoot
+        }
     }
 
     $appsRoot = Join-Path $moduleRoot 'Apps'
@@ -282,11 +316,16 @@ function New-ModuleStage {
 
     Get-ChildItem -LiteralPath $moduleRoot -Recurse -Filter *.psd1 -File |
         ForEach-Object {
-            Set-ManifestVersion -Path $_.FullName -ModuleVersion $moduleVersion -Prerelease $manifestPrerelease
+            Set-ManifestVersion -Path $_.FullName -ModuleVersion $moduleVersion -Prerelease $manifestPrerelease `
+                -RequiredPowerShellVersion $powerShellMinimumVersion
         }
 }
 
 function Invoke-Help {
+    if ($resolvedBuildScope -ne 'Full') {
+        throw 'Generated legacy help requires the Windows-specific help project and is available only for Full builds.'
+    }
+
     if (-not (Test-Path -LiteralPath (Join-Path $moduleRoot 'Pscx.psd1'))) {
         New-ModuleStage
     }
@@ -329,6 +368,10 @@ function Invoke-Help {
 function Invoke-Test {
     param([switch] $All)
 
+    if ($resolvedBuildScope -ne 'Full') {
+        throw 'The current managed test project references Pscx.Win. Run it only with -BuildScope Full on Windows.'
+    }
+
     Write-Step $(if ($All) { 'Run full legacy managed test suite' } else { 'Run managed regression tests' })
     if (-not (Test-Path -LiteralPath (Join-Path $moduleRoot 'Pscx.psd1'))) {
         New-ModuleStage
@@ -367,7 +410,9 @@ function Invoke-Test {
 
 function Invoke-Package {
     New-ModuleStage
-    Invoke-Help
+    if ($resolvedBuildScope -eq 'Full') {
+        Invoke-Help
+    }
 
     Write-Step "Create Pscx-$packageVersion.zip"
     Remove-BuildDirectory $packageOutputPath
@@ -418,6 +463,9 @@ function Invoke-Validate {
         if ($data.ModuleVersion -ne [version]'0.0.0') {
             throw "Source manifest $(Get-RelativePath $manifest.FullName) must use the 0.0.0 build-time placeholder."
         }
+        if ($data.PowerShellVersion -ne [version]'0.0') {
+            throw "Source manifest $(Get-RelativePath $manifest.FullName) must use the 0.0 PowerShell-version placeholder."
+        }
     }
 
     $manifestPath = Join-Path $moduleRoot 'Pscx.psd1'
@@ -429,12 +477,23 @@ function Invoke-Validate {
     if ($manifest.Version -ne [version]$moduleVersion) {
         throw "Staged module version '$($manifest.Version)' does not match '$moduleVersion'."
     }
+    if ($manifest.PowerShellVersion -ne [version]$powerShellMinimumVersion) {
+        throw "Staged PowerShell requirement '$($manifest.PowerShellVersion)' does not match '$powerShellMinimumVersion'."
+    }
 
     if ($manifestPrerelease -and $manifest.PrivateData.PSData.Prerelease -ne $manifestPrerelease) {
         throw "Staged module prerelease '$($manifest.PrivateData.PSData.Prerelease)' does not match '$manifestPrerelease'."
     }
 
-    foreach ($assemblyName in 'Pscx.Core.dll', 'Pscx.dll', 'Pscx.Win.dll') {
+    $assemblyNames = @('Pscx.Core.dll', 'Pscx.dll')
+    if ($resolvedBuildScope -eq 'Full') {
+        $assemblyNames += 'Pscx.Win.dll'
+    }
+    elseif (Test-Path -LiteralPath (Join-Path $moduleRoot 'Pscx.Win.dll')) {
+        throw 'A Core package must not contain Pscx.Win.dll.'
+    }
+
+    foreach ($assemblyName in $assemblyNames) {
         $assemblyPath = Join-Path $moduleRoot $assemblyName
         $assemblyVersion = [System.Reflection.AssemblyName]::GetAssemblyName($assemblyPath).Version
         $fileInfo = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($assemblyPath)
@@ -460,19 +519,66 @@ function Invoke-Validate {
         throw "The packaged changelog has no $moduleVersion release heading."
     }
 
-    Invoke-NativeCommand pwsh @(
+    Invoke-NativeCommand $PowerShellPath @(
         '-NoLogo',
         '-NoProfile',
         '-NonInteractive',
         '-File',
         (Join-Path $repositoryRoot 'Tools/Test-PscxPackage.ps1'),
         '-ManifestPath',
-        $manifestPath
+        $manifestPath,
+        '-ExpectedBuildScope',
+        $resolvedBuildScope
     )
+}
+
+function Invoke-ImportTest {
+    $manifestPath = Join-Path $moduleRoot 'Pscx.psd1'
+    if (-not (Test-Path -LiteralPath $manifestPath)) {
+        throw "The staged package is missing: $manifestPath"
+    }
+
+    New-Item -ItemType Directory -Path $testResultsPath -Force | Out-Null
+    $versionLabel = if ($ExpectedPowerShellVersion) {
+        $ExpectedPowerShellVersion
+    }
+    else {
+        'host'
+    }
+    $platformLabel = if ($IsWindows) {
+        'windows'
+    }
+    elseif ($IsMacOS) {
+        'macos'
+    }
+    else {
+        'linux'
+    }
+    $resultsPath = Join-Path $testResultsPath "import-$platformLabel-pwsh-$versionLabel.json"
+
+    Write-Step "Test packaged import with PowerShell $versionLabel"
+    $arguments = @(
+        '-NoLogo',
+        '-NoProfile',
+        '-NonInteractive',
+        '-File',
+        (Join-Path $repositoryRoot 'Tools/Test-PscxPackage.ps1'),
+        '-ManifestPath',
+        $manifestPath,
+        '-ExpectedBuildScope',
+        $resolvedBuildScope,
+        '-ResultsPath',
+        $resultsPath
+    )
+    if ($ExpectedPowerShellVersion) {
+        $arguments += @('-ExpectedPowerShellVersion', $ExpectedPowerShellVersion)
+    }
+    Invoke-NativeCommand $PowerShellPath $arguments
 }
 
 function Invoke-Audit {
     Write-Step 'Audit dependencies'
+    Invoke-NativeCommand dotnet @('restore', $solutionPath, '--nologo')
     Invoke-NativeCommand dotnet @(
         'package',
         'list',
@@ -512,6 +618,16 @@ if ($artifactsRoot.TrimEnd('\', '/') -in $protectedRepositoryPaths) {
 }
 
 $semanticVersion = [string]$versionDocument.Project.PropertyGroup.PscxVersionPrefix
+$powerShellMinimumVersion = [string]$versionDocument.Project.PropertyGroup.PowerShellMinimumVersion
+$powerShellSdkVersion = [string]$versionDocument.Project.PropertyGroup.PowerShellSdkVersion
+$parsedPowerShellVersion = $null
+if (-not [version]::TryParse($powerShellMinimumVersion, [ref]$parsedPowerShellVersion)) {
+    throw "PowerShellMinimumVersion '$powerShellMinimumVersion' is invalid."
+}
+$parsedPowerShellVersion = $null
+if (-not [version]::TryParse($powerShellSdkVersion, [ref]$parsedPowerShellVersion)) {
+    throw "PowerShellSdkVersion '$powerShellSdkVersion' is invalid."
+}
 $versionMatch = [regex]::Match(
     $semanticVersion,
     '^(?<module>\d+\.\d+\.\d+)(?:-(?<prerelease>[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$'
@@ -560,7 +676,12 @@ if ($ExpectedTag) {
 
 $expandedTasks = foreach ($item in $Task) {
     if ($item -eq 'CI') {
-        'Clean', 'Restore', 'Compile', 'Test', 'Package', 'Validate'
+        if ($resolvedBuildScope -eq 'Full') {
+            'Clean', 'Restore', 'Compile', 'Test', 'Package', 'Validate'
+        }
+        else {
+            'Clean', 'Restore', 'Compile', 'Package', 'Validate'
+        }
     }
     else {
         $item
@@ -573,6 +694,8 @@ Write-Host "Assembly version      : $moduleVersion.0"
 Write-Host "File version          : $moduleVersion.$BuildNumber"
 Write-Host "Informational version : $informationalVersion"
 Write-Host "Artifacts             : $artifactsRoot"
+Write-Host "Build scope           : $resolvedBuildScope"
+Write-Host "PowerShell support    : $powerShellMinimumVersion - $powerShellSdkVersion"
 
 $validated = $false
 foreach ($item in $expandedTasks) {
@@ -583,6 +706,7 @@ foreach ($item in $expandedTasks) {
         Help { Invoke-Help }
         Test { Invoke-Test }
         TestAll { Invoke-Test -All }
+        ImportTest { Invoke-ImportTest }
         Package { Invoke-Package }
         Validate {
             Invoke-Validate

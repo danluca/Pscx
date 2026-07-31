@@ -222,7 +222,7 @@ The maintainer controls the semantic version. CI controls the unique build ident
 #### Streamline test execution
 
 - [ ] Make the build entry point execute the unified test architecture defined in Phase 2.
-- [ ] Build and package once per relevant runtime/platform, then run appropriate tests against that artifact rather than rebuilding separately for every test command.
+- [x] Build and package once per relevant runtime/platform, then run appropriate tests against that artifact rather than rebuilding separately for every test command.
 - [x] Run fast, platform-neutral checks early.
 - [ ] Run Windows-only tests only on Windows and report intentional skips clearly.
 - [ ] Run packaged-module import and public-contract tests on Windows, Linux, and macOS.
@@ -249,17 +249,17 @@ The maintainer controls the semantic version. CI controls the unique build ident
 
 ### 2.1 CI matrix
 
-- [ ] Replace the Windows-only job with a matrix covering:
+- [x] Replace the Windows-only job with a matrix covering:
   - Windows;
   - Ubuntu;
   - macOS.
-- [ ] Build the cross-platform projects on all three operating systems.
-- [ ] Build Windows-specific projects on Windows.
-- [ ] Test the minimum supported PowerShell version.
-- [ ] Test the current stable PowerShell version.
-- [ ] Capture module import time on Windows, Linux, and macOS from clean packaged-module test jobs.
+- [x] Build the cross-platform projects on all three operating systems.
+- [x] Build Windows-specific projects on Windows.
+- [x] Test the minimum supported PowerShell version.
+- [x] Test the current stable PowerShell version.
+- [x] Capture module import time on Windows, Linux, and macOS from clean packaged-module test jobs.
 - [ ] Optionally test the latest preview without making preview failures release-blocking.
-- [ ] Cache NuGet dependencies without caching build output.
+- [x] Cache NuGet dependencies without caching build output.
 
 ### 2.2 Unified test architecture
 

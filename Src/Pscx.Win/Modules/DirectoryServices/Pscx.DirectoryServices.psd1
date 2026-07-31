@@ -1,5 +1,6 @@
 @{
 ModuleVersion    = '0.0.0' # Stamped from Directory.Build.props during packaging.
+PowerShellVersion = '0.0' # Stamped from Directory.Build.props during packaging.
     FormatsToProcess = 'Pscx.DirectoryServices.Format.ps1xml'	    
     TypesToProcess   = 'Pscx.DirectoryServices.Type.ps1xml'
 }

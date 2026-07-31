@@ -18,9 +18,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-test-package:
-    runs-on: windows-latest
+  matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      build: ${{ steps.define.outputs.build }}
+      import: ${{ steps.define.outputs.import }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Define CI matrix
+        id: define
+        shell: pwsh
+        run: |
+          "build=$(./Tools/Get-CiMatrix.ps1 -Kind Build)" >> $env:GITHUB_OUTPUT
+          "import=$(./Tools/Get-CiMatrix.ps1 -Kind Import)" >> $env:GITHUB_OUTPUT
+
+  build:
+    needs: matrix
+    name: Build (${{ matrix.platform }}, ${{ matrix.buildScope }})
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.matrix.outputs.build) }}
 
     steps:
       - name: Checkout
@@ -33,32 +56,127 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: Cache NuGet packages
+        uses: actions/cache@v5
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('global.json', 'Directory.Build.props', 'Src/**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Install PowerShell ${{ matrix.powerShellVersion }}
+        shell: pwsh
+        run: >-
+          dotnet tool install PowerShell
+          --tool-path .tools/powershell
+          --version ${{ matrix.powerShellVersion }}
+
       - name: Build, test, package, and validate
         timeout-minutes: 25
         shell: pwsh
-        run: >-
-          ./build.ps1
-          -Task CI
-          -Configuration Release
-          -BuildNumber ${{ github.run_number }}
-          -CommitSha ${{ github.sha }}
+        run: |
+          $powerShell = Join-Path $PWD '${{ matrix.powerShellExecutable }}'
+          & $powerShell -NoLogo -NoProfile -NonInteractive -File ./build.ps1 `
+            -Task CI `
+            -BuildScope '${{ matrix.buildScope }}' `
+            -Configuration Release `
+            -BuildNumber ${{ github.run_number }} `
+            -CommitSha '${{ github.sha }}' `
+            -PowerShellPath $powerShell
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
 
       - name: Upload package
         if: ${{ always() }}
         timeout-minutes: 5
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: pscx-${{ github.run_number }}
+          name: pscx-package-${{ matrix.platform }}
           path: artifacts/packages/*.zip
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload managed test results
+        if: ${{ always() && matrix.buildScope == 'Full' }}
+        timeout-minutes: 5
+        uses: actions/upload-artifact@v7
+        with:
+          name: managed-test-results-${{ matrix.platform }}
+          path: artifacts/test-results/**
           if-no-files-found: warn
           retention-days: 14
 
-      - name: Upload test results
+  packaged-import:
+    needs:
+      - matrix
+      - build
+    name: Import (${{ matrix.platform }}, PowerShell ${{ matrix.powerShellVersion }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.matrix.outputs.import) }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v5
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('global.json', 'Directory.Build.props', 'Src/**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Download ${{ matrix.platform }} package
+        uses: actions/download-artifact@v6
+        with:
+          name: pscx-package-${{ matrix.platform }}
+          path: artifacts/download
+
+      - name: Expand package
+        shell: pwsh
+        run: |
+          $archives = @(Get-ChildItem artifacts/download -Filter 'Pscx-*.zip' -File)
+          if ($archives.Count -ne 1) {
+            throw "Expected one PSCX archive; found $($archives.Count)."
+          }
+          Expand-Archive -LiteralPath $archives[0].FullName -DestinationPath artifacts/module
+
+      - name: Install PowerShell ${{ matrix.powerShellVersion }}
+        shell: pwsh
+        run: >-
+          dotnet tool install PowerShell
+          --tool-path .tools/powershell
+          --version ${{ matrix.powerShellVersion }}
+
+      - name: Test clean packaged import
+        shell: pwsh
+        run: |
+          $powerShell = Join-Path $PWD '${{ matrix.powerShellExecutable }}'
+          & $powerShell -NoLogo -NoProfile -NonInteractive -File ./build.ps1 `
+            -Task ImportTest `
+            -BuildScope '${{ matrix.buildScope }}' `
+            -ArtifactsPath artifacts `
+            -PowerShellPath $powerShell `
+            -ExpectedPowerShellVersion '${{ matrix.powerShellVersion }}'
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+
+      - name: Upload import timing
         if: ${{ always() }}
         timeout-minutes: 5
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: test-results-${{ github.run_number }}
-          path: artifacts/test-results/**
-          if-no-files-found: warn
+          name: import-${{ matrix.platform }}-pwsh-${{ matrix.powerShellLabel }}
+          path: artifacts/test-results/*.json
+          if-no-files-found: error
           retention-days: 14

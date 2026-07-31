@@ -1,5 +1,6 @@
 @{
 ModuleVersion    = '0.0.0' # Stamped from Directory.Build.props during packaging.
+PowerShellVersion = '0.0' # Stamped from Directory.Build.props during packaging.
     ModuleToProcess  = 'Pscx.CD.psm1'
     FunctionsToExport = @(
         'Set-PscxLocation'

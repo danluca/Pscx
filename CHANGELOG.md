@@ -8,6 +8,8 @@
   vulnerable transitive dependency.
 * Centralized version identity and replaced the legacy desktop workflow and
   post-build packaging scripts with one local/CI build entry point.
+* Added Windows, Ubuntu, and macOS CI builds plus clean packaged-module import
+  checks on the minimum and current PowerShell 7.6 versions.
 
 ## 3.7.0 - June 2025
 * Upgraded to .NET 9.0, PowerShell Core 7.5

@@ -76,7 +76,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.2" />
     <PackageReference Include="Microsoft.NETCore.Platforms" Version="7.0.4" />
-    <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.6.4" />
+    <PackageReference Include="Microsoft.PowerShell.SDK" Version="$(PowerShellSdkVersion)" />
     <PackageReference Include="Squid-Box.SevenZipSharp" Version="1.6.2.24">
       <GeneratePathProperty>True</GeneratePathProperty>
     </PackageReference>

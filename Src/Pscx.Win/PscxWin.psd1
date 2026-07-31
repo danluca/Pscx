@@ -4,8 +4,8 @@
     CompanyName        = 'PowerShell Core Community Extensions'
     Copyright          = 'Copyright PowerShell Core Community Extensions Team 2006 - 2023.'
     Description        = 'PowerShell Core Community Extensions (PSCX) module which implements Windows OS specific set of Cmdlets.'
-    PowerShellVersion  = '7.2'
-    CLRVersion         = '6.0'
+    # Stamped from Directory.Build.props when the package is assembled.
+    PowerShellVersion  = '0.0'
     # Stamped from Directory.Build.props when the package is assembled.
     ModuleVersion      = '0.0.0'
     RequiredAssemblies = 'Pscx.Win.dll'

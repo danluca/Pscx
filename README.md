@@ -19,11 +19,9 @@ The customizations made in this fork include:
 - a GitHub Actions build.
 
 > [!NOTE]
-> The development projects currently target .NET 10 and PowerShell SDK 7.6.4,
-> while some module manifests still contain the older PowerShell 7.2 metadata.
-> Aligning the compatibility contract, build, manifests, and CI is a priority in
-> the modernization roadmap. Published releases may have different requirements
-> from the current development branch.
+> The 3.8 development branch requires PowerShell 7.6 LTS and .NET 10. The
+> repository currently builds against PowerShell SDK 7.6.4. Published releases
+> may have different requirements from the current development branch.
 
 ## Release notes
 
@@ -95,6 +93,11 @@ their prerequisites already exist:
 ./build.ps1 -Task Audit
 ```
 
+`-BuildScope Auto` selects a Full build on Windows and a Core build elsewhere.
+Use `-BuildScope Full` for the complete Windows package or `-BuildScope Core`
+for the cross-platform projects and package. Full builds are intentionally
+Windows-only.
+
 Build output is written beneath the ignored `artifacts` directory. Pass
 `-ArtifactsPath` to use another directory. `Test` currently runs the reliable
 NodaTime arithmetic regression slice. `TestAll` exposes the full legacy NUnit
@@ -107,6 +110,13 @@ The maintainer-controlled semantic version is `PscxVersionPrefix` in
 number in `FileVersion`, and adds the run number plus short commit SHA to
 informational metadata. Source manifests intentionally contain `0.0.0`; staged
 package manifests are stamped without rewriting tracked source files.
+
+The minimum supported PowerShell and build SDK versions are also centralized in
+`Directory.Build.props`. CI builds and packages on Windows, Ubuntu, and macOS,
+then imports each platform package in fresh jobs using both the minimum and
+current PowerShell versions. Each import job publishes command counts, warnings,
+and import duration as JSON. NuGet packages are cached; compiled and packaged
+output is not.
 
 ### Compiled C# cmdlets
 

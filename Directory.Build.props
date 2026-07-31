@@ -6,6 +6,8 @@
     -->
     <PscxVersionPrefix>3.8.0</PscxVersionPrefix>
     <PscxVersionCore>$([System.Text.RegularExpressions.Regex]::Match('$(PscxVersionPrefix)', '^\d+\.\d+\.\d+').Value)</PscxVersionCore>
+    <PowerShellMinimumVersion>7.6.0</PowerShellMinimumVersion>
+    <PowerShellSdkVersion>7.6.4</PowerShellSdkVersion>
 
     <PscxBuildNumber Condition="'$(PscxBuildNumber)' == ''">0</PscxBuildNumber>
     <PscxCommitSha Condition="'$(PscxCommitSha)' == ''">local</PscxCommitSha>

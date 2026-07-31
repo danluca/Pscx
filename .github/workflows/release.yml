@@ -57,7 +57,7 @@ jobs:
       - name: Upload release candidate
         if: ${{ always() }}
         timeout-minutes: 5
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: pscx-release-${{ github.run_number }}
           path: artifacts/packages/*.zip

@@ -297,7 +297,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.Platforms" Version="7.0.4" />
-    <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.6.4" />
+    <PackageReference Include="Microsoft.PowerShell.SDK" Version="$(PowerShellSdkVersion)" />
   </ItemGroup>
 
   <ItemGroup>
