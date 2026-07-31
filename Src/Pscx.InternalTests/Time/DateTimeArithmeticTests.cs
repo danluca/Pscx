@@ -7,7 +7,7 @@ using PscxLocalDateTime = Pscx.Time.LocalDateTime;
 using PscxOffsetDateTime = Pscx.Time.OffsetDateTime;
 using PscxZonedDateTime = Pscx.Time.ZonedDateTime;
 
-namespace PscxUnitTests.Time {
+namespace PscxInternalTests.Time {
     [TestFixture]
     public sealed class DateTimeArithmeticTests {
         [TestCase(1)]

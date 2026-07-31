@@ -82,13 +82,16 @@ Use the repository entry point from any working directory:
 ./build.ps1 -Task CI
 ```
 
-`CI` performs a clean restore, compile, managed regression test, package, help
-generation, and package validation. Individual operations can also be run when
-their prerequisites already exist:
+`CI` performs a clean restore, compile, package/help generation, the unified
+managed and Pester test suites, coverage collection, and package validation.
+`TestPipeline` runs the same release-blocking path explicitly. Individual
+operations can also be run when their prerequisites already exist:
 
 ```powershell
+./build.ps1 -Task TestPipeline
 ./build.ps1 -Task Restore,Compile
 ./build.ps1 -Task Test
+./build.ps1 -Task Pester
 ./build.ps1 -Task Package,Validate
 ./build.ps1 -Task Audit
 ```
@@ -99,10 +102,15 @@ for the cross-platform projects and package. Full builds are intentionally
 Windows-only.
 
 Build output is written beneath the ignored `artifacts` directory. Pass
-`-ArtifactsPath` to use another directory. `Test` currently runs the reliable
-NodaTime arithmetic regression slice. `TestAll` exposes the full legacy NUnit
-suite, whose environment-dependent tests remain scheduled for classification
-and migration in Phase 2.
+`-ArtifactsPath` to use another directory. `Test` runs the cross-platform,
+pure-logic `Pscx.InternalTests` project. `Pester` starts a clean PowerShell
+process and tests the staged package. Their TRX, NUnit, Cobertura, framework
+summaries, and combined status are written beneath `artifacts/test-results`.
+The pinned Pester version and separate coverage gates are defined in
+`Tests/TestPolicy.psd1`; Pester is saved beneath ignored `.tools` output and is
+not redistributed. `TestAll` exposes the non-release-blocking
+`Pscx.LegacyTests` suite while its remaining fixtures are migrated or removed.
+See `Tests/MANAGED_TEST_INVENTORY.md` for their classifications.
 
 The maintainer-controlled semantic version is `PscxVersionPrefix` in
 `Directory.Build.props`. Local stable builds use that value directly. CI adds

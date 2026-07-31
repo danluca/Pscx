@@ -30,6 +30,20 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: Cache NuGet packages
+        uses: actions/cache@v5
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('global.json', 'Directory.Build.props', 'Src/**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Cache PowerShell test modules
+        uses: actions/cache@v5
+        with:
+          path: .tools/modules
+          key: ${{ runner.os }}-pwsh-tests-${{ hashFiles('Tests/TestPolicy.psd1') }}
+
       - name: Build stable release candidate
         if: ${{ github.ref_type == 'tag' }}
         timeout-minutes: 25
@@ -62,4 +76,14 @@ jobs:
           name: pscx-release-${{ github.run_number }}
           path: artifacts/packages/*.zip
           if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload release test results
+        if: ${{ always() }}
+        timeout-minutes: 5
+        uses: actions/upload-artifact@v7
+        with:
+          name: pscx-release-tests-${{ github.run_number }}
+          path: artifacts/test-results/**
+          if-no-files-found: warn
           retention-days: 30

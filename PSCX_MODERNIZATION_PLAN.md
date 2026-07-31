@@ -221,12 +221,12 @@ The maintainer controls the semantic version. CI controls the unique build ident
 
 #### Streamline test execution
 
-- [ ] Make the build entry point execute the unified test architecture defined in Phase 2.
+- [x] Make the build entry point execute the unified test architecture defined in Phase 2.
 - [x] Build and package once per relevant runtime/platform, then run appropriate tests against that artifact rather than rebuilding separately for every test command.
 - [x] Run fast, platform-neutral checks early.
 - [ ] Run Windows-only tests only on Windows and report intentional skips clearly.
-- [ ] Run packaged-module import and public-contract tests on Windows, Linux, and macOS.
-- [ ] Publish one overall pass/fail status with separate Pester and managed-test diagnostics.
+- [x] Run packaged-module import and public-contract tests on Windows, Linux, and macOS.
+- [x] Publish one overall pass/fail status with separate Pester and managed-test diagnostics.
 - [x] Make the exact CI test command reproducible locally without GitHub-specific environment variables.
 
 ### Exit criteria
@@ -286,7 +286,7 @@ Both suites run through one repository command, produce standard test-result fil
 #### Migration tasks
 
 - [x] Configure an NUnit test adapter so the existing managed tests are discovered and fail the build when no expected tests run.
-- [ ] Create one cross-platform repository command such as `./build.ps1 -Test` that:
+- [x] Create one cross-platform repository command, `./build.ps1 -Task TestPipeline`, that:
   1. restores and builds;
   2. packages PSCX into an isolated test directory;
   3. runs the .NET unit tests;
@@ -294,24 +294,24 @@ Both suites run through one repository command, produce standard test-result fil
   5. runs Pester against the packaged module;
   6. emits standard test and coverage results;
   7. returns a nonzero exit code if either suite fails.
-- [ ] Rename/restructure `Pscx.UnitTests` so its limited internal-unit purpose is obvious.
-- [ ] Inventory every existing NUnit test and classify it as:
+- [x] Rename/restructure `Pscx.UnitTests` so its limited internal-unit purpose is obvious.
+- [x] Inventory every existing NUnit test and classify it as:
   - migrate to Pester because it tests command/module behavior;
   - retain as a .NET unit test because it tests a pure algorithm;
   - remove because the corresponding feature no longer exists or will be retired.
 - [ ] Migrate tests that directly instantiate cmdlets or depend on a custom PowerShell harness to packaged-module Pester tests.
 - [ ] Do not test the same behavior in both suites unless it is a deliberate high-risk regression case.
 - [ ] Categorize Windows-only tests so they skip cleanly and visibly on other platforms.
-- [ ] Publish both suites as one CI test summary while preserving framework-specific diagnostic files.
-- [ ] Collect PowerShell coverage from Pester and managed-code coverage from the .NET test runner.
-- [ ] Establish separate realistic coverage thresholds; do not combine unlike line-coverage percentages into a misleading single number.
+- [x] Publish both suites as one CI test summary while preserving framework-specific diagnostic files.
+- [x] Collect PowerShell coverage from Pester and managed-code coverage from the .NET test runner.
+- [x] Establish separate realistic coverage thresholds; do not combine unlike line-coverage percentages into a misleading single number.
 
 ### 2.3 Pester public-contract suite
 
 **Tracking:** [#22 Establish packaged-module Pester tests](https://github.com/danluca/Pscx/issues/22)
 
-- [ ] Replace `Tests/ItIsLoneyHere-NeedSomePesterTests.txt` with a real Pester test project.
-- [ ] Test importing from the final packaged directory, not only build output.
+- [x] Replace `Tests/ItIsLoneyHere-NeedSomePesterTests.txt` with a real Pester test project.
+- [x] Test importing from the final packaged directory, not only build output.
 - [ ] Verify every declared export resolves after import.
 - [ ] Verify no undeclared function, cmdlet, provider, or alias leaks from the module.
 - [ ] Verify `Get-Help` is available for every public command.
@@ -325,11 +325,11 @@ Both suites run through one repository command, produce standard test-result fil
 
 ### 2.4 Focused .NET unit suite
 
-- [ ] Retain tests for pure algorithms and internal value objects only.
-- [ ] Add regression coverage for date/time forwarding methods.
+- [x] Retain tests for pure algorithms and internal value objects only.
+- [x] Add regression coverage for date/time forwarding methods.
 - [ ] Test unit conversion independently of formatting and PowerShell parameter binding.
 - [ ] Test encoding, hashing, archive safety, and parser primitives independently where retained.
-- [ ] Avoid environmental dependencies such as installed modules, profiles, user PATH, network services, AD, SQL Server, or desktop state.
+- [x] Avoid environmental dependencies such as installed modules, profiles, user PATH, network services, AD, SQL Server, or desktop state.
 - [ ] Move environmental and PowerShell-host-dependent cases to Pester.
 
 ### 2.5 Static validation

@@ -7,6 +7,8 @@ param(
         'Help',
         'Test',
         'TestAll',
+        'Pester',
+        'TestPipeline',
         'ImportTest',
         'Package',
         'Validate',
@@ -45,9 +47,11 @@ $PSStyle.OutputRendering = [System.Management.Automation.OutputRendering]::Plain
 
 $repositoryRoot = $PSScriptRoot
 $solutionPath = Join-Path $repositoryRoot 'Src/Pscx.sln'
-$coreProjectPath = Join-Path $repositoryRoot 'Src/Pscx/Pscx.csproj'
-$testProjectPath = Join-Path $repositoryRoot 'Src/Pscx.UnitTests/Pscx.UnitTests.csproj'
+$coreProjectPath = Join-Path $repositoryRoot 'Src/Pscx.InternalTests/Pscx.InternalTests.csproj'
+$internalTestProjectPath = Join-Path $repositoryRoot 'Src/Pscx.InternalTests/Pscx.InternalTests.csproj'
+$legacyTestProjectPath = Join-Path $repositoryRoot 'Src/Pscx.UnitTests/Pscx.LegacyTests.csproj'
 $versionFilePath = Join-Path $repositoryRoot 'Directory.Build.props'
+$testPolicyFilePath = Join-Path $repositoryRoot 'Tests/TestPolicy.psd1'
 $artifactsRoot = [System.IO.Path]::GetFullPath($ArtifactsPath)
 $moduleRoot = Join-Path $artifactsRoot 'module/Pscx'
 $helpOutputPath = Join-Path $artifactsRoot 'help'
@@ -366,13 +370,68 @@ function Invoke-Help {
 }
 
 function Invoke-Test {
-    param([switch] $All)
+    Write-Step 'Run cross-platform internal tests with managed-code coverage'
+    $managedResultsPath = Join-Path $testResultsPath 'managed'
+    Remove-BuildDirectory $managedResultsPath
+    New-Item -ItemType Directory -Path $managedResultsPath -Force | Out-Null
+    $arguments = @(
+        'test',
+        $internalTestProjectPath,
+        '--configuration',
+        $Configuration,
+        '--no-build',
+        '--no-restore',
+        '--nologo',
+        '--results-directory',
+        $managedResultsPath,
+        '--logger',
+        'trx;LogFileName=Pscx.InternalTests.trx',
+        '--collect',
+        'XPlat Code Coverage'
+    ) + (Get-MSBuildVersionArguments)
 
+    Invoke-NativeCommand dotnet $arguments
+
+    $coverageFiles = @(Get-ChildItem -LiteralPath $managedResultsPath -Recurse -Filter coverage.cobertura.xml -File)
+    $coverageGroups = @($coverageFiles | Group-Object { (Get-FileHash -LiteralPath $_.FullName).Hash })
+    if ($coverageGroups.Count -ne 1) {
+        throw "Expected one distinct managed coverage report; found $($coverageGroups.Count)."
+    }
+    Copy-Item -LiteralPath $coverageGroups[0].Group[0].FullName `
+        -Destination (Join-Path $testResultsPath 'Pscx.Managed.coverage.xml') -Force
+
+    [xml] $testResult = Get-Content -LiteralPath (Join-Path $managedResultsPath 'Pscx.InternalTests.trx') -Raw
+    [xml] $coverage = Get-Content -LiteralPath (Join-Path $testResultsPath 'Pscx.Managed.coverage.xml') -Raw
+    $counters = $testResult.TestRun.ResultSummary.Counters
+    $coveragePercent = 100 * [decimal]::Parse(
+        [string]$coverage.coverage.'line-rate',
+        [System.Globalization.CultureInfo]::InvariantCulture
+    )
+    $summary = [ordered]@{
+        Framework = '.NET/NUnit'
+        TotalCount = [int]$counters.total
+        PassedCount = [int]$counters.passed
+        FailedCount = [int]$counters.failed
+        SkippedCount = [int]$counters.notExecuted
+        CoveragePercent = [Math]::Round($coveragePercent, 3)
+        CoverageMinimumPercent = [decimal]$testPolicy.ManagedCoverageMinimumPercent
+        TestResultPath = Join-Path $managedResultsPath 'Pscx.InternalTests.trx'
+        CoveragePath = Join-Path $testResultsPath 'Pscx.Managed.coverage.xml'
+    }
+    $summary | ConvertTo-Json -Depth 4 |
+        Set-Content -LiteralPath (Join-Path $testResultsPath 'Pscx.Managed.summary.json') -Encoding utf8
+
+    if ($coveragePercent -lt [decimal]$testPolicy.ManagedCoverageMinimumPercent) {
+        throw "Managed coverage $coveragePercent% is below the $($testPolicy.ManagedCoverageMinimumPercent)% minimum."
+    }
+}
+
+function Invoke-LegacyTest {
     if ($resolvedBuildScope -ne 'Full') {
-        throw 'The current managed test project references Pscx.Win. Run it only with -BuildScope Full on Windows.'
+        throw 'The legacy managed tests reference Pscx.Win and can run only with -BuildScope Full on Windows.'
     }
 
-    Write-Step $(if ($All) { 'Run full legacy managed test suite' } else { 'Run managed regression tests' })
+    Write-Step 'Run full legacy managed test suite'
     if (-not (Test-Path -LiteralPath (Join-Path $moduleRoot 'Pscx.psd1'))) {
         New-ModuleStage
     }
@@ -384,7 +443,7 @@ function Invoke-Test {
     New-Item -ItemType Directory -Path $testResultsPath -Force | Out-Null
     $arguments = @(
         'test',
-        $testProjectPath,
+        $legacyTestProjectPath,
         '--configuration',
         $Configuration,
         '--no-build',
@@ -393,19 +452,63 @@ function Invoke-Test {
         '--results-directory',
         $testResultsPath,
         '--logger',
-        'trx;LogFileName=Pscx.UnitTests.trx'
+        'trx;LogFileName=Pscx.LegacyTests.trx'
     ) + (Get-MSBuildVersionArguments)
 
-    if (-not $All) {
-        # Phase 2 will classify/migrate the environment-dependent legacy tests.
-        # Until then, CI runs the stable pure-logic regression slice.
-        $arguments += @(
-            '--filter',
-            'FullyQualifiedName~PscxUnitTests.Time.DateTimeArithmeticTests'
-        )
+    Invoke-NativeCommand dotnet $arguments
+}
+
+function Invoke-PesterTest {
+    Write-Step 'Run packaged-module Pester tests with PowerShell coverage'
+    Invoke-NativeCommand $PowerShellPath @(
+        '-NoLogo',
+        '-NoProfile',
+        '-NonInteractive',
+        '-File',
+        (Join-Path $repositoryRoot 'Tools/Invoke-PscxPester.ps1'),
+        '-ModulePath',
+        $moduleRoot,
+        '-BuildScope',
+        $resolvedBuildScope,
+        '-ResultsPath',
+        $testResultsPath
+    )
+}
+
+function Invoke-UnifiedTest {
+    Write-Step 'Run unified release-blocking test suites'
+    New-Item -ItemType Directory -Path $testResultsPath -Force | Out-Null
+    $outcomes = [ordered]@{}
+    $failures = [System.Collections.Generic.List[string]]::new()
+
+    foreach ($suite in @(
+        [ordered]@{ Name = 'Managed'; Action = { Invoke-Test } },
+        [ordered]@{ Name = 'Pester'; Action = { Invoke-PesterTest } }
+    )) {
+        try {
+            & $suite.Action
+            $outcomes[$suite.Name] = [ordered]@{ Status = 'Passed'; Error = $null }
+        }
+        catch {
+            $message = $_.Exception.Message
+            $outcomes[$suite.Name] = [ordered]@{ Status = 'Failed'; Error = $message }
+            $failures.Add("$($suite.Name): $message")
+            Write-Error "$($suite.Name) suite failed: $message" -ErrorAction Continue
+        }
     }
 
-    Invoke-NativeCommand dotnet $arguments
+    $summary = [ordered]@{
+        Status = if ($failures.Count -eq 0) { 'Passed' } else { 'Failed' }
+        BuildScope = $resolvedBuildScope
+        PowerShellVersion = $PSVersionTable.PSVersion.ToString()
+        Suites = $outcomes
+    }
+    $summary | ConvertTo-Json -Depth 5 |
+        Set-Content -LiteralPath (Join-Path $testResultsPath 'Pscx.TestSummary.json') -Encoding utf8
+
+    if ($failures.Count -gt 0) {
+        throw "Unified tests failed. $($failures -join ' | ')"
+    }
 }
 
 function Invoke-Package {
@@ -429,7 +532,8 @@ function Invoke-Validate {
         'Src/Pscx/Pscx.csproj',
         'Src/Pscx.Core/Pscx.Core.csproj',
         'Src/Pscx.Help/Pscx.Help.csproj',
-        'Src/Pscx.UnitTests/Pscx.UnitTests.csproj',
+        'Src/Pscx.InternalTests/Pscx.InternalTests.csproj',
+        'Src/Pscx.UnitTests/Pscx.LegacyTests.csproj',
         'Src/Pscx.Win/Pscx.Win.csproj',
         'Src/AssemblyInfo.Shared.cs',
         'Src/Pscx.Core/Properties/PscxAssemblyInfo.cs',
@@ -602,6 +706,7 @@ function Invoke-PublishPrep {
 }
 
 [xml] $versionDocument = Get-Content -LiteralPath $versionFilePath -Raw
+$testPolicy = Import-PowerShellDataFile -LiteralPath $testPolicyFilePath
 $artifactPathRoot = [System.IO.Path]::GetPathRoot($artifactsRoot).TrimEnd('\', '/')
 if ($artifactsRoot.TrimEnd('\', '/') -eq $artifactPathRoot) {
     throw "ArtifactsPath cannot be a filesystem root: $artifactsRoot"
@@ -675,13 +780,8 @@ if ($ExpectedTag) {
 }
 
 $expandedTasks = foreach ($item in $Task) {
-    if ($item -eq 'CI') {
-        if ($resolvedBuildScope -eq 'Full') {
-            'Clean', 'Restore', 'Compile', 'Test', 'Package', 'Validate'
-        }
-        else {
-            'Clean', 'Restore', 'Compile', 'Package', 'Validate'
-        }
+    if ($item -in 'CI', 'TestPipeline') {
+        'Clean', 'Restore', 'Compile', 'Package', 'UnifiedTest', 'Validate'
     }
     else {
         $item
@@ -705,7 +805,9 @@ foreach ($item in $expandedTasks) {
         Compile { Invoke-Compile }
         Help { Invoke-Help }
         Test { Invoke-Test }
-        TestAll { Invoke-Test -All }
+        TestAll { Invoke-LegacyTest }
+        Pester { Invoke-PesterTest }
+        UnifiedTest { Invoke-UnifiedTest }
         ImportTest { Invoke-ImportTest }
         Package { Invoke-Package }
         Validate {

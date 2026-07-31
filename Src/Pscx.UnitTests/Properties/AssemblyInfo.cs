@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Pscx_UnitTests")]
+[assembly: AssemblyTitle("Pscx_LegacyTests")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Hill Family")]
-[assembly: AssemblyProduct("Pscx_UnitTests")]
+[assembly: AssemblyProduct("Pscx_LegacyTests")]
 [assembly: AssemblyCopyright("Copyright © Hill Family 2006")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

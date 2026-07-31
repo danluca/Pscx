@@ -3,7 +3,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <OutputType>Library</OutputType>
     <RootNamespace>PscxUnitTests</RootNamespace>
-    <AssemblyName>PscxUnitTests</AssemblyName>
+    <AssemblyName>PscxLegacyTests</AssemblyName>
     <OldToolsVersion>3.5</OldToolsVersion>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>

@@ -10,6 +10,11 @@
   post-build packaging scripts with one local/CI build entry point.
 * Added Windows, Ubuntu, and macOS CI builds plus clean packaged-module import
   checks on the minimum and current PowerShell 7.6 versions.
+* Established one release-blocking managed/Pester test pipeline with separate
+  standard result files, managed and PowerShell coverage, and an aggregate
+  status.
+* Split pure logic tests into `Pscx.InternalTests`, classified the remaining
+  legacy fixtures, and removed a non-reproducible external lab fixture.
 
 ## 3.7.0 - June 2025
 * Upgraded to .NET 9.0, PowerShell Core 7.5
