@@ -9,6 +9,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Pscx\Pscx.csproj" />
+    <ProjectReference Include="..\Pscx.Win\Pscx.Win.csproj"
+                      Condition="'$(PscxBuildScope)' == 'Full'" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PscxBuildScope)' != 'Full'">
+    <Compile Remove="Windows\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>

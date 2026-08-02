@@ -1,45 +1,37 @@
-# Managed test inventory
+# Test ownership inventory
 
-This inventory applies the ownership rules in Phase 2.2 of the modernization
-plan. It records the intended destination of the pre-existing NUnit fixtures;
-it does not claim that every migration has been completed.
+Phase 2 retired `Pscx.LegacyTests` and its custom in-process PowerShell host.
+Every active test now has one owner based on the behavior it exercises.
 
-## Retained in `Pscx.InternalTests`
+## `Pscx.InternalTests`
 
-| Fixture | Tests | Reason |
-| --- | ---: | --- |
-| `Time/DateTimeArithmeticTests.cs` | 14 | Pure date/time forwarding and transition logic |
-| `SimpleUnits/LengthTests.cs` | 4 | Pure unit/value-object behavior |
+The NUnit project owns deterministic implementation logic that does not need a
+PowerShell session:
 
-## Retain after isolation from the legacy project
+- date/time forwarding, arithmetic, and transition behavior;
+- unit value objects and unit conversion;
+- encoding-name resolution;
+- binary parser positioning, strings, and bit primitives;
+- Windows dynamic database type generation and row mapping, conditionally
+  compiled only for `Full` builds.
 
-| Fixture | Tests | Required follow-up |
-| --- | ---: | --- |
-| `Database/DataTypeSetterTest.cs` | 2 | Move to a Windows-targeted internal test project |
-| `Database/TypeBuilderTest.cs` | 3 | Move to a Windows-targeted internal test project |
+The project must not depend on profiles, installed modules, user PATH, network
+services, Active Directory, SQL Server, or desktop state.
 
-## Migrate to packaged-module Pester tests
+## `Pscx.Package.Tests.ps1`
 
-| Fixture | Tests | Public behavior |
-| --- | ---: | --- |
-| `Accelerators/Base64Test.cs` | 1 | Accelerator behavior in a PowerShell session |
-| `DirectoryServices/DirectoryServicesTest.cs` | 1 | Windows provider behavior |
-| `Drawing/ExportBitmapTest.cs` | 6 | Bitmap cmdlet behavior and files |
-| `Drawing/ResizeBitmapTest.cs` | 3 | Bitmap cmdlet parameters and output |
-| `GetHashCommandTests.cs` | 2 | Cmdlet parameters, pipeline input, and output |
-| `IO/PscxLinkTests.cs` | 1 | Windows filesystem cmdlet integration |
-| `IO/PscxPathInfoTests.cs` | 12 | `-Path`/`-LiteralPath` and wildcard binding |
-| `SimpleUnits/ConvertToUnitTest.cs` | 1 | Cmdlet input and output contract |
-| `Xml/TestXmlTests.cs` | 2 | Cmdlet behavior against real files |
-| `Yaml/YamlTest.cs` | 1 | PowerShell conversion command behavior |
+Pester owns behavior visible through the staged module:
 
-## Removed
+- manifests, exports, aliases, providers, help, and README examples;
+- default and optional-feature imports in clean child processes;
+- parameter binding, pipelines, errors, `WhatIf`, and `Confirm`;
+- Base64 acceleration, hashing, unit conversion, XML, YAML, and Windows links.
 
-| Fixture | Tests | Reason |
-| --- | ---: | --- |
-| `DirectoryServices/ForeignServerTests.cs` | 7 | Hard-coded, unreachable external lab dependencies made the fixture unsafe and non-reproducible |
+The old bitmap fixtures were removed because their commands are no longer part
+of the exported module contract. External directory-service fixtures were
+removed because they depended on unavailable lab infrastructure; the packaged
+provider contract remains covered without network or AD dependencies.
 
-Support classes such as `PscxCmdletTest`, `PscxProviderTest`, and
-`Drawing/BitmapTestBase` remain only while their dependent fixtures are being
-migrated. The legacy project is not part of the release-blocking unified test
-run; `TestAll` remains available to expose its current failures during migration.
+Archive safety will receive focused ownership when `Pscx.Archive` is extracted
+in Phase 5. No standalone archive-safety primitive is retained in the core
+module today.

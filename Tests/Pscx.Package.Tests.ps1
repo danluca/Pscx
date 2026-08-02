@@ -183,6 +183,71 @@ Describe 'Representative public command behavior' {
         $encoded | Should -Be 'AQID'
     }
 
+    It 'registers the Base64 accelerator in the imported session' {
+        $encoded = [base64][byte[]](1, 2, 3)
+
+        $encoded.ToString() | Should -Be 'AQID'
+    }
+
+    It 'hashes pipeline byte input with the documented default algorithm' {
+        $hash = [byte[]](97, 98, 99) | Get-PscxHash
+
+        $hash.Algorithm | Should -Be 'SHA256'
+        $hash.HashString | Should -Be 'BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD'
+        $hash.Hash | Should -HaveCount 32
+    }
+
+    It 'hashes a file received from the pipeline' {
+        $path = Join-Path $script:temporaryRoot 'hash-input.txt'
+        [IO.File]::WriteAllText($path, 'PSCX', [Text.UTF8Encoding]::new($false))
+
+        $hash = Get-Item -LiteralPath $path | Get-PscxHash -Algorithm SHA512
+
+        $hash.Algorithm | Should -Be 'SHA512'
+        $hash.Path | Should -Be (Get-Item -LiteralPath $path).FullName
+        $hash.Hash | Should -HaveCount 64
+    }
+
+    It 'converts numeric units through the public cmdlet contract' {
+        $measurement = ConvertTo-Unit -Value 320287.65 -FromUnit m -ToUnit km
+
+        $measurement.GetType().FullName | Should -Be 'Pscx.SimpleUnits.Measurement'
+        [math]::Abs($measurement.value - 320.28765) | Should -BeLessThan 0.000001
+        $measurement.unit.Symbol | Should -Be 'km'
+    }
+
+    It 'round-trips structured YAML through the packaged Windows commands' {
+        if ($BuildScope -ne 'Full') {
+            Set-ItResult -Skipped -Because 'YAML commands are supplied by the Windows module.'
+            return
+        }
+
+        $source = "project:`n  name: PSCX`n  active: true"
+        $object = $source | ConvertFrom-Yaml
+        $yaml = $object | ConvertTo-Yaml
+        $roundTrip = $yaml | ConvertFrom-Yaml
+
+        $object.project.name | Should -Be 'PSCX'
+        $yaml | Should -Match 'name: PSCX'
+        $yaml | Should -Match 'active: "true"'
+        $roundTrip.project.active | Should -Be 'true'
+    }
+
+    It 'creates a Windows hard link in an isolated temporary directory' {
+        if ($BuildScope -ne 'Full') {
+            Set-ItResult -Skipped -Because 'NTFS link commands are supplied by the Windows module.'
+            return
+        }
+
+        $target = Join-Path $script:temporaryRoot 'target.txt'
+        $link = Join-Path $script:temporaryRoot 'target-link.txt'
+        Set-Content -LiteralPath $target -Value 'linked content'
+
+        New-Hardlink -LiteralPath $link -Target $target | Out-Null
+
+        Get-Content -LiteralPath $link -Raw | Should -Be (Get-Content -LiteralPath $target -Raw)
+    }
+
     It 'supports wildcard Path input and emits Boolean results' {
         $pathRoot = Join-Path $script:temporaryRoot 'wildcards'
         New-Item -ItemType Directory -Path $pathRoot -Force | Out-Null

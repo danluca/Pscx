@@ -33,7 +33,6 @@
       '$(MSBuildProjectName)' == 'Pscx.Core' Or
       '$(MSBuildProjectName)' == 'Pscx.Help' Or
       '$(MSBuildProjectName)' == 'Pscx.InternalTests' Or
-      '$(MSBuildProjectName)' == 'Pscx.LegacyTests' Or
       '$(MSBuildProjectName)' == 'Pscx.Win'">
     <!--
       Microsoft.PowerShell.SDK 7.6.4 resolves the vulnerable 10.0.6 version

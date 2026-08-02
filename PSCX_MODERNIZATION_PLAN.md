@@ -327,27 +327,28 @@ Both suites run through one repository command, produce standard test-result fil
 
 - [x] Retain tests for pure algorithms and internal value objects only.
 - [x] Add regression coverage for date/time forwarding methods.
-- [ ] Test unit conversion independently of formatting and PowerShell parameter binding.
-- [ ] Test encoding, hashing, archive safety, and parser primitives independently where retained.
+- [x] Test unit conversion independently of formatting and PowerShell parameter binding.
+- [x] Test encoding and parser primitives independently, and hashing through the packaged public cmdlet. Archive safety moves to the Phase 5 module extraction because no standalone archive-safety primitive is retained in core.
 - [x] Avoid environmental dependencies such as installed modules, profiles, user PATH, network services, AD, SQL Server, or desktop state.
-- [ ] Move environmental and PowerShell-host-dependent cases to Pester.
+- [x] Move environmental and PowerShell-host-dependent cases to Pester.
 
 ### 2.5 Static validation
 
-- [ ] Run PSScriptAnalyzer over all `.ps1`, `.psm1`, and `.psd1` files.
-- [ ] Validate all manifests with `Test-ModuleManifest`.
-- [ ] Validate XML help, type data, and format data.
+- [x] Run PSScriptAnalyzer over all `.ps1`, `.psm1`, and `.psd1` files.
+- [x] Validate all manifests with `Test-ModuleManifest`.
+- [x] Validate XML help, type data, and format data.
 - [ ] Treat compiler warnings as errors after the existing warning backlog is resolved.
-- [ ] Add formatting checks for C#, PowerShell, Markdown, XML, and YAML.
+  - Deferred: the clean Full build still reports an existing compiler-warning backlog. High/critical dependency warnings already fail; general warnings-as-errors will be enabled after the backlog is resolved.
+- [x] Add formatting checks for C#, PowerShell, Markdown, XML, and YAML. Checked-in baselines prevent new debt while allowing incremental cleanup.
 
 ### Exit criteria
 
-- [ ] Tests execute on every pull request.
-- [ ] One documented command runs the complete test strategy locally and in CI.
-- [ ] Every test has one clear owner: public PowerShell contract or pure internal algorithm.
-- [ ] The packaged module imports successfully on every supported OS.
-- [ ] Export and help consistency are enforced automatically.
-- [ ] Cross-platform claims have cross-platform evidence.
+- [x] Tests execute on every pull request.
+- [x] One documented command runs the complete test strategy locally and in CI.
+- [x] Every test has one clear owner: public PowerShell contract or pure internal algorithm.
+- [x] The packaged module imports successfully on every supported OS.
+- [x] Export and help consistency are enforced automatically.
+- [x] Cross-platform claims have cross-platform evidence.
 
 ---
 

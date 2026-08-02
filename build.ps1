@@ -6,8 +6,8 @@ param(
         'Compile',
         'Help',
         'Test',
-        'TestAll',
         'Pester',
+        'Static',
         'TestPipeline',
         'ImportTest',
         'Package',
@@ -49,7 +49,6 @@ $repositoryRoot = $PSScriptRoot
 $solutionPath = Join-Path $repositoryRoot 'Src/Pscx.sln'
 $coreProjectPath = Join-Path $repositoryRoot 'Src/Pscx.InternalTests/Pscx.InternalTests.csproj'
 $internalTestProjectPath = Join-Path $repositoryRoot 'Src/Pscx.InternalTests/Pscx.InternalTests.csproj'
-$legacyTestProjectPath = Join-Path $repositoryRoot 'Src/Pscx.UnitTests/Pscx.LegacyTests.csproj'
 $versionFilePath = Join-Path $repositoryRoot 'Directory.Build.props'
 $testPolicyFilePath = Join-Path $repositoryRoot 'Tests/TestPolicy.psd1'
 $artifactsRoot = [System.IO.Path]::GetFullPath($ArtifactsPath)
@@ -243,7 +242,8 @@ function Get-MSBuildVersionArguments {
         "-p:PscxBuildNumber=$BuildNumber",
         "-p:PscxCommitSha=$shortCommitSha",
         "-p:PscxPackageVersion=$packageVersion",
-        "-p:InformationalVersion=$informationalVersion"
+        "-p:InformationalVersion=$informationalVersion",
+        "-p:PscxBuildScope=$resolvedBuildScope"
     )
 }
 
@@ -426,38 +426,6 @@ function Invoke-Test {
     }
 }
 
-function Invoke-LegacyTest {
-    if ($resolvedBuildScope -ne 'Full') {
-        throw 'The legacy managed tests reference Pscx.Win and can run only with -BuildScope Full on Windows.'
-    }
-
-    Write-Step 'Run full legacy managed test suite'
-    if (-not (Test-Path -LiteralPath (Join-Path $moduleRoot 'Pscx.psd1'))) {
-        New-ModuleStage
-    }
-
-    $testOutput = Join-Path $repositoryRoot "Src/Pscx.UnitTests/bin/$Configuration/net10.0"
-    Remove-BuildDirectory (Join-Path $testOutput 'Apps')
-    Copy-RequiredItem (Join-Path $moduleRoot 'Apps') (Join-Path $testOutput 'Apps')
-
-    New-Item -ItemType Directory -Path $testResultsPath -Force | Out-Null
-    $arguments = @(
-        'test',
-        $legacyTestProjectPath,
-        '--configuration',
-        $Configuration,
-        '--no-build',
-        '--no-restore',
-        '--nologo',
-        '--results-directory',
-        $testResultsPath,
-        '--logger',
-        'trx;LogFileName=Pscx.LegacyTests.trx'
-    ) + (Get-MSBuildVersionArguments)
-
-    Invoke-NativeCommand dotnet $arguments
-}
-
 function Invoke-PesterTest {
     Write-Step 'Run packaged-module Pester tests with PowerShell coverage'
     Invoke-NativeCommand $PowerShellPath @(
@@ -475,6 +443,21 @@ function Invoke-PesterTest {
     )
 }
 
+function Invoke-StaticValidation {
+    Write-Step 'Run repository static validation'
+    Invoke-NativeCommand $PowerShellPath @(
+        '-NoLogo',
+        '-NoProfile',
+        '-NonInteractive',
+        '-File',
+        (Join-Path $repositoryRoot 'Tools/Test-PscxStatic.ps1'),
+        '-ModulePath',
+        $moduleRoot,
+        '-ResultsPath',
+        $testResultsPath
+    )
+}
+
 function Invoke-UnifiedTest {
     Write-Step 'Run unified release-blocking test suites'
     New-Item -ItemType Directory -Path $testResultsPath -Force | Out-Null
@@ -483,7 +466,8 @@ function Invoke-UnifiedTest {
 
     foreach ($suite in @(
         [ordered]@{ Name = 'Managed'; Action = { Invoke-Test } },
-        [ordered]@{ Name = 'Pester'; Action = { Invoke-PesterTest } }
+        [ordered]@{ Name = 'Pester'; Action = { Invoke-PesterTest } },
+        [ordered]@{ Name = 'Static'; Action = { Invoke-StaticValidation } }
     )) {
         try {
             & $suite.Action
@@ -533,11 +517,9 @@ function Invoke-Validate {
         'Src/Pscx.Core/Pscx.Core.csproj',
         'Src/Pscx.Help/Pscx.Help.csproj',
         'Src/Pscx.InternalTests/Pscx.InternalTests.csproj',
-        'Src/Pscx.UnitTests/Pscx.LegacyTests.csproj',
         'Src/Pscx.Win/Pscx.Win.csproj',
         'Src/AssemblyInfo.Shared.cs',
         'Src/Pscx.Core/Properties/PscxAssemblyInfo.cs',
-        'Src/Pscx.UnitTests/Properties/AssemblyInfo.cs',
         '.github/workflows'
     )
 
@@ -805,8 +787,8 @@ foreach ($item in $expandedTasks) {
         Compile { Invoke-Compile }
         Help { Invoke-Help }
         Test { Invoke-Test }
-        TestAll { Invoke-LegacyTest }
         Pester { Invoke-PesterTest }
+        Static { Invoke-StaticValidation }
         UnifiedTest { Invoke-UnifiedTest }
         ImportTest { Invoke-ImportTest }
         Package { Invoke-Package }
