@@ -42,6 +42,7 @@ to install and import its NodaTime-backed API.
 Use three release stages:
 
 1. **3.x stabilization release**
+   - Publish this work as PSCX 3.8.0 after Phase 3 is complete and before Phase 4 begins.
    - Correct defects, security warnings, CI, documentation, and metadata.
    - Add tests without intentionally breaking the public API.
    - Mark removal candidates as deprecated.
@@ -427,6 +428,22 @@ PowerShell can infer command syntax and parameter metadata from a loaded command
 - [ ] The public command catalog is generated or mechanically validated.
 - [ ] A user can install PSCX with one standard PowerShell command.
 - [ ] Release artifacts are reproducible and validated.
+
+---
+
+## Release gate: PSCX 3.8.0 and transition to 4.0 development
+
+This is an ordered boundary between Phase 3 and Phase 4. Do not begin the
+breaking public-surface or package-boundary work in Phase 4 on the 3.8
+development line.
+
+- [ ] Complete every Phase 3 exit criterion.
+- [ ] Run the final release validation from a clean checkout on every supported operating system.
+- [ ] Publish the validated package and release notes as PSCX 3.8.0, and create the `v3.8.0` tag from that release commit.
+- [ ] Create a `release/3.8` servicing branch from `v3.8.0` only if 3.8.x maintenance releases are expected.
+- [ ] After `v3.8.0` is released, rename the active development branch from `dev/15-upgrade` to `dev/4.0`.
+- [ ] In the first 4.0 development commit, change the authoritative `PscxVersionPrefix` in `Directory.Build.props` from `3.8.0` to `4.0.0-preview.1` and start the 4.0 changelog section.
+- [ ] Begin Phase 4 only on the 4.0 development line.
 
 ---
 
