@@ -357,22 +357,26 @@ Both suites run through one repository command, produce standard test-result fil
 
 **Goal:** Make the published compatibility and feature story accurate and self-maintaining.
 
-- [ ] Before Phase 3 begins, decompose the remaining roadmap into reviewable GitHub issues and link each issue to its corresponding section.
+- [x] Decompose Phase 3 into reviewable GitHub issues and link each issue to its corresponding section. Decompose later phases as their design work approaches.
 
 ### 3.1 Correct current documentation drift
 
-- [ ] Update the README's PowerShell and .NET versions.
-- [ ] Add a 3.8.0 changelog section.
-- [ ] Correct the fork-origin version, release link, displayed commit, and linked commit so they agree.
-- [ ] Correct the `Format-Hex` versus `Format-PscxHex` contradiction.
-- [ ] Correct `Invoke-Sudo` versus `Invoke-Gsudo`/`gsudo` naming.
-- [ ] Resolve whether `Search-Transcript` is public; export and document it or remove it from the catalog.
-- [ ] Document the existing JSON, YAML, Base64, ISO date/time, and other type accelerators if retained.
-- [ ] Document which features and commands are Windows-only.
-- [ ] Replace “latest PowerShell” with a precise supported-version range.
-- [ ] Remove promotional/profile content that distracts from installing and evaluating PSCX, or move it to a related-projects section.
+**Tracking:** [#24 Correct PSCX 3.8 documentation and metadata drift](https://github.com/danluca/Pscx/issues/24)
+
+- [x] Update the README's PowerShell and .NET versions.
+- [x] Add a 3.8.0 changelog section.
+- [x] Correct the fork-origin version, release link, displayed commit, and linked commit so they agree.
+- [x] Correct the `Format-Hex` versus `Format-PscxHex` contradiction.
+- [x] Correct `Invoke-Sudo` versus `Invoke-Gsudo`/`gsudo` naming.
+- [x] Resolve whether `Search-Transcript` is public; export and document it or remove it from the catalog.
+- [x] Document the existing JSON, YAML, Base64, ISO date/time, and other type accelerators if retained.
+- [x] Document which features and commands are Windows-only.
+- [x] Replace “latest PowerShell” with a precise supported-version range.
+- [x] Remove promotional/profile content that distracts from installing and evaluating PSCX, or move it to a related-projects section.
 
 ### 3.2 Generate the public API catalog
+
+**Tracking:** [#25 Generate and validate the PSCX public API catalog](https://github.com/danluca/Pscx/issues/25)
 
 - [ ] Enhance `Tools/find_cmdlets.ps1` or replace it with a validation/generation tool.
 - [ ] Generate the README command tables from manifests and help metadata.
@@ -381,6 +385,8 @@ Both suites run through one repository command, produce standard test-result fil
 - [ ] Fail CI when generated documentation differs from committed documentation.
 
 ### 3.3 Replace `Pscx.Help` with mainstream external help
+
+**Tracking:** [#26 Replace Pscx.Help with Markdown and PlatyPS](https://github.com/danluca/Pscx/issues/26)
 
 The current `Pscx.Help` project is an internal build-time tool, not a useful user-facing module. It contains a snap-in-era `Get-PSSnapinHelp` generator, bespoke XML source files, and a custom XSLT conversion to MAML. Replace this pipeline with the supported `Microsoft.PowerShell.PlatyPS` workflow.
 
@@ -413,6 +419,8 @@ PowerShell can infer command syntax and parameter metadata from a loaded command
 
 ### 3.4 Improve installation and publishing
 
+**Tracking:** [#27 Modernize PSCX installation and release artifacts](https://github.com/danluca/Pscx/issues/27)
+
 - [ ] Publish installable packages to PowerShell Gallery, if repository ownership and signing permit it.
 - [ ] Document `Install-PSResource` as the preferred installation method.
 - [ ] Keep a direct release ZIP as a secondary installation option.
@@ -432,6 +440,8 @@ PowerShell can infer command syntax and parameter metadata from a loaded command
 ---
 
 ## Release gate: PSCX 3.8.0 and transition to 4.0 development
+
+**Tracking:** [#28 Validate and release PSCX 3.8.0](https://github.com/danluca/Pscx/issues/28)
 
 This is an ordered boundary between Phase 3 and Phase 4. Do not begin the
 breaking public-surface or package-boundary work in Phase 4 on the 3.8
@@ -768,7 +778,7 @@ The following issues are small enough to begin independently:
 | 0. Baseline and decisions | Complete | 100% |
 | 1. Correctness, security, builds | In progress | 25% |
 | 2. Tests and CI | In progress | 62% |
-| 3. Metadata, docs, releases | Not started | 0% |
+| 3. Metadata, docs, releases | In progress | 25% |
 | 4. Explicit public API | Not started | 0% |
 | 5. Feature classification | Not started | 0% |
 | 6. Dependency and binary reduction | Not started | 0% |

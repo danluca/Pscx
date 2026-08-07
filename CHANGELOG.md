@@ -20,6 +20,8 @@
 * Restored the declared `AddRegex` function, prevented a Windows helper from
   shadowing `AddAccelerator`, and included the optional VHD module in Windows
   packages.
+* Corrected the public documentation for supported versions, platforms,
+  command names, optional exports, and registered type accelerators.
 
 ## 3.7.0 - June 2025
 * Upgraded to .NET 9.0, PowerShell Core 7.5
@@ -59,7 +61,6 @@
 * Renamed Expand-Archive to Expand-PscxArchive and Read-Archive to Read-PscxArchive.
 * Renamed Set-LocationEx to Set-PscxLocation.
 * Removed all *-Clipboard commands - superseeded by built-in PowerShell utilities
-* Renamed Format-Hex command to Format-PscxHex.
 * Renamed Get-Uptime to Get-PscxUptime.
 * Renamed Join-String to Join-PscxString.
 * Removed the gcb alias that now conflicts with the built-in gcb alias

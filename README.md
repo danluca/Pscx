@@ -19,9 +19,11 @@ The customizations made in this fork include:
 - a GitHub Actions build.
 
 > [!NOTE]
-> The 3.8 development branch requires PowerShell 7.6 LTS and .NET 10. The
-> repository currently builds against PowerShell SDK 7.6.4. Published releases
-> may have different requirements from the current development branch.
+> PSCX 3.8 requires a PowerShell 7.6 LTS release (`7.6.x`) and .NET 10. The
+> build accepts PowerShell 7.6.0 as its minimum and currently compiles against
+> PowerShell SDK 7.6.4. PowerShell 7.7 and later are outside the 3.8 support
+> contract until they are validated explicitly. Published PSCX releases may
+> have different requirements from the current development branch.
 
 ## Release notes
 
@@ -46,8 +48,8 @@ the [Imports](Imports/) folder for the applicable license files.
 
 ### Pre-requisites
 
-- Install a PowerShell version compatible with the PSCX release you are using.
-  The current development branch targets PowerShell 7.6 and .NET 10.
+- Install PowerShell 7.6 LTS (`7.6.x`) for the current PSCX 3.8 development
+  branch. PSCX 3.8 targets .NET 10 and does not support Windows PowerShell 5.1.
 - A PowerShell profile is optional. Add `Import-Module Pscx` to a profile only
   if PSCX should load in every interactive session.
 
@@ -67,6 +69,21 @@ the [Imports](Imports/) folder for the applicable license files.
    Import-Module Pscx
    Get-Module Pscx
    ```
+
+### Platform support
+
+PSCX 3.8 supports Windows, Linux, and macOS. The default package selects its
+platform-aware payload during import:
+
+- The PSCX core assembly and the functions under **Cross-platform** below are
+  supported on all three operating systems, except for the foreground-window
+  commands called out in the catalog.
+- The PSCX Windows companion assembly, commands under **Windows only**, YAML
+  commands and accelerators, gsudo integration, and optional VHD/WMI modules
+  are available only on Windows.
+- Optional submodules are controlled through `ModulesToImport` in
+  `Pscx.UserPreferences.ps1` or an import argument. Their default state is
+  shown in the catalog.
 
 ## Maintainers
 
@@ -265,7 +282,11 @@ Adds values to an environment variable of type PATH (default is PATH variable)
 Sets/overrides a path-like variable (defaults to PATH) to the value specified
 
 ### Format-Hex
-Displays contents of files for byte streams in hex.
+Displays contents of files or byte streams in hexadecimal. `Format-Hex` is the
+current PSCX command name; the earlier changelog claim that it was renamed to
+`Format-PscxHex` was incorrect. Because PowerShell also supplies a command with
+this name, use `Pscx\Format-Hex` or the PSCX `fhex` alias when disambiguation is
+needed. Resolving the collision is deferred to PSCX 4.0.
 
 ### Join-PscxString
 Joins an array of strings into a single string.
@@ -404,12 +425,6 @@ Disabled by default:
 - `Add-DirectoryLength`
 - `Add-ShortPath`
 
-### TranscribeSession submodule
-
-Disabled by default for security and privacy:
-
-- `Search-Transcript`
-
 ### Utility submodule
 
 - `AddAccelerator`
@@ -434,6 +449,29 @@ Disabled by default for security and privacy:
 - `Get-ExecutionTime`
 - `AddRegex`
 
+### Type accelerators
+
+Importing the default Utility submodule registers the following accelerators
+in the PowerShell session. As with all PowerShell type accelerators, these are
+session-global registrations and currently remain registered after PSCX is
+removed from the session.
+
+| Accelerator | Backing type or purpose | Platform/default |
+| --- | --- | --- |
+| `[accelerators]` | PowerShell's internal type-accelerator registry | All; default |
+| `[json]` | Serialize a value as indented JSON | All; default |
+| `[hex]` | Convert supported scalar, string, array, or object values to hexadecimal | All; default |
+| `[base64]`, `[b64]` | Convert supported values to Base64 | All; default |
+| `[isodate]` | Format and parse ISO-oriented date/time values | All; default |
+| `[zonedtime]` | `Pscx.Time.ZonedDateTime` | All; default |
+| `[offsettime]` | `Pscx.Time.OffsetDateTime` | All; default |
+| `[localtime]` | `Pscx.Time.LocalDateTime` | All; default |
+| `[tz]` | `NodaTime.DateTimeZone` | All; default |
+| `[tzi]` | `System.TimeZoneInfo` | All; default |
+| `[yaml]`, `[yml]` | Serialize a value as YAML | Windows; default Windows companion import |
+| `[wmidatetime]` | Convert WMI date/time values | Windows; optional WMI submodule |
+| `[wmitimespan]` | Convert WMI time-span values | Windows; optional WMI submodule |
+
 ## Windows only
 
 ### Functions loaded by the Windows companion module
@@ -445,6 +483,9 @@ Disabled by default for security and privacy:
 - `Import-VisualStudioVars`
 
 ### Sudo submodule
+
+The public elevation commands are `Invoke-Gsudo` and `gsudo`; PSCX does not
+export an `Invoke-Sudo` command.
 
 - `gsudo`
 - `Invoke-Gsudo`
