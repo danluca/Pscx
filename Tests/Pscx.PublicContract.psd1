@@ -30,6 +30,15 @@
         Core = @('AssemblyCache', 'PscxSettings')
         Full = @('DirectoryServices')
     }
+    Platforms = @{
+        # Script functions cannot carry SupportedOSPlatformAttribute metadata.
+        # Keep the exceptional Windows-only functions here until their module
+        # placement makes the platform boundary self-describing.
+        WindowsOnlyCommands = @(
+            'Invoke-BatchFile',
+            'Stop-RemoteProcess'
+        )
+    }
     OptionalFeatures = @{
         Core = @(
             @{ Name = 'CD'; ModuleName = 'Pscx.CD' },

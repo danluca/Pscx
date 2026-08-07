@@ -378,11 +378,11 @@ Both suites run through one repository command, produce standard test-result fil
 
 **Tracking:** [#25 Generate and validate the PSCX public API catalog](https://github.com/danluca/Pscx/issues/25)
 
-- [ ] Enhance `Tools/find_cmdlets.ps1` or replace it with a validation/generation tool.
-- [ ] Generate the README command tables from manifests and help metadata.
-- [ ] Generate a platform column for every public command.
-- [ ] Generate short descriptions from a single authoritative source.
-- [ ] Fail CI when generated documentation differs from committed documentation.
+- [x] Enhance `Tools/find_cmdlets.ps1` or replace it with a validation/generation tool.
+- [x] Generate the README command tables from manifests and help metadata.
+- [x] Generate a platform column for every public command.
+- [x] Generate short descriptions from a single authoritative source.
+- [x] Fail CI when generated documentation differs from committed documentation.
 
 ### 3.3 Replace `Pscx.Help` with mainstream external help
 
@@ -778,7 +778,7 @@ The following issues are small enough to begin independently:
 | 0. Baseline and decisions | Complete | 100% |
 | 1. Correctness, security, builds | In progress | 25% |
 | 2. Tests and CI | In progress | 62% |
-| 3. Metadata, docs, releases | In progress | 25% |
+| 3. Metadata, docs, releases | In progress | 50% |
 | 4. Explicit public API | Not started | 0% |
 | 5. Feature classification | Not started | 0% |
 | 6. Dependency and binary reduction | Not started | 0% |

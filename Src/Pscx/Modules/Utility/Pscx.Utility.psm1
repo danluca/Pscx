@@ -70,6 +70,11 @@ filter New-HashObject {
 }
 
 <#
+.SYNOPSIS
+    Displays PowerShell help using PSCX pager behavior.
+.DESCRIPTION
+    Forwards to Get-Help and displays detailed help through the configured PSCX
+    paging behavior.
 .FORWARDHELPTARGETNAME Get-Help
 .FORWARDHELPCATEGORY Cmdlet
 #>

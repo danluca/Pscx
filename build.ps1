@@ -8,6 +8,7 @@ param(
         'Test',
         'Pester',
         'Static',
+        'Catalog',
         'TestPipeline',
         'ImportTest',
         'Package',
@@ -458,6 +459,28 @@ function Invoke-StaticValidation {
     )
 }
 
+function Invoke-Catalog {
+    if ($resolvedBuildScope -ne 'Full') {
+        throw 'The complete README catalog requires a Full Windows package.'
+    }
+    if (-not (Test-Path -LiteralPath (Join-Path $moduleRoot 'PscxWin.psd1'))) {
+        throw 'The Full packaged module is missing. Run the Package task first.'
+    }
+
+    Write-Step 'Update README public API catalog'
+    Invoke-NativeCommand $PowerShellPath @(
+        '-NoLogo',
+        '-NoProfile',
+        '-NonInteractive',
+        '-File',
+        (Join-Path $repositoryRoot 'Tools/Update-PscxReadmeCatalog.ps1'),
+        '-ModulePath',
+        $moduleRoot,
+        '-ReadmePath',
+        (Join-Path $repositoryRoot 'README.md')
+    )
+}
+
 function Invoke-UnifiedTest {
     Write-Step 'Run unified release-blocking test suites'
     New-Item -ItemType Directory -Path $testResultsPath -Force | Out-Null
@@ -789,6 +812,7 @@ foreach ($item in $expandedTasks) {
         Test { Invoke-Test }
         Pester { Invoke-PesterTest }
         Static { Invoke-StaticValidation }
+        Catalog { Invoke-Catalog }
         UnifiedTest { Invoke-UnifiedTest }
         ImportTest { Invoke-ImportTest }
         Package { Invoke-Package }

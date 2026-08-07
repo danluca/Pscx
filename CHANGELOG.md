@@ -22,6 +22,8 @@
   packages.
 * Corrected the public documentation for supported versions, platforms,
   command names, optional exports, and registered type accelerators.
+* Replaced the manually maintained README command inventory with a generated,
+  CI-validated catalog sourced from packaged manifests and command help.
 
 ## 3.7.0 - June 2025
 * Upgraded to .NET 9.0, PowerShell Core 7.5

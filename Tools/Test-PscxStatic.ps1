@@ -110,6 +110,18 @@ foreach ($formatFile in Get-ChildItem -LiteralPath $ModulePath -Recurse -Filter 
     Update-FormatData -PrependPath $formatFile.FullName -ErrorAction Stop
 }
 
+# Only the Full Windows package can enumerate the complete cross-platform and
+# Windows public surface. One matrix leg is sufficient to enforce the shared
+# committed README; Core legs still run all other static checks.
+if (Test-Path -LiteralPath (Join-Path $ModulePath 'PscxWin.psd1')) {
+    & $powerShellExecutable -NoLogo -NoProfile -NonInteractive -File `
+        (Join-Path $repositoryRoot 'Tools/Update-PscxReadmeCatalog.ps1') `
+        -ModulePath $ModulePath -ReadmePath (Join-Path $repositoryRoot 'README.md') -Check
+    if ($LASTEXITCODE -ne 0) {
+        throw "README public API catalog validation failed with exit code $LASTEXITCODE."
+    }
+}
+
 $formatExtensions = @('.cs', '.ps1', '.psm1', '.psd1', '.md', '.xml', '.ps1xml', '.yml', '.yaml')
 $formatCounts = @{}
 foreach ($extension in $formatExtensions) {
