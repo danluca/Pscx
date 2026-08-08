@@ -24,6 +24,9 @@
   command names, optional exports, and registered type accelerators.
 * Replaced the manually maintained README command inventory with a generated,
   CI-validated catalog sourced from packaged manifests and command help.
+* Replaced the snap-in-era help project and bespoke XML/XSLT generator with
+  pinned Microsoft.PowerShell.PlatyPS, canonical Markdown command/about help,
+  localized packaged MAML, and build/test validation.
 
 ## 3.7.0 - June 2025
 * Upgraded to .NET 9.0, PowerShell Core 7.5

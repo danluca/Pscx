@@ -20,8 +20,9 @@ runs static validation, validates the package, and fails if any gate fails.
 - `Test-PscxStatic.ps1` owns repository-wide PSScriptAnalyzer, module-manifest,
   XML/type/format-data, and formatting regression checks.
 
-`TestPolicy.psd1` pins Pester and PSScriptAnalyzer and defines separate initial
-managed and PowerShell coverage gates. `StaticAnalysisBaseline.psd1` records
+`TestPolicy.psd1` pins Pester, PSScriptAnalyzer, and the build-only PlatyPS
+module and defines separate initial managed and PowerShell coverage gates.
+`StaticAnalysisBaseline.psd1` records
 existing analyzer and formatting debt; the static gate permits reductions but
 fails on regressions. Results are written beneath
 `artifacts/test-results` as TRX, NUnit 3 XML, Cobertura XML, framework JSON, and

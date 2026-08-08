@@ -122,6 +122,17 @@ Describe 'Packaged PSCX module contract' {
 }
 
 Describe 'Packaged PSCX help and examples' {
+    It 'ships localized external help for the package scope' {
+        $culturePath = Join-Path $ModulePath 'en-US'
+        Test-Path -LiteralPath (Join-Path $culturePath 'Pscx.dll-Help.xml') |
+            Should -BeTrue
+        Test-Path -LiteralPath (Join-Path $culturePath 'about_Pscx.help.txt') |
+            Should -BeTrue
+        Test-Path -LiteralPath (Join-Path $culturePath 'Pscx.Win.dll-Help.xml') |
+            Should -Be ($BuildScope -eq 'Full')
+        (Get-Help about_Pscx).Name | Should -Be 'about_Pscx'
+    }
+
     It 'provides usable help and an example for every public function and cmdlet' {
         $gaps = @(
             $script:publicCommands |
@@ -146,6 +157,31 @@ Describe 'Packaged PSCX help and examples' {
                 }
         )
         $gaps | Should -BeNullOrEmpty
+    }
+
+    It 'runs safe deterministic examples from canonical command help' {
+        $repositoryRoot = Split-Path -Parent $PSScriptRoot
+        $examples = @(
+            @{ Command = 'Format-Byte'; Validate = { param($result) [string]$result | Should -Match '10.*KB' } }
+            @{ Command = 'ConvertTo-Base64'; Validate = {
+                param($result)
+                [Convert]::FromBase64String(($result -join '')).Count | Should -Be 127
+            } }
+            @{ Command = 'Get-TypeName'; Validate = { param($result) $result | Should -Be 'DateTime' } }
+        )
+
+        foreach ($example in $examples) {
+            $markdownPath = Join-Path $repositoryRoot "docs/commands/Pscx/$($example.Command).md"
+            $markdown = Get-Content -LiteralPath $markdownPath -Raw
+            $codeMatch = [regex]::Match(
+                $markdown,
+                '(?ms)^## EXAMPLES.*?^```powershell\s*\r?\n(?<code>.*?)^```\s*$'
+            )
+            $codeMatch.Success | Should -BeTrue -Because "$($example.Command) has a PowerShell example"
+
+            $result = & ([scriptblock]::Create($codeMatch.Groups['code'].Value))
+            & $example.Validate $result
+        }
     }
 
     It 'keeps every PowerShell example block in README syntactically valid' {

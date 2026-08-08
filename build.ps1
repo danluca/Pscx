@@ -327,47 +327,30 @@ function New-ModuleStage {
 }
 
 function Invoke-Help {
-    if ($resolvedBuildScope -ne 'Full') {
-        throw 'Generated legacy help requires the Windows-specific help project and is available only for Full builds.'
-    }
-
     if (-not (Test-Path -LiteralPath (Join-Path $moduleRoot 'Pscx.psd1'))) {
         New-ModuleStage
     }
 
-    Write-Step 'Generate help'
+    Write-Step 'Validate Markdown and generate external help'
     Remove-BuildDirectory $helpOutputPath
-    New-Item -ItemType Directory -Path $helpOutputPath -Force | Out-Null
+    $cultureOutputPath = Join-Path $helpOutputPath 'en-US'
+    New-Item -ItemType Directory -Path $cultureOutputPath -Force | Out-Null
 
-    $helpBuilderPath = Join-Path $repositoryRoot "Src/Pscx.Help/bin/$Configuration/net10.0"
-    if (-not (Test-Path -LiteralPath (Join-Path $helpBuilderPath 'Pscx.Help.dll'))) {
-        throw "Required help builder output is missing. Run the Compile task first."
-    }
+    Invoke-NativeCommand $PowerShellPath @(
+        '-NoLogo',
+        '-NoProfile',
+        '-NonInteractive',
+        '-File',
+        (Join-Path $repositoryRoot 'Tools/Invoke-PscxHelp.ps1'),
+        '-ModulePath',
+        $moduleRoot,
+        '-OutputPath',
+        $cultureOutputPath,
+        '-BuildScope',
+        $resolvedBuildScope
+    )
 
-    try {
-        Invoke-NativeCommand pwsh @(
-            '-NoLogo',
-            '-NoProfile',
-            '-NonInteractive',
-            '-File',
-            (Join-Path $repositoryRoot 'Tools/Generate-PscxHelp.ps1'),
-            '-ModulePath',
-            $moduleRoot,
-            '-HelpBuilderPath',
-            $helpBuilderPath,
-            '-OutputPath',
-            $helpOutputPath,
-            '-Configuration',
-            $Configuration
-        )
-    }
-    finally {
-        Remove-BuildDirectory (Join-Path $artifactsRoot 'help-work')
-    }
-
-    Get-ChildItem -LiteralPath $helpOutputPath -File |
-        Where-Object Name -NotLike 'Merged*' |
-        Copy-Item -Destination $moduleRoot -Force
+    Copy-RequiredItem $cultureOutputPath $moduleRoot
 }
 
 function Invoke-Test {
@@ -520,9 +503,7 @@ function Invoke-UnifiedTest {
 
 function Invoke-Package {
     New-ModuleStage
-    if ($resolvedBuildScope -eq 'Full') {
-        Invoke-Help
-    }
+    Invoke-Help
 
     Write-Step "Create Pscx-$packageVersion.zip"
     Remove-BuildDirectory $packageOutputPath
@@ -538,7 +519,6 @@ function Invoke-Validate {
         'Src/ConsoleApp/ConsoleApp.csproj',
         'Src/Pscx/Pscx.csproj',
         'Src/Pscx.Core/Pscx.Core.csproj',
-        'Src/Pscx.Help/Pscx.Help.csproj',
         'Src/Pscx.InternalTests/Pscx.InternalTests.csproj',
         'Src/Pscx.Win/Pscx.Win.csproj',
         'Src/AssemblyInfo.Shared.cs',

@@ -160,9 +160,11 @@ utilities rather than exportable cmdlets.
 
 When this OS based functionality separation is not self evident and a class is not entirely cross-platform nor OS specific, at a minimum do annotate the functions that are OS specific with `SupportedOSPlatform` attribute. Refactoring the design where the OS specific classes extend a basic common functionality is encouraged.
 
-Under the current build, new compiled cmdlets also require a corresponding help
-file in `Pscx.Help`. The modernization plan proposes replacing that legacy
-generator with Markdown and PlatyPS.
+Add or update compiled-command help under `docs/commands/Pscx` or
+`docs/commands/Pscx.Win`. The build pins `Microsoft.PowerShell.PlatyPS`,
+validates the Markdown against the packaged command metadata, and generates
+offline MAML beneath the package's `en-US` directory. Public script functions
+continue to use their single authoritative comment-based help source.
 
 
 ### Tooling

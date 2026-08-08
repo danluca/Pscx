@@ -394,28 +394,28 @@ Use Markdown as the canonical, reviewable help source for all public commands. G
 
 PowerShell can infer command syntax and parameter metadata from a loaded command, but it does not extract a complete high-quality help topic—including detailed descriptions, parameter explanations, examples, notes, and related links—from the current C# attributes. Those parts still require authored documentation.
 
-- [ ] Add a `docs/commands/` Markdown help tree organized by package.
-- [ ] Import the built package and bootstrap Markdown topics from command metadata using `Microsoft.PowerShell.PlatyPS`.
-- [ ] Migrate useful descriptions, examples, notes, inputs, outputs, and links from `Src/Pscx.Help/Help/*.xml`.
-- [ ] Do not migrate help topics for commands already removed from the product.
-- [ ] Use PlatyPS to generate each module's external MAML file into the correct culture directory, such as `en-US/`.
-- [ ] Use comment-based help for small private/internal functions where external documentation adds no value.
-- [ ] For public script functions, either:
+- [x] Add a `docs/commands/` Markdown help tree organized by package.
+- [x] Import the built package and bootstrap Markdown topics from command metadata using `Microsoft.PowerShell.PlatyPS`.
+- [x] Migrate useful descriptions, examples, notes, inputs, outputs, and links from `Src/Pscx.Help/Help/*.xml`.
+- [x] Do not migrate help topics for commands already removed from the product.
+- [x] Use PlatyPS to generate each module's external MAML file into the correct culture directory, such as `en-US/`.
+- [x] Use comment-based help for small private/internal functions where external documentation adds no value.
+- [x] For public script functions, either:
   - use the same external PlatyPS-generated help as compiled cmdlets for consistency; or
   - use comment-based help only when it remains the single authoritative source and passes the same validation.
-- [ ] Generate `about_Pscx` from Markdown rather than concatenated header/footer text.
-- [ ] Validate Markdown help schema during CI.
-- [ ] Import the packaged module and verify `Get-Help <command> -Full` for every export.
-- [ ] Verify that documented parameter names and syntax match `Get-Command`.
-- [ ] Smoke-test code examples that are deterministic and safe.
-- [ ] Remove:
+- [x] Generate `about_Pscx` from Markdown rather than concatenated header/footer text.
+- [x] Validate Markdown help schema during CI.
+- [x] Import the packaged module and verify `Get-Help <command> -Full` for every export.
+- [x] Verify that documented parameter names and syntax match `Get-Command`.
+- [x] Smoke-test code examples that are deterministic and safe.
+- [x] Remove:
   - the `Pscx.Help` project and assembly;
   - `PscxHelp.psd1` and `PscxHelp.psm1`;
   - the `Get-PSSnapinHelp` implementation;
   - bespoke localized command XML after migration;
   - the custom MAML XSLT and generation scripts;
   - the help project from the solution and build dependencies.
-- [ ] Decide later whether PSCX needs online/updatable help. If so, add `HelpInfoURI` and publish the required cross-platform help packages; this is optional and separate from shipping local help.
+- [ ] **Deferred:** decide during installation/release work whether PSCX needs online/updatable help. If so, add `HelpInfoURI` and publish the required cross-platform help packages; this is optional and separate from shipping local help.
 
 ### 3.4 Improve installation and publishing
 
