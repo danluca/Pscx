@@ -1,5 +1,10 @@
 # PowerShell Community Extensions Light Changelog
 
+## 4.0.0 - Unreleased
+
+* Started PSCX 4.0 development after publishing the stabilized PSCX 3.8.0
+  release.
+
 ## 3.8.0 - August 2026
 
 * Updated the runtime baseline to PowerShell 7.6 LTS and .NET 10.

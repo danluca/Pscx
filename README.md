@@ -10,7 +10,8 @@ upstream commit
 
 The customizations made in this fork include:
 
-- current development version 3.8.0 targeting .NET 10 and the PowerShell 7.6 SDK;
+- current development version 4.0.0-preview.1 targeting .NET 10 and the
+  PowerShell 7.6 SDK;
 - a cross-platform core for Windows, macOS, and Linux, with a Windows companion
   module for platform-specific commands;
 - modern .NET SDK/Visual Studio 2022-compatible projects;
@@ -19,11 +20,12 @@ The customizations made in this fork include:
 - a GitHub Actions build.
 
 > [!NOTE]
-> PSCX 3.8 requires a PowerShell 7.6 LTS release (`7.6.x`) and .NET 10. The
-> build accepts PowerShell 7.6.0 as its minimum and currently compiles against
-> PowerShell SDK 7.6.4. PowerShell 7.7 and later are outside the 3.8 support
-> contract until they are validated explicitly. Published PSCX releases may
-> have different requirements from the current development branch.
+> PSCX 4.0 development currently retains the PSCX 3.8 runtime baseline: a
+> PowerShell 7.6 LTS release (`7.6.x`) and .NET 10. The build accepts PowerShell
+> 7.6.0 as its minimum and currently compiles against PowerShell SDK 7.6.4.
+> PowerShell 7.7 and later remain outside the support contract until they are
+> validated explicitly. Published PSCX releases may have different requirements
+> from the current development branch.
 
 ## Release notes
 
@@ -48,8 +50,8 @@ the [Imports](Imports/) folder for the applicable license files.
 
 ### Pre-requisites
 
-- Install PowerShell 7.6 LTS (`7.6.x`) for the current PSCX 3.8 development
-  branch. PSCX 3.8 targets .NET 10 and does not support Windows PowerShell 5.1.
+- Install PowerShell 7.6 LTS (`7.6.x`) for the current PSCX 4.0 development
+  branch. It targets .NET 10 and does not support Windows PowerShell 5.1.
 - A PowerShell profile is optional. Add `Import-Module Pscx` to a profile only
   if PSCX should load in every interactive session.
 

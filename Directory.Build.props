@@ -4,7 +4,7 @@
       The maintainer controls this semantic version. Build systems may add a
       CI prerelease/build identity, but must not rewrite this value.
     -->
-    <PscxVersionPrefix>3.8.0</PscxVersionPrefix>
+    <PscxVersionPrefix>4.0.0-preview.1</PscxVersionPrefix>
     <PscxVersionCore>$([System.Text.RegularExpressions.Regex]::Match('$(PscxVersionPrefix)', '^\d+\.\d+\.\d+').Value)</PscxVersionCore>
     <PowerShellMinimumVersion>7.6.0</PowerShellMinimumVersion>
     <PowerShellSdkVersion>7.6.4</PowerShellSdkVersion>

@@ -446,7 +446,7 @@ PowerShell can infer command syntax and parameter metadata from a loaded command
 
 ---
 
-## Release gate: PSCX 3.8.0 and transition to 4.0 development
+## Release gate: PSCX 3.8.0 and transition to 4.0 development — complete
 
 **Tracking:** [#28 Validate and release PSCX 3.8.0](https://github.com/danluca/Pscx/issues/28)
 
@@ -459,19 +459,19 @@ development line.
   operating system. The Windows, Linux, and macOS CI matrix is green, and a
   local stable-version `PublishPrep` rehearsal validated the ZIP installation,
   SPDX SBOM, and SHA-256 release assets on August 8, 2026.
-- [ ] Have [pull request #23](https://github.com/danluca/Pscx/pull/23) ready for
+- [x] Have [pull request #23](https://github.com/danluca/Pscx/pull/23) ready for
   review and ask the maintainer to merge it.
-- [ ] Merge pull request #23 into `master`, then update the local `master` branch
+- [x] Merge pull request #23 into `master`, then update the local `master` branch
   to the resulting release commit.
-- [ ] Create and push the annotated `v3.8.0` tag from that exact release commit.
-- [ ] Verify the tag-triggered release workflow rebuilds 3.8.0 and creates a
+- [x] Create and push the annotated `v3.8.0` tag from that exact release commit.
+- [x] Verify the tag-triggered release workflow rebuilds 3.8.0 and creates a
   draft GitHub Release containing the ZIP, SPDX SBOM, and SHA-256 checksum.
-- [ ] Review the generated notes and attached assets, then publish the draft
+- [x] Review the generated notes and attached assets, then publish the draft
   GitHub Release.
-- [ ] Perform a local install/upgrade of PSCX from the published GitHub Release.
-- [ ] After `v3.8.0` is released, create a `dev/29-rel40`.
-- [ ] In the first 4.0 development commit, change the authoritative `PscxVersionPrefix` in `Directory.Build.props` from `3.8.0` to `4.0.0-preview.1` and start the 4.0 changelog section.
-- [ ] Begin Phase 4 only on the 4.0 development line.
+- [x] Perform a local install/upgrade of PSCX from the published GitHub Release.
+- [x] After `v3.8.0` is released, create a `dev/29-rel40`.
+- [x] In the first 4.0 development commit, change the authoritative `PscxVersionPrefix` in `Directory.Build.props` from `3.8.0` to `4.0.0-preview.1` and start the 4.0 changelog section.
+- [x] Establish the 4.0 development line before beginning Phase 4 work.
 
 ---
 
@@ -708,6 +708,28 @@ For each group:
 - [ ] Add a platform/support table.
 - [ ] Add migration guidance from legacy PSCX and from PSCX Light 3.x.
 
+### 7.5 Guided update and installation
+
+- [ ] Add an explicitly invoked PowerShell update script that discovers the
+  latest compatible stable PSCX release from GitHub Releases, compares it with
+  installed versions, and reports the available version and release-notes URL.
+  Allow prerelease discovery only through an explicit opt-in switch.
+- [ ] Require interactive confirmation immediately before installation and
+  support `ShouldProcess`, including `-WhatIf`; do not check the network or
+  prompt automatically during module import or normal command execution.
+- [ ] Download the release ZIP and checksum to a temporary location, verify the
+  SHA-256 checksum and package manifest/version, and reject unsafe archive paths
+  before modifying a module directory.
+- [ ] Install atomically into the versioned `Pscx/<module-version>/...` layout,
+  retain existing versions for rollback, and report the installed path and the
+  command needed to import the new version. Keep removal of older versions a
+  separate, explicit operation.
+- [ ] Handle offline, proxy, rate-limit, incompatible-runtime, permission, and
+  interrupted-install failures with actionable errors and no partial install.
+- [ ] Test release selection, semantic-version comparison, confirmation,
+  `-WhatIf`, checksum failure, archive safety, side-by-side installation, and
+  recovery behavior without depending on the live GitHub service.
+
 ### Exit criteria
 
 - [ ] New features have cross-platform tests and full help.
@@ -722,6 +744,32 @@ For each group:
 
 ### Preview checklist
 
+- [ ] Replace the flaky per-file/rule-batch parallel PSScriptAnalyzer subprocess
+  pattern with deterministic, bounded static-analysis orchestration.
+- [ ] Preserve complete diagnostics for analyzer infrastructure failures,
+  including the file, rule batch, exit code, standard output, and standard
+  error; distinguish those failures from actual analyzer findings, and ensure
+  that any narrowly scoped transient retry still reports the initial failure
+  and never retries or hides a genuine finding.
+- [ ] Add regression coverage for the static-analysis runner so a child-process
+  failure cannot lose its diagnostic context on Windows, Linux, or macOS.
+- [ ] Generate a portable HTML test dashboard from the existing managed-test
+  TRX, Pester NUnit XML, coverage, and static-validation JSON outputs. Present
+  overall and per-suite status, passed/failed/skipped counts, failure details,
+  duration, and the separate PowerShell and managed-code coverage results.
+- [ ] Produce the same HTML dashboard from local and CI test runs and upload it
+  as a browsable CI artifact. Keep the XML, JSON, TRX, and coverage files as
+  the authoritative machine-readable results; the dashboard is a convenience
+  view and must not become a second source of test truth.
+- [ ] Make the report self-contained and usable offline without CDN resources,
+  platform-specific browser automation, or exposing environment-sensitive
+  paths and data.
+- [ ] Generate release ZIPs with the standard versioned module layout,
+  `Pscx/<module-version>/...`, deriving the directory name from the
+  authoritative module version rather than hard-coding it.
+- [ ] Validate that extracting the ZIP directly into a directory on
+  `$env:PSModulePath` supports normal discovery, version-qualified import, and
+  side-by-side installation without rearranging package contents.
 - [ ] Publish at least one preview of each new package.
 - [ ] Publish a complete 3.x-to-4.0 migration guide.
 - [ ] Test clean install, upgrade, uninstall, and side-by-side scenarios.
