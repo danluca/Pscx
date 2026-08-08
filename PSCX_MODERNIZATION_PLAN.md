@@ -456,9 +456,11 @@ development line.
 
 - [ ] Complete every Phase 3 exit criterion.
 - [ ] Run the final release validation from a clean checkout on every supported operating system.
-- [ ] Publish the validated package and release notes as PSCX 3.8.0, and create the `v3.8.0` tag from that release commit.
-- [ ] Create a `release/3.8` servicing branch from `v3.8.0` only if 3.8.x maintenance releases are expected.
-- [ ] After `v3.8.0` is released, rename the active development branch from `dev/15-upgrade` to `dev/4.0`.
+- [ ] Have the MR #23 ready for review and ask user to merge.
+- [ ] From master branch, after merge, publish the validated package and release notes as PSCX 3.8.0, and create the `v3.8.0` tag from that release commit. Or guide the user how to do that in GitHub's interface.
+- [ ] Create a GitHub release for v3.8.0
+- [ ] Perform a local install/upgrade of the PSCX from the GitHub release
+- [ ] After `v3.8.0` is released, create a `dev/29-rel40`.
 - [ ] In the first 4.0 development commit, change the authoritative `PscxVersionPrefix` in `Directory.Build.props` from `3.8.0` to `4.0.0-preview.1` and start the 4.0 changelog section.
 - [ ] Begin Phase 4 only on the 4.0 development line.
 

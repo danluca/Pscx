@@ -5,6 +5,7 @@ obj/
 Output/
 artifacts/
 .tools/
+logs/
 
 # MSTest test Results
 [Tt]est[Rr]esult*/

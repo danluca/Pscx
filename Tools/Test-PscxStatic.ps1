@@ -4,7 +4,9 @@ param(
     [string] $ModulePath,
 
     [Parameter(Mandatory)]
-    [string] $ResultsPath
+    [string] $ResultsPath,
+
+    [string] $PowerShellPath = 'pwsh'
 )
 
 Set-StrictMode -Version Latest
@@ -41,7 +43,12 @@ $allFiles = @(
 $powerShellFiles = @($allFiles | Where-Object Extension -In '.ps1', '.psm1', '.psd1')
 $resultsPath = [IO.Path]::GetFullPath($ResultsPath)
 New-Item -ItemType Directory -Path $resultsPath -Force | Out-Null
-$powerShellExecutable = (Get-Process -Id $PID).Path
+try {
+    $powerShellExecutable = (Get-Command -Name $PowerShellPath -CommandType Application -ErrorAction Stop).Source
+}
+catch {
+    throw "Could not resolve the PowerShell executable '$PowerShellPath'."
+}
 $analyzerFileScript = Join-Path $PSScriptRoot 'Invoke-PscxAnalyzerFile.ps1'
 $ruleNames = @(
     Get-ScriptAnalyzerRule |

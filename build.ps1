@@ -438,7 +438,9 @@ function Invoke-StaticValidation {
         '-ModulePath',
         $moduleRoot,
         '-ResultsPath',
-        $testResultsPath
+        $testResultsPath,
+        '-PowerShellPath',
+        $PowerShellPath
     )
 }
 
