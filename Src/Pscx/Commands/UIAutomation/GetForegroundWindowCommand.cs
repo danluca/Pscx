@@ -10,12 +10,14 @@
 using System;
 using System.ComponentModel;
 using System.Management.Automation;
+using System.Runtime.Versioning;
 
 namespace Pscx.Commands.UIAutomation
 {
     [Cmdlet(VerbsCommon.Get, PscxNouns.ForegroundWindow), 
      Description("Returns the hWnd or handle of the window in the foreground on the current desktop. See also Set-ForegroundWindow.")]
     [RelatedLink(typeof(SetForegroundWindowCommand))]
+    [SupportedOSPlatform("windows")]
     public class GetForegroundWindowCommand : Cmdlet
     {
         protected override void BeginProcessing()

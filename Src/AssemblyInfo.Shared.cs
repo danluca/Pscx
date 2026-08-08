@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 [assembly: AssemblyVersion(PscxAssemblyInfo.AssemblyVersion)]
 [assembly: AssemblyFileVersion(PscxAssemblyInfo.FileVersion)]
+[assembly: AssemblyInformationalVersion(PscxAssemblyInfo.InformationalVersion)]
 
 [assembly: AssemblyProduct(PscxAssemblyInfo.Product)]
 [assembly: AssemblyCopyright(PscxAssemblyInfo.Copyright)]

@@ -1,0 +1,45 @@
+<Project>
+  <PropertyGroup>
+    <!--
+      The maintainer controls this semantic version. Build systems may add a
+      CI prerelease/build identity, but must not rewrite this value.
+    -->
+    <PscxVersionPrefix>3.8.0</PscxVersionPrefix>
+    <PscxVersionCore>$([System.Text.RegularExpressions.Regex]::Match('$(PscxVersionPrefix)', '^\d+\.\d+\.\d+').Value)</PscxVersionCore>
+    <PowerShellMinimumVersion>7.6.0</PowerShellMinimumVersion>
+    <PowerShellSdkVersion>7.6.4</PowerShellSdkVersion>
+
+    <PscxBuildNumber Condition="'$(PscxBuildNumber)' == ''">0</PscxBuildNumber>
+    <PscxCommitSha Condition="'$(PscxCommitSha)' == ''">local</PscxCommitSha>
+    <PscxPackageVersion
+      Condition="'$(PscxPackageVersion)' == ''">$(PscxVersionPrefix)</PscxPackageVersion>
+    <Version>$(PscxPackageVersion)</Version>
+    <VersionPrefix>$(PscxVersionCore)</VersionPrefix>
+    <AssemblyVersion>$(PscxVersionCore).0</AssemblyVersion>
+    <FileVersion>$(PscxVersionCore).$(PscxBuildNumber)</FileVersion>
+    <InformationalVersion
+      Condition="'$(InformationalVersion)' == ''">$(PscxPackageVersion)+build.$(PscxBuildNumber).sha.$(PscxCommitSha)</InformationalVersion>
+
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <NuGetAuditLevel>high</NuGetAuditLevel>
+    <WarningsAsErrors>$(WarningsAsErrors);NU1903;NU1904</WarningsAsErrors>
+    <SystemSecurityCryptographyXmlVersion
+      Condition="'$(SystemSecurityCryptographyXmlVersion)' == ''">10.0.10</SystemSecurityCryptographyXmlVersion>
+  </PropertyGroup>
+
+  <ItemGroup Condition="
+      '$(MSBuildProjectName)' == 'Pscx' Or
+      '$(MSBuildProjectName)' == 'Pscx.Core' Or
+      '$(MSBuildProjectName)' == 'Pscx.InternalTests' Or
+      '$(MSBuildProjectName)' == 'Pscx.Win'">
+    <!--
+      Microsoft.PowerShell.SDK 7.6.4 resolves the vulnerable 10.0.6 version
+      transitively. Keep this explicit override until the SDK dependency graph
+      selects a non-vulnerable version on its own.
+    -->
+    <PackageReference
+      Include="System.Security.Cryptography.Xml"
+      Version="$(SystemSecurityCryptographyXmlVersion)" />
+  </ItemGroup>
+</Project>

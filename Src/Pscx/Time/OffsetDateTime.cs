@@ -88,9 +88,9 @@ namespace Pscx.Time {
 
         public NodaTime.OffsetDateTime PlusMinutes(int minutes) => dateTime.PlusMinutes(minutes);
 
-        public NodaTime.OffsetDateTime PlusSeconds(int seconds) => dateTime.PlusMinutes(seconds);
+        public NodaTime.OffsetDateTime PlusSeconds(int seconds) => dateTime.PlusSeconds(seconds);
 
-        public NodaTime.OffsetDateTime PlusMilliseconds(int milliseconds) => dateTime.PlusMinutes(milliseconds);
+        public NodaTime.OffsetDateTime PlusMilliseconds(int milliseconds) => dateTime.PlusMilliseconds(milliseconds);
 
         public NodaTime.OffsetDateTime Minus(Duration dur) => dateTime.Minus(dur);
 

@@ -1,0 +1,114 @@
+name: Release preparation
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v5
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('global.json', 'Directory.Build.props', 'Src/**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Cache PowerShell test modules
+        uses: actions/cache@v5
+        with:
+          path: .tools/modules
+          key: ${{ runner.os }}-pwsh-tests-${{ hashFiles('Tests/TestPolicy.psd1') }}
+
+      - name: Build stable release candidate
+        if: ${{ github.ref_type == 'tag' }}
+        timeout-minutes: 25
+        shell: pwsh
+        run: >-
+          ./build.ps1
+          -Task CI,PublishPrep
+          -Configuration Release
+          -BuildNumber ${{ github.run_number }}
+          -CommitSha ${{ github.sha }}
+          -Release
+          -ExpectedTag ${{ github.ref_name }}
+
+      - name: Build manual prerelease candidate
+        if: ${{ github.ref_type != 'tag' }}
+        timeout-minutes: 25
+        shell: pwsh
+        run: >-
+          ./build.ps1
+          -Task CI,PublishPrep
+          -Configuration Release
+          -BuildNumber ${{ github.run_number }}
+          -CommitSha ${{ github.sha }}
+
+      - name: Upload manual release candidate
+        if: ${{ always() && github.ref_type != 'tag' }}
+        timeout-minutes: 5
+        uses: actions/upload-artifact@v7
+        with:
+          name: pscx-release-${{ github.run_number }}
+          path: artifacts/packages/*
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Create draft GitHub release with direct assets
+        if: ${{ github.ref_type == 'tag' }}
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $assets = @(Get-ChildItem artifacts/packages -File | Sort-Object Name)
+          if ($assets.Count -ne 3) {
+            throw "Expected ZIP, SBOM, and checksum release assets; found $($assets.Count)."
+          }
+          $arguments = @(
+            'release', 'create', '${{ github.ref_name }}',
+            '--verify-tag',
+            '--draft',
+            '--title', 'PSCX ${{ github.ref_name }}',
+            '--generate-notes'
+          )
+          $arguments += $assets.FullName
+          & gh @arguments
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+
+      - name: Upload release test results
+        if: ${{ always() }}
+        timeout-minutes: 5
+        uses: actions/upload-artifact@v7
+        with:
+          name: pscx-release-tests-${{ github.run_number }}
+          path: artifacts/test-results/**
+          if-no-files-found: warn
+          retention-days: 30

@@ -1,0 +1,171 @@
+---
+document type: cmdlet
+external help file: Pscx.Win.dll-Help.xml
+HelpUri: ''
+Locale: en-US
+Module Name: Pscx.Win
+ms.date: 08/06/2026
+PlatyPS schema version: 2024-05-01
+title: Remove-ReparsePoint
+---
+
+# Remove-ReparsePoint
+
+## SYNOPSIS
+
+PSCX Cmdlet: Removes NTFS reparse junctions and symbolic links.
+
+## SYNTAX
+
+### Path (Default)
+
+```
+Remove-ReparsePoint [-Path] <PscxPathInfo[]> [-WhatIf] [-Confirm] [<CommonParameters>]
+```
+
+### LiteralPath
+
+```
+Remove-ReparsePoint [-LiteralPath] <PscxPathInfo[]> [-WhatIf] [-Confirm] [<CommonParameters>]
+```
+
+## ALIASES
+
+None
+
+## DESCRIPTION
+
+Removes NTFS reparse junctions and symbolic links.
+
+## EXAMPLES
+
+### Example 1 - View detailed command help
+
+```powershell
+Get-Help Remove-ReparsePoint -Full
+```
+
+Displays the complete installed help for this command.
+
+## PARAMETERS
+
+### -Confirm
+
+Prompts you for confirmation before running the cmdlet.
+
+```yaml
+Type: System.Management.Automation.SwitchParameter
+DefaultValue: ''
+SupportsWildcards: false
+Aliases:
+- cf
+ParameterSets:
+- Name: (All)
+  Position: Named
+  IsRequired: false
+  ValueFromPipeline: false
+  ValueFromPipelineByPropertyName: false
+  ValueFromRemainingArguments: false
+DontShow: false
+AcceptedValues: []
+HelpMessage: ''
+```
+
+### -LiteralPath
+
+
+
+```yaml
+Type: Pscx.Core.IO.PscxPathInfo[]
+DefaultValue: ''
+SupportsWildcards: false
+Aliases:
+- PSPath
+ParameterSets:
+- Name: LiteralPath
+  Position: 0
+  IsRequired: true
+  ValueFromPipeline: false
+  ValueFromPipelineByPropertyName: true
+  ValueFromRemainingArguments: false
+DontShow: false
+AcceptedValues: []
+HelpMessage: ''
+```
+
+### -Path
+
+Path to the new link.
+
+```yaml
+Type: Pscx.Core.IO.PscxPathInfo[]
+DefaultValue: ''
+SupportsWildcards: false
+Aliases: []
+ParameterSets:
+- Name: Path
+  Position: 0
+  IsRequired: true
+  ValueFromPipeline: true
+  ValueFromPipelineByPropertyName: true
+  ValueFromRemainingArguments: false
+DontShow: false
+AcceptedValues: []
+HelpMessage: ''
+```
+
+### -WhatIf
+
+Runs the command in a mode that only reports what would happen without performing the actions.
+
+```yaml
+Type: System.Management.Automation.SwitchParameter
+DefaultValue: ''
+SupportsWildcards: false
+Aliases:
+- wi
+ParameterSets:
+- Name: (All)
+  Position: Named
+  IsRequired: false
+  ValueFromPipeline: false
+  ValueFromPipelineByPropertyName: false
+  ValueFromRemainingArguments: false
+DontShow: false
+AcceptedValues: []
+HelpMessage: ''
+```
+
+### CommonParameters
+
+This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable,
+-InformationAction, -InformationVariable, -OutBuffer, -OutVariable, -PipelineVariable,
+-ProgressAction, -Verbose, -WarningAction, and -WarningVariable. For more information, see
+[about_CommonParameters](https://go.microsoft.com/fwlink/?LinkID=113216).
+
+## INPUTS
+
+### Pscx.Core.IO.PscxPathInfo
+
+Accepts a Pscx.Core.IO.PscxPathInfo[] value.
+
+### Pscx.Core.IO.PscxPathInfo[]
+
+Accepts a Pscx.Core.IO.PscxPathInfo[] value.
+
+## OUTPUTS
+
+## NOTES
+
+
+
+
+## RELATED LINKS
+
+- [Online Version]()
+- [New-Hardlink]()
+- [New-Junction]()
+- [Get-MountPoint]()
+- [Remove-MountPoint]()
+- [Get-ReparsePoint]()
+- [New-Symlink]()

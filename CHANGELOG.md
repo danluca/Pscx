@@ -1,5 +1,39 @@
 # PowerShell Community Extensions Light Changelog
 
+## 3.8.0 - August 2026
+
+* Updated the runtime baseline to PowerShell 7.6 LTS and .NET 10.
+* Corrected NodaTime date/time arithmetic forwarding defects.
+* Enforced high/critical NuGet vulnerability policy and resolved the current
+  vulnerable transitive dependency.
+* Centralized version identity and replaced the legacy desktop workflow and
+  post-build packaging scripts with one local/CI build entry point.
+* Added Windows, Ubuntu, and macOS CI builds plus clean packaged-module import
+  checks on the minimum and current PowerShell 7.6 versions.
+* Established one release-blocking managed/Pester test pipeline with separate
+  standard result files, managed and PowerShell coverage, and an aggregate
+  status.
+* Split pure logic tests into `Pscx.InternalTests`, classified the remaining
+  legacy fixtures, and removed a non-reproducible external lab fixture.
+* Expanded packaged-module Pester coverage for exports, help, aliases,
+  providers, optional features, and representative public command behavior.
+* Restored the declared `AddRegex` function, prevented a Windows helper from
+  shadowing `AddAccelerator`, and included the optional VHD module in Windows
+  packages.
+* Corrected the public documentation for supported versions, platforms,
+  command names, optional exports, and registered type accelerators.
+* Replaced the manually maintained README command inventory with a generated,
+  CI-validated catalog sourced from packaged manifests and command help.
+* Replaced the snap-in-era help project and bespoke XML/XSLT generator with
+  pinned Microsoft.PowerShell.PlatyPS, canonical Markdown command/about help,
+  localized packaged MAML, and build/test validation.
+* Standardized distribution on direct GitHub Release ZIPs with clean-install
+  validation, SHA-256 checksums, and a pinned-tool SPDX SBOM; retained local,
+  selective PowerShell signing while keeping CI-built PSCX binaries unsigned.
+* Modernized optional-module manifests and made build, test, static-analysis,
+  and local-signing tooling reliable with PowerShell 7.6 across Windows,
+  Linux, and macOS.
+
 ## 3.7.0 - June 2025
 * Upgraded to .NET 9.0, PowerShell Core 7.5
 * Upgraded gsudo to 2.6
@@ -38,7 +72,6 @@
 * Renamed Expand-Archive to Expand-PscxArchive and Read-Archive to Read-PscxArchive.
 * Renamed Set-LocationEx to Set-PscxLocation.
 * Removed all *-Clipboard commands - superseeded by built-in PowerShell utilities
-* Renamed Format-Hex command to Format-PscxHex.
 * Renamed Get-Uptime to Get-PscxUptime.
 * Renamed Join-String to Join-PscxString.
 * Removed the gcb alias that now conflicts with the built-in gcb alias
