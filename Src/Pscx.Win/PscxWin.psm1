@@ -1,6 +1,6 @@
 ﻿# -----------------------------------------------------------------------
-# Desc: This is the PscxWin initialization module script. This module is 
-# not meant to be used standalone, only as a companion module for PSCX 
+# Desc: This is the PscxWin initialization module script. This module is
+# not meant to be used standalone, only as a companion module for PSCX
 # when running on Windows OS
 # -----------------------------------------------------------------------
 Set-StrictMode -Version Latest
@@ -334,8 +334,8 @@ Export-ModuleMember -Alias * -Function * -Cmdlet *
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBZIP307V+9D1y9
-# Yj1Fgb+a7OgXHBTNq8Osz7MnOZ4by6CCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCIYM07/oeeBeGv
+# r1y8Gx+oS6P2E4JsSJI1PqxpQMtmx6CCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -514,34 +514,34 @@ Export-ModuleMember -Alias * -Function * -Cmdlet *
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQg9g8E9YubMqGc1KFFKOar
-# X2RpLzD/CYkwsVf7b4cAXIQwDQYJKoZIhvcNAQEBBQAEggIACIoPhnw8PHHATclf
-# MZnyQFrucTJ/isH5QfdEfnxp/UwjOM0buTRdbY7eSD6JnQ7KFGv72QQvQ33hUq1C
-# WSitfug0uM9L9/PEflAERzgjrnNi0mHy3FeGdnXgGCUWuA/JhyPSYeQ8hqaHZdtz
-# Ts2CqdRTAfv0XgIPvFAg2I3fuWXAMGFRQeI9WgWIcOvjShwoz+YrwdzpXzzJRkQS
-# f5VTGDWHMpn1K8vT9eZDjMr2LDm2Kg7lbva1Z/+7gaGKTr8Jx4jA+D2MET3lySeH
-# QLtnMc9hKj/vjHBGnJsN/smAc0M11QP1zFjiLNHdwMk33fu2/I8fs9zSYLpLBGvu
-# czypOKxo/Q/mBkOlj7y3tsYNN69jEi7ZIphjj5SBUcSwD2nfldXzi3r//8UMG9B+
-# Xr7znKAyhfrt+wGQ5F7M8LgIHR9VjN8Q1W/E60kkRTGbKXdV/mUs4plm9D5amTqA
-# i2SoQBdhZdR3Jm8VeO5UupMFLqJuhNApPSxm5qBypkFqIruaBpoHdql1UT6+nEhS
-# DH4k+yjYZnructVZcTsEy36az3yaO7kVdQg/4s8nNkAaFZcuoKSwAiM5fTy0FqKF
-# pQV8xjYJaUTQlWTMzdibQHHf1sSooE77+n4pqYEzOKF7oMUjqpQwBVeDeUdw3RsW
-# GaPuhfZLN5FkxvCWTxbaGEzX9T2hggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgbt/zz2py0Qn8tUnUWxaS
+# C4jrKlizojjZNFumkvLy0fAwDQYJKoZIhvcNAQEBBQAEggIAm5QR/+SF0f7xYbBD
+# zEc7dE9j/x1dilASWdBj76uzx4hFsa1fBO1nZ/OpCg2wp0XRk5Lu0a21IxpgkcSL
+# 9l0Ra+ljMVcbRmjZhw7MMRH/aRKD/YqM/YDCCPHFxRY6tThdSvFQ1d5Ek2akveUj
+# h/t/YUYcg8GA1WWXVF0m4PsypAcx8pPRwNRto3LBAR3aFVpf5LAGW/7THo/5j3nf
+# kFAnF+E7PL9NIbW2GHiimysHqr3FBhskcQvFcFCQKDBMkAlJkOIGw6zppsKqB3Rd
+# aoa6T/DGqDKRd+Pld+mplC9LYjN/cw6htHH+ne43/0C5q4bzdrnch06fksBoUfoQ
+# aaPK7T/Gk+T8YeYGk30BHOop6VLvVH/D+IBKuHHSQa0KUSrLo2UU8Wg04YWV7cRJ
+# /MNjjej+tDSto0oJxqtWOIKucFaOzN4DGtPSxqCAeJ7P+Y3Tvfy07x4dZLqscIHa
+# j4XkdXpo4wz8wEPrXcF/Zlx2ZNaK90cOUdClntpKJwe2n0nhwVHbmyzHC5g4ynI1
+# b8Y1GVfgqR+0PC0gaWPcdkj2Pvz9JGjeUsxc+X4nI6CD/e9o3+pHBYmonhwx7BP6
+# g26F20ypQNoLpUqS89wXGyZvQaOIhYHSuqOm4wkI5rm8bnLKTcdLBveCQIfancT3
+# AORxiSoLypDuYB+YTuuWQYdjrgehggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# NzI0MjExMjI2WjAvBgkqhkiG9w0BCQQxIgQgB6+m37kBjJHoZU+LBwcFcc22N8aB
-# gXfmVjTSjWov29AwDQYJKoZIhvcNAQEBBQAEggIAXj4iC0nSecaEQk+1P+VPGdAM
-# MjRWSZivayEuA/ffLgIPjgIZLswnGUSKiirBZLPvL3oGbnwN5PdVUAfGsujo3spZ
-# igpNW8zYCSo9gbnn/Y/E4Vpa1rR0Qnjr5kndjPtD+jneUKf9kzv+r8BZ+Ij+teZ1
-# DbtLXhLYfVs57potQn8Ob75D0sv4xGkyp//NTlQfWS/bROGgRPf1sse5JIIO4dIA
-# an3+cITqIcdZIMdQ4p7U/HYX//6CT7KQfnB7cFWGj00CNaNeUqvmv9aJ9NDiCosv
-# szH0E6DtzKegYtpig7ghxwM7gioWE7vjxlKqqlOEO5UcQwCtX8O5LYpkuicUHymw
-# Yq3AywtssS+pfFnwpml92tJL9qjYH9oO0xSOcX+wwpEQBHsfRYUS3iwltDXGO1yC
-# UsVcvA7WNZ5X5DzeDeXkROF51w9rILHJvqVDgpMMdv4bU2zQIeZ7vQYLTZ1T6Oyu
-# 9Cqdkvdtcqfxpm33VNgAu0VhX/keJETaKe7SHr3sjuF5JKwQjyL20zCNfYPU4FMO
-# hapRkQnAfkwAixX67nb0y87HsQppCwroJZgFC0N6NwatIe0+FR3mUCeaI4jg7Djj
-# szGCWl+9rbt8ryeN3qmveOG9EUMDC3KBdrC85wXGNRyfr5JHe8cYh6xUwKZatHTw
-# SO1QamFaNUhpUM7qOlc=
+# ODA4MDQ0ODMxWjAvBgkqhkiG9w0BCQQxIgQgc/VKzcPJjseG1/0gpDCi/d7x7uq9
+# CQJyJgCGM5OVMhYwDQYJKoZIhvcNAQEBBQAEggIAtjEsXIEYjdL6bHabtYwBhxGO
+# KLFbAR4MiLithHvqkaKTsvsbZ1Sdc03giFHwoeCgltGJyPcOJLY5pEDTfZAhfmwj
+# jxtvg9zwzCa34LgKHDBXYqVT0lOWO1XaJFKY9qsAyEPEiekI4njkZv2WMWWPWk4d
+# 1rrEKkhCznuxzSR7oNnNY+QWoebxWyY4/eyoBrh3LzKmHsIgPgMntCSigz2TPkre
+# nqMfb2m3G0US4MuZSvvPCaCYO3Yi6JFArgwQgLXrVsW3wE8uE+e8r3eapxOsx8Kq
+# oPqnzdubeVdEyJvNDSQV02GjFSia/vkd2gZhqZ2x23eBAlaCv9Hco2XFwsEENTj1
+# ZqS0BArCJzX14Vnit7pdSSCwUDnpj9pqwZtdvAMnmGJjxbqWoEH1Hwk+FWzYzmrx
+# CXtnvRzK2fiuNe8gc1cLa7M7gXpciz8iWs/6GhfBBG8b6Au64f4Gk73LV9x6IcBu
+# apA2F42JQNHtn9y9PFXqaCWr9nnwUHp2eADxE0IXkndL9VKOFptjqCGaEdYE2th/
+# RytkkiTjEBarux0omAj4iZEmUnekqrhB7l5QEo43d7Nu8x7MOQCf410k/5vxdZMR
+# h1U2MhgtXGMwxobo9rRm33vtM4uQmAsdRmTzuHvbbGdwwsNGMYMqBnjMqG55mn4v
+# QYFGq+zlQ9RpzQv/Cm0=
 # SIG # End signature block

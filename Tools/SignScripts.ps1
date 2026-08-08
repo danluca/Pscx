@@ -36,7 +36,7 @@ if ($certificate.NotBefore -gt [datetime]::Now -or $certificate.NotAfter -lt [da
 }
 
 $codeSigningOid = '1.3.6.1.5.5.7.3.3'
-if ($certificate.EnhancedKeyUsageList.ObjectId.Value -notcontains $codeSigningOid) {
+if ($certificate.EnhancedKeyUsageList.ObjectId -notcontains $codeSigningOid) {
     throw "Certificate $CertificateThumbprint is not valid for code signing."
 }
 

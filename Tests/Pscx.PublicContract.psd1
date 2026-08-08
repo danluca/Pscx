@@ -27,8 +27,8 @@
         Full = @('ln', 'rvhr', 'rvwer')
     }
     Providers = @{
-        Core = @('AssemblyCache', 'PscxSettings')
-        Full = @('DirectoryServices')
+        Core = @('PscxSettings')
+        Full = @('AssemblyCache', 'DirectoryServices')
     }
     Platforms = @{
         # Script functions cannot carry SupportedOSPlatformAttribute metadata.
