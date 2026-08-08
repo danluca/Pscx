@@ -454,12 +454,21 @@ This is an ordered boundary between Phase 3 and Phase 4. Do not begin the
 breaking public-surface or package-boundary work in Phase 4 on the 3.8
 development line.
 
-- [ ] Complete every Phase 3 exit criterion.
-- [ ] Run the final release validation from a clean checkout on every supported operating system.
-- [ ] Have the MR #23 ready for review and ask user to merge.
-- [ ] From master branch, after merge, publish the validated package and release notes as PSCX 3.8.0, and create the `v3.8.0` tag from that release commit. Or guide the user how to do that in GitHub's interface.
-- [ ] Create a GitHub release for v3.8.0
-- [ ] Perform a local install/upgrade of the PSCX from the GitHub release
+- [x] Complete every Phase 3 exit criterion.
+- [x] Run the final release validation from a clean checkout on every supported
+  operating system. The Windows, Linux, and macOS CI matrix is green, and a
+  local stable-version `PublishPrep` rehearsal validated the ZIP installation,
+  SPDX SBOM, and SHA-256 release assets on August 8, 2026.
+- [ ] Have [pull request #23](https://github.com/danluca/Pscx/pull/23) ready for
+  review and ask the maintainer to merge it.
+- [ ] Merge pull request #23 into `master`, then update the local `master` branch
+  to the resulting release commit.
+- [ ] Create and push the annotated `v3.8.0` tag from that exact release commit.
+- [ ] Verify the tag-triggered release workflow rebuilds 3.8.0 and creates a
+  draft GitHub Release containing the ZIP, SPDX SBOM, and SHA-256 checksum.
+- [ ] Review the generated notes and attached assets, then publish the draft
+  GitHub Release.
+- [ ] Perform a local install/upgrade of PSCX from the published GitHub Release.
 - [ ] After `v3.8.0` is released, create a `dev/29-rel40`.
 - [ ] In the first 4.0 development commit, change the authoritative `PscxVersionPrefix` in `Directory.Build.props` from `3.8.0` to `4.0.0-preview.1` and start the 4.0 changelog section.
 - [ ] Begin Phase 4 only on the 4.0 development line.

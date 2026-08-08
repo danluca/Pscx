@@ -1,6 +1,6 @@
 # PowerShell Community Extensions Light Changelog
 
-## 3.8.0 - Unreleased
+## 3.8.0 - August 2026
 
 * Updated the runtime baseline to PowerShell 7.6 LTS and .NET 10.
 * Corrected NodaTime date/time arithmetic forwarding defects.
@@ -30,6 +30,9 @@
 * Standardized distribution on direct GitHub Release ZIPs with clean-install
   validation, SHA-256 checksums, and a pinned-tool SPDX SBOM; retained local,
   selective PowerShell signing while keeping CI-built PSCX binaries unsigned.
+* Modernized optional-module manifests and made build, test, static-analysis,
+  and local-signing tooling reliable with PowerShell 7.6 across Windows,
+  Linux, and macOS.
 
 ## 3.7.0 - June 2025
 * Upgraded to .NET 9.0, PowerShell Core 7.5
