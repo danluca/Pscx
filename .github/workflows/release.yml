@@ -18,6 +18,8 @@ jobs:
   prepare:
     runs-on: windows-latest
     timeout-minutes: 30
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
@@ -68,15 +70,38 @@ jobs:
           -BuildNumber ${{ github.run_number }}
           -CommitSha ${{ github.sha }}
 
-      - name: Upload release candidate
-        if: ${{ always() }}
+      - name: Upload manual release candidate
+        if: ${{ always() && github.ref_type != 'tag' }}
         timeout-minutes: 5
         uses: actions/upload-artifact@v7
         with:
           name: pscx-release-${{ github.run_number }}
-          path: artifacts/packages/*.zip
+          path: artifacts/packages/*
           if-no-files-found: error
           retention-days: 30
+
+      - name: Create draft GitHub release with direct assets
+        if: ${{ github.ref_type == 'tag' }}
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $assets = @(Get-ChildItem artifacts/packages -File | Sort-Object Name)
+          if ($assets.Count -ne 3) {
+            throw "Expected ZIP, SBOM, and checksum release assets; found $($assets.Count)."
+          }
+          $arguments = @(
+            'release', 'create', '${{ github.ref_name }}',
+            '--verify-tag',
+            '--draft',
+            '--title', 'PSCX ${{ github.ref_name }}',
+            '--generate-notes'
+          )
+          $arguments += $assets.FullName
+          & gh @arguments
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
 
       - name: Upload release test results
         if: ${{ always() }}

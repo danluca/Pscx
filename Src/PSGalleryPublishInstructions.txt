@@ -1,7 +1,0 @@
-
-$nugetApiKey = '--------------------------'
-
-$releaseNotes = Get-Content $home\GitHub\pscx\pscx\ReleaseNotes.txt -Raw
-
-Publish-Module -Path $home\Documents\WindowsPowerShell\Modules\Pscx -NuGetApiKey $nugetApiKey `
-               -ReleaseNotes $releaseNotes

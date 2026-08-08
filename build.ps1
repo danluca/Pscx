@@ -679,19 +679,141 @@ function Invoke-Audit {
     )
 }
 
+function Assert-UnsignedPscxBinaries {
+    if (-not $IsWindows) {
+        return
+    }
+
+    $signedBinaries = @(
+        Get-ChildItem -LiteralPath $moduleRoot -Filter 'Pscx*.dll' -File |
+            Where-Object {
+                (Get-AuthenticodeSignature -LiteralPath $_.FullName).Status -ne 'NotSigned'
+            }
+    )
+    if ($signedBinaries.Count -gt 0) {
+        $names = $signedBinaries.Name -join ', '
+        throw "Release PSCX binaries must remain Authenticode-unsigned: $names"
+    }
+}
+
+function Invoke-InstalledPackageTest {
+    $archivePath = Join-Path $packageOutputPath "Pscx-$packageVersion.zip"
+    Write-Step 'Validate installation from the release ZIP in a clean environment'
+    Invoke-NativeCommand $PowerShellPath @(
+        '-NoLogo',
+        '-NoProfile',
+        '-NonInteractive',
+        '-File',
+        (Join-Path $repositoryRoot 'Tools/Test-PscxReleasePackage.ps1'),
+        '-PackagePath',
+        $archivePath,
+        '-ExpectedBuildScope',
+        $resolvedBuildScope,
+        '-ExpectedVersion',
+        $moduleVersion,
+        '-PowerShellPath',
+        $PowerShellPath
+    )
+}
+
+function New-ReleaseSbom {
+    $sbomToolRoot = Join-Path $repositoryRoot ".tools/sbom/$sbomToolVersion"
+    $sbomExecutable = Join-Path $sbomToolRoot $(
+        if ($IsWindows) { 'sbom-tool.exe' } else { 'sbom-tool' }
+    )
+    if (-not (Test-Path -LiteralPath $sbomExecutable -PathType Leaf)) {
+        New-Item -ItemType Directory -Path $sbomToolRoot -Force | Out-Null
+        Invoke-NativeCommand dotnet @(
+            'tool',
+            'install',
+            'Microsoft.Sbom.DotNetTool',
+            '--tool-path',
+            $sbomToolRoot,
+            '--version',
+            $sbomToolVersion
+        ) | Out-Host
+    }
+
+    $manifestRoot = Join-Path $moduleRoot '_manifest'
+    Remove-BuildDirectory $manifestRoot
+    Write-Step "Generate SPDX 2.2 SBOM with Microsoft SBOM Tool $sbomToolVersion"
+    Invoke-NativeCommand $sbomExecutable @(
+        'generate',
+        '-b',
+        $moduleRoot,
+        '-bc',
+        (Join-Path $repositoryRoot 'Src'),
+        '-pn',
+        'Pscx',
+        '-pv',
+        $packageVersion,
+        '-ps',
+        'PowerShell Core Community Extensions',
+        '-nsb',
+        'https://github.com/danluca/Pscx',
+        '-mi',
+        'SPDX:2.2'
+    ) | Out-Host
+
+    $generatedSbom = Join-Path $manifestRoot 'spdx_2.2/manifest.spdx.json'
+    if (-not (Test-Path -LiteralPath $generatedSbom -PathType Leaf)) {
+        throw "The SBOM tool did not create its expected manifest: $generatedSbom"
+    }
+
+    $validationPath = Join-Path $testResultsPath 'Pscx.Sbom.validation.json'
+    New-Item -ItemType Directory -Path $testResultsPath -Force | Out-Null
+    Invoke-NativeCommand $sbomExecutable @(
+        'validate',
+        '-b',
+        $moduleRoot,
+        '-o',
+        $validationPath,
+        '-mi',
+        'SPDX:2.2'
+    ) | Out-Host
+
+    $sbomPath = Join-Path $packageOutputPath "Pscx-$packageVersion.spdx.json"
+    Copy-Item -LiteralPath $generatedSbom -Destination $sbomPath -Force
+    Remove-BuildDirectory $manifestRoot
+    return $sbomPath
+}
+
+function New-ReleaseChecksums {
+    param([string[]] $AssetPath)
+
+    Write-Step 'Generate SHA-256 release checksums'
+    $lines = foreach ($path in $AssetPath) {
+        $resolvedPath = (Resolve-Path -LiteralPath $path).Path
+        $hash = (Get-FileHash -LiteralPath $resolvedPath -Algorithm SHA256).Hash.ToLowerInvariant()
+        "$hash  $([IO.Path]::GetFileName($resolvedPath))"
+    }
+    $checksumPath = Join-Path $packageOutputPath "Pscx-$packageVersion.sha256"
+    Set-Content -LiteralPath $checksumPath -Value $lines -Encoding utf8
+    return $checksumPath
+}
+
 function Invoke-PublishPrep {
     param([switch] $AlreadyValidated)
 
     if (-not $AlreadyValidated) {
         Invoke-Validate
     }
-    Write-Step 'Publish preparation complete'
-    Write-Host "Prepared package: $(Get-RelativePath (Join-Path $packageOutputPath "Pscx-$packageVersion.zip"))"
-    Write-Host 'Publishing and signing are intentionally separate, maintainer-approved release actions.'
+    $archivePath = Join-Path $packageOutputPath "Pscx-$packageVersion.zip"
+    Invoke-InstalledPackageTest
+    Assert-UnsignedPscxBinaries
+    $sbomPath = New-ReleaseSbom
+    $checksumPath = New-ReleaseChecksums -AssetPath @($archivePath, $sbomPath)
+
+    Write-Step 'Release preparation complete'
+    Write-Host "Package : $(Get-RelativePath $archivePath)"
+    Write-Host "SBOM    : $(Get-RelativePath $sbomPath)"
+    Write-Host "SHA-256 : $(Get-RelativePath $checksumPath)"
+    Write-Host 'GitHub Releases are the only publication channel; CI does not sign PSCX binaries or PowerShell files.'
 }
 
 [xml] $versionDocument = Get-Content -LiteralPath $versionFilePath -Raw
 $testPolicy = Import-PowerShellDataFile -LiteralPath $testPolicyFilePath
+$sbomToolVersion = [string]$testPolicy.SbomToolVersion
 $artifactPathRoot = [System.IO.Path]::GetPathRoot($artifactsRoot).TrimEnd('\', '/')
 if ($artifactsRoot.TrimEnd('\', '/') -eq $artifactPathRoot) {
     throw "ArtifactsPath cannot be a filesystem root: $artifactsRoot"

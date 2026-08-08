@@ -56,10 +56,17 @@ the [Imports](Imports/) folder for the applicable license files.
 ### Installation
 
 1. Download the package from the
-   [latest GitHub release](https://github.com/danluca/Pscx/releases/latest).
-2. If the download is a GitHub artifact wrapper, extract it first to obtain
-   `Pscx-{version}.zip`.
-3. Extract the module into a directory listed in `$env:PSModulePath`. Common
+   [latest GitHub release](https://github.com/danluca/Pscx/releases/latest),
+   together with its `.sha256` checksum file. GitHub Releases are the supported
+   distribution channel; PSCX is not published to PowerShell Gallery.
+2. Verify the ZIP against the matching entry in the checksum file:
+
+   ```powershell
+   Get-FileHash ./Pscx-3.8.0.zip -Algorithm SHA256
+   Get-Content ./Pscx-3.8.0.sha256
+   ```
+
+3. Extract the ZIP into a directory listed in `$env:PSModulePath`. Common
    current-user locations are:
    - Windows: `~/Documents/PowerShell/Modules`
    - macOS/Linux: `~/.local/share/powershell/Modules`
@@ -69,6 +76,9 @@ the [Imports](Imports/) folder for the applicable license files.
    Import-Module Pscx
    Get-Module Pscx
    ```
+
+The release ZIP includes local offline help. PSCX does not configure
+`Update-Help` or publish separate online help packages.
 
 ### Platform support
 
@@ -176,6 +186,35 @@ Several conveniences are made available in support of release process:
 - `Tools/Update-PscxReadmeCatalog.ps1` generates the public API tables from a
   Full packaged module. Use `./build.ps1 -Task Catalog` after packaging; the
   Windows static CI gate fails when the committed catalog is stale.
+
+### Release artifacts and local signing
+
+`./build.ps1 -Task CI,PublishPrep` validates installation from the completed
+ZIP in an isolated module path, generates an SPDX 2.2 SBOM with the pinned
+Microsoft SBOM Tool, and creates SHA-256 checksums. A tagged release workflow
+attaches these three files directly to a draft GitHub Release for maintainer
+review and publication:
+
+- `Pscx-{version}.zip`;
+- `Pscx-{version}.spdx.json`;
+- `Pscx-{version}.sha256`.
+
+The CI workflow has no signing credentials and PSCX-built DLLs in its release
+artifacts are intentionally Authenticode-unsigned. Maintainers may sign
+selected PowerShell source or locally staged files from a Windows workstation:
+
+```powershell
+./Tools/SignScripts.ps1 `
+    -Path ./Src/Pscx/Modules/Utility `
+    -Recurse `
+    -CertificateThumbprint '<certificate-thumbprint>' `
+    -WhatIf
+```
+
+Remove `-WhatIf` only after reviewing the exact file set. The signing tool
+requires an explicit certificate thumbprint, validates the code-signing
+certificate and timestamp result, excludes `Pscx.UserPreferences.ps1` by
+default, and is never invoked by the build or GitHub Actions.
 
 ## Public API catalog
 

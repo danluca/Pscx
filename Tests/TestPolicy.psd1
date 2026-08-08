@@ -4,6 +4,7 @@
     PesterVersion = '6.0.0'
     PSScriptAnalyzerVersion = '1.25.0'
     PlatyPSVersion = '1.0.1'
+    SbomToolVersion = '4.1.5'
 
     # Conservative initial gates based on the Phase 2.2 smoke suites. Raise
     # these independently as tests migrate; never combine the percentages.

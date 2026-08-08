@@ -27,6 +27,9 @@
 * Replaced the snap-in-era help project and bespoke XML/XSLT generator with
   pinned Microsoft.PowerShell.PlatyPS, canonical Markdown command/about help,
   localized packaged MAML, and build/test validation.
+* Standardized distribution on direct GitHub Release ZIPs with clean-install
+  validation, SHA-256 checksums, and a pinned-tool SPDX SBOM; retained local,
+  selective PowerShell signing while keeping CI-built PSCX binaries unsigned.
 
 ## 3.7.0 - June 2025
 * Upgraded to .NET 9.0, PowerShell Core 7.5

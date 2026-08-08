@@ -415,27 +415,34 @@ PowerShell can infer command syntax and parameter metadata from a loaded command
   - bespoke localized command XML after migration;
   - the custom MAML XSLT and generation scripts;
   - the help project from the solution and build dependencies.
-- [ ] **Deferred:** decide during installation/release work whether PSCX needs online/updatable help. If so, add `HelpInfoURI` and publish the required cross-platform help packages; this is optional and separate from shipping local help.
+- [x] Ship local offline help only. PSCX will not configure online/updatable
+  help or publish separate help packages.
 
 ### 3.4 Improve installation and publishing
 
 **Tracking:** [#27 Modernize PSCX installation and release artifacts](https://github.com/danluca/Pscx/issues/27)
 
-- [ ] Publish installable packages to PowerShell Gallery, if repository ownership and signing permit it.
-- [ ] Document `Install-PSResource` as the preferred installation method.
-- [ ] Keep a direct release ZIP as a secondary installation option.
-- [ ] Remove the double-ZIP artifact problem by uploading the package itself as a release asset.
-- [ ] Add SHA-256 checksums for release artifacts.
-- [ ] Generate an SBOM for release packages.
-- [ ] Sign PowerShell scripts, manifests, assemblies, and packages consistently if signing remains a project requirement.
-- [ ] Validate the installed package in a clean environment before publishing.
+- [x] Use GitHub Releases as the only supported distribution channel; do not
+  publish PSCX to PowerShell Gallery.
+- [x] Document direct ZIP installation as the supported installation method.
+- [x] Upload the package ZIP itself to a draft GitHub Release from a tagged
+  build, avoiding the Actions artifact wrapper/double-ZIP problem while
+  preserving maintainer approval before publication.
+- [x] Add SHA-256 checksums for release artifacts.
+- [x] Generate a pinned-tool SPDX 2.2 SBOM for release packages.
+- [x] Keep Authenticode signing as an explicit local maintainer operation for
+  selected PowerShell files. Do not provide CI signing credentials, and leave
+  PSCX-built binary artifacts unsigned.
+- [x] Validate installation and module import from the completed release ZIP in
+  an isolated module path before publishing.
 
 ### Exit criteria
 
-- [ ] README, manifests, projects, CI, and changelog describe the same release.
-- [ ] The public command catalog is generated or mechanically validated.
-- [ ] A user can install PSCX with one standard PowerShell command.
-- [ ] Release artifacts are reproducible and validated.
+- [x] README, manifests, projects, CI, and changelog describe the same release.
+- [x] The public command catalog is generated or mechanically validated.
+- [x] A user can install PSCX through the documented GitHub Release ZIP
+  workflow without a gallery dependency.
+- [x] Release artifacts are reproducible and validated.
 
 ---
 
@@ -708,7 +715,7 @@ For each group:
 - [ ] Publish a complete 3.x-to-4.0 migration guide.
 - [ ] Test clean install, upgrade, uninstall, and side-by-side scenarios.
 - [ ] Test package import in clean Windows, Linux, and macOS environments.
-- [ ] Test PowerShell Gallery installation and direct release ZIP installation.
+- [ ] Test direct GitHub Release ZIP installation.
 - [ ] Validate command help and examples from installed packages.
 - [ ] Collect and triage preview feedback.
 - [ ] Freeze the public API before release-candidate builds.
@@ -719,7 +726,7 @@ For each group:
 - [ ] No unapproved high or critical dependency vulnerability remains.
 - [ ] Package contents and SBOM are reviewed.
 - [ ] Release notes list additions, fixes, removals, and replacements.
-- [ ] Checksums and signatures are published.
+- [ ] Checksums and an SBOM are published, and signing status is documented.
 - [ ] Documentation points to stable package names and versions.
 - [ ] Legacy compatibility package or migration instructions are available.
 
