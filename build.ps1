@@ -423,7 +423,9 @@ function Invoke-PesterTest {
         '-BuildScope',
         $resolvedBuildScope,
         '-ResultsPath',
-        $testResultsPath
+        $testResultsPath,
+        '-PowerShellPath',
+        $PowerShellPath
     )
 }
 

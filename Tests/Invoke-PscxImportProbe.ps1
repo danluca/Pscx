@@ -13,14 +13,18 @@ param(
 
     [switch] $EnableAllOptionalFeatures,
 
+    [string] $PowerShellPath = 'pwsh',
+
     [Parameter(DontShow)]
     [string] $ProbeOutputPath
 )
 
 $probePath = Join-Path ([IO.Path]::GetTempPath()) ('Pscx.ImportProbe.{0}.json' -f [guid]::NewGuid().ToString('N'))
-$pwshPath = Join-Path $PSHOME 'pwsh.exe'
-if (-not (Test-Path -LiteralPath $pwshPath)) {
-    $pwshPath = Join-Path $PSHOME 'pwsh'
+try {
+    $pwshPath = (Get-Command -Name $PowerShellPath -CommandType Application -ErrorAction Stop).Source
+}
+catch {
+    throw "Could not resolve the PowerShell executable '$PowerShellPath'."
 }
 
 $arguments = @(
@@ -33,6 +37,8 @@ $arguments = @(
     $ModulePath,
     '-BuildScope',
     $BuildScope,
+    '-PowerShellPath',
+    $pwshPath,
     '-ProbeOutputPath',
     $probePath
 )

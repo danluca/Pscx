@@ -4,7 +4,9 @@ param(
 
     [Parameter(Mandatory)]
     [ValidateSet('Core', 'Full')]
-    [string] $BuildScope
+    [string] $BuildScope,
+
+    [string] $PowerShellPath = 'pwsh'
 )
 
 $testContract = Import-PowerShellDataFile -LiteralPath (
@@ -338,7 +340,7 @@ Describe 'Representative public command behavior' {
 Describe 'Optional feature imports' {
     It 'imports with default preferences in a clean process' {
         $result = & (Join-Path $PSScriptRoot 'Invoke-PscxImportProbe.ps1') `
-            -ModulePath $ModulePath -BuildScope $BuildScope
+            -ModulePath $ModulePath -BuildScope $BuildScope -PowerShellPath $PowerShellPath
         $result.Imported | Should -BeTrue
         $result.Warnings | Should -BeNullOrEmpty
     }
@@ -347,7 +349,8 @@ Describe 'Optional feature imports' {
         param($Name, $ModuleName)
 
         $result = & (Join-Path $PSScriptRoot 'Invoke-PscxImportProbe.ps1') `
-            -ModulePath $ModulePath -BuildScope $BuildScope -Feature $Name
+            -ModulePath $ModulePath -BuildScope $BuildScope -Feature $Name `
+            -PowerShellPath $PowerShellPath
         $result.Imported | Should -BeTrue
         $result.LoadedModules | Should -Contain $ModuleName
         $result.Warnings | Should -BeNullOrEmpty
@@ -360,7 +363,8 @@ Describe 'Optional feature imports' {
         }
 
         $result = & (Join-Path $PSScriptRoot 'Invoke-PscxImportProbe.ps1') `
-            -ModulePath $ModulePath -BuildScope $BuildScope -EnableAllOptionalFeatures
+            -ModulePath $ModulePath -BuildScope $BuildScope -EnableAllOptionalFeatures `
+            -PowerShellPath $PowerShellPath
         $declaredCommands = @(
             $script:manifestData.FunctionsToExport
             $script:manifestData.CmdletsToExport
@@ -371,7 +375,8 @@ Describe 'Optional feature imports' {
 
     It 'does not replace a pre-existing global alias when optional features are disabled' {
         $result = & (Join-Path $PSScriptRoot 'Invoke-PscxImportProbe.ps1') `
-            -ModulePath $ModulePath -BuildScope $BuildScope -DisableOptionalFeatures
+            -ModulePath $ModulePath -BuildScope $BuildScope -DisableOptionalFeatures `
+            -PowerShellPath $PowerShellPath
         $result.Imported | Should -BeTrue
         $result.CdAliasBefore | Should -Be $result.CdAliasAfter
         $result.Warnings | Should -BeNullOrEmpty
