@@ -54,6 +54,7 @@ namespace Pscx.Core {
             this.Preferences["CD_EchoNewLocation"] = false;
             this.Preferences[EditFileBackingFileThreshold] = EditFileBackingFileThresholdDefaultValue;
             this.Preferences["FileSizeInUnits"] = false;
+            this.Preferences["OverrideExistingAliases"] = false;
             this.Preferences["PageHelpUsingLess"] = true;
             this.Preferences["TextEditor"] = DefaultTextEditor;
 

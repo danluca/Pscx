@@ -3,6 +3,9 @@ ModuleVersion    = '0.0.0' # Stamped from Directory.Build.props during packaging
 PowerShellVersion = '0.0' # Stamped from Directory.Build.props during packaging.
     FormatsToProcess = 'Pscx.Net.Format.ps1xml'
     TypesToProcess   = 'Pscx.Net.Type.ps1xml'
+    FunctionsToExport = @()
+    CmdletsToExport = @()
+    AliasesToExport = @()
 }
 
 # SIG # Begin signature block

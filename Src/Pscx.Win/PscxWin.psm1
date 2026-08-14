@@ -305,11 +305,6 @@ function Import-VisualStudioVars {
 # set the 7zip library path
 [SevenZip.SevenZipBase]::SetLibraryPath([System.IO.Path]::Join([Pscx.Core.PscxContext]::Instance.AppsDir, "7z.dll"))
 
-# aliases
-Set-Alias rvhr  Pscx\Resolve-HResult        -Description "PSCX alias"
-Set-Alias rvwer Pscx\Resolve-WindowsError   -Description "PSCX alias"
-Set-Alias ln    Pscx\New-HardLink           -Description "PSCX alias"
-
 $acceleratorsType = [psobject].Assembly.GetType('System.Management.Automation.TypeAccelerators')
 
 # If these accelerators have already been defined, don't override (and don't error)
@@ -324,12 +319,25 @@ function AddPscxWinAccelerator($name, $type)
 AddPscxWinAccelerator "yaml" ([Pscx.Win.Fwk.TypeAccelerators.Yaml])
 AddPscxWinAccelerator "yml"  ([Pscx.Win.Fwk.TypeAccelerators.Yaml])
 
+$aliasesToExport = @()
+$pscxAliases = [ordered]@{
+    rvhr = 'Resolve-HResult'
+    rvwer = 'Resolve-WindowsError'
+    ln = 'New-HardLink'
+}
+foreach ($aliasName in $pscxAliases.Keys) {
+    $existingCommand = Get-Command -Name $aliasName -ErrorAction SilentlyContinue |
+        Select-Object -First 1
+    if ($Pscx:Preferences.OverrideExistingAliases -or $null -eq $existingCommand) {
+        Set-Alias -Name $aliasName -Value $pscxAliases[$aliasName] -Scope Local `
+            -Description 'PSCX compatibility alias'
+        $aliasesToExport += $aliasName
+    }
+}
 
-# -----------------------------------------------------------------------
-# Cmdlet aliases
-# -----------------------------------------------------------------------
-
-Export-ModuleMember -Alias * -Function * -Cmdlet *
+$publicContract = Import-PowerShellDataFile -LiteralPath (Join-Path $PSScriptRoot 'PscxWin.psd1')
+Export-ModuleMember -Alias $aliasesToExport -Function $publicContract.FunctionsToExport `
+    -Cmdlet $publicContract.CmdletsToExport
 
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor

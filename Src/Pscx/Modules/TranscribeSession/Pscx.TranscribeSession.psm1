@@ -94,7 +94,7 @@ $TranscriptFile = "{0}-{1:0###}.txt" -f (Get-Date -Format yyyyMMdd-HHmm), $PID
 $Pscx:Session['TranscribeSession_TranscriptPath'] = Join-Path $TranscriptDir $TranscriptFile
 Start-Transcript $Pscx:Session['TranscribeSession_TranscriptPath']
 
-Export-ModuleMember -Alias * -Function * -Cmdlet *
+Export-ModuleMember -Function Search-Transcript
 
 
 # SIG # Begin signature block

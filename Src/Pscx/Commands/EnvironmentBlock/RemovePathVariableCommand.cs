@@ -7,7 +7,7 @@ using System.ComponentModel;
 using System.Management.Automation;
 
 namespace Pscx.Commands.EnvironmentBlock {
-    [Cmdlet(VerbsCommon.Remove, PscxNouns.PathVariable), Description("Removes values from an environment variable of type PATH (default is PATH variable)")]
+    [Cmdlet(VerbsCommon.Remove, PscxNouns.PathVariable, SupportsShouldProcess = true), Description("Removes values from an environment variable of type PATH (default is PATH variable)")]
     [RelatedLink(typeof(AddPathVariableCommand))]
     [RelatedLink(typeof(GetPathVariableCommand))]
     [RelatedLink(typeof(SetPathVariableCommand))]
@@ -22,6 +22,10 @@ namespace Pscx.Commands.EnvironmentBlock {
 
         protected override void EndProcessing() {
             if ((Value?.Length ?? 0) == 0) {
+                return;
+            }
+
+            if (!ShouldProcess(Name, "Remove values from path-like environment variable")) {
                 return;
             }
 

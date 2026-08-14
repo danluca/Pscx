@@ -11,7 +11,30 @@
     RequiredAssemblies = 'Pscx.dll' # needed for [pscxmodules] type (does not import cmdlets/providers)
     RootModule         = 'Pscx.psm1'
     NestedModules      = @('Pscx.dll', 'NodaTime.dll')
-    AliasesToExport    = '*'
+    AliasesToExport    = @(
+        'call',
+        'cvxml',
+        'e',
+        'ehp',
+        'ep',
+        'fhex',
+        'fxml',
+        'gpar',
+        'gtn',
+        'igc',
+        'lorem',
+        'ql',
+        'qs',
+        'rver',
+        'skip',
+        'sro',
+        'swr',
+        'tail',
+        'touch',
+        'ln',
+        'rvhr',
+        'rvwer'
+    )
     CmdletsToExport    = @(
         # PSCX main module
         'Join-PscxString',
@@ -44,6 +67,7 @@
         'Set-PathVariable',
         'Push-EnvironmentBlock',
         'Add-PathVariable',
+        'Remove-PathVariable',
         'ConvertFrom-Base64',
         'Skip-Object',
         'ConvertTo-MacOs9LineEnding',
@@ -127,7 +151,7 @@
         'gsudo', 
         'invoke-gsudo',
         'Test-IsGsudoCacheAvailable', 
-        'Test-IsProcessElevated', 
+        'Test-IsProcessElevated',
         'Test-IsAdminMember'
     )
     FormatsToProcess   = @(

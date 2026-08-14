@@ -98,7 +98,7 @@ function Add-ShortPath
     }
 }
 
-Export-ModuleMember -Alias * -Function * -Cmdlet *
+Export-ModuleMember -Function Add-DirectoryLength, Add-ShortPath
 
 
 # SIG # Begin signature block

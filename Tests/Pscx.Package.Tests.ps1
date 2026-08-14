@@ -27,6 +27,15 @@ BeforeAll {
     Get-Alias | ForEach-Object {
         $script:aliasesBeforeImport[$_.Name] = $_.Definition
     }
+    $script:commandsBeforeImport = @{}
+    $aliasNames = @($script:contract.Aliases.Core)
+    if ($BuildScope -eq 'Full') {
+        $aliasNames += $script:contract.Aliases.Full
+    }
+    Get-Command -Name $aliasNames -ErrorAction SilentlyContinue | ForEach-Object Name |
+        Sort-Object -Unique | ForEach-Object {
+        $script:commandsBeforeImport[$_] = $true
+    }
     $script:importWarnings = @()
     $script:manifest = Test-ModuleManifest -Path $script:manifestPath -ErrorAction Stop
     Import-Module $script:manifestPath -Force -ErrorAction Stop `
@@ -107,19 +116,68 @@ Describe 'Packaged PSCX module contract' {
         Compare-Object $expectedProviders $actualProviders | Should -BeNullOrEmpty
     }
 
-    It 'creates or changes only documented PSCX aliases' {
-        $expectedAliases = @($script:contract.Aliases.Core)
+    It 'creates available aliases, preserves collisions, and always replaces cd' {
+        $documentedAliases = @($script:contract.Aliases.Core)
         if ($BuildScope -eq 'Full') {
-            $expectedAliases += $script:contract.Aliases.Full
+            $documentedAliases += $script:contract.Aliases.Full
         }
+        $expectedChangedAliases = @(
+            $documentedAliases | Where-Object {
+                $_ -ne 'cd' -and -not $script:commandsBeforeImport.ContainsKey($_)
+            } | Sort-Object -Unique
+        )
         $changedAliases = @(
             Get-Alias | Where-Object {
                 -not $script:aliasesBeforeImport.ContainsKey($_.Name) -or
                 $script:aliasesBeforeImport[$_.Name] -ne $_.Definition
             } | ForEach-Object Name | Sort-Object -Unique
         )
-        $undeclaredAliases = @($changedAliases | Where-Object { $_ -NotIn $expectedAliases })
-        $undeclaredAliases | Should -BeNullOrEmpty
+        Compare-Object $expectedChangedAliases $changedAliases | Should -BeNullOrEmpty
+        Compare-Object $expectedChangedAliases `
+            @($script:module.ExportedAliases.Keys | Sort-Object -Unique) |
+            Should -BeNullOrEmpty
+        $changedAliases | Where-Object {
+            $script:commandsBeforeImport.ContainsKey($_)
+        } | Should -BeNullOrEmpty
+    }
+
+    It 'uses explicit manifest and script-module exports' {
+        foreach ($manifestFile in Get-ChildItem -LiteralPath $ModulePath -Recurse -Filter *.psd1 -File) {
+            $manifestContent = Get-Content -LiteralPath $manifestFile.FullName -Raw
+            if ($manifestContent -notmatch '(?m)^\s*ModuleVersion\s*=') {
+                continue
+            }
+            $manifestData = Import-PowerShellDataFile -LiteralPath $manifestFile.FullName
+            @($manifestData.FunctionsToExport) | Should -Not -Contain '*'
+            @($manifestData.CmdletsToExport) | Should -Not -Contain '*'
+            @($manifestData.AliasesToExport) | Should -Not -Contain '*'
+        }
+        foreach ($scriptModule in Get-ChildItem -LiteralPath $ModulePath -Recurse -Filter *.psm1 -File) {
+            (Get-Content -LiteralPath $scriptModule.FullName -Raw) |
+                Should -Not -Match 'Export-ModuleMember[^\r\n]*(?:-Alias|-Function|-Cmdlet)\s+\*'
+        }
+    }
+}
+
+Describe 'Path-variable mutation' {
+    It 'exports Remove-PathVariable and honors WhatIf' {
+        $name = 'PSCX_TEST_PATH_{0}' -f [guid]::NewGuid().ToString('N')
+        $values = @(
+            (Join-Path $script:temporaryRoot 'first'),
+            (Join-Path $script:temporaryRoot 'second')
+        )
+        $initialValue = $values -join [IO.Path]::PathSeparator
+        try {
+            [Environment]::SetEnvironmentVariable($name, $initialValue)
+            Remove-PathVariable -Name $name -Value $values[0] -WhatIf
+            [Environment]::GetEnvironmentVariable($name) | Should -Be $initialValue
+
+            Remove-PathVariable -Name $name -Value $values[0] -Confirm:$false
+            [Environment]::GetEnvironmentVariable($name) | Should -Be $values[1]
+        }
+        finally {
+            [Environment]::SetEnvironmentVariable($name, $null)
+        }
     }
 }
 
@@ -373,12 +431,48 @@ Describe 'Optional feature imports' {
         $result.Warnings | Should -BeNullOrEmpty
     }
 
-    It 'does not replace a pre-existing global alias when optional features are disabled' {
+    It 'does not replace collisions when optional features are disabled' {
         $result = & (Join-Path $PSScriptRoot 'Invoke-PscxImportProbe.ps1') `
             -ModulePath $ModulePath -BuildScope $BuildScope -DisableOptionalFeatures `
             -PowerShellPath $PowerShellPath
         $result.Imported | Should -BeTrue
-        $result.CdAliasBefore | Should -Be $result.CdAliasAfter
+        $result.ChangedAliases | Should -Not -Contain 'cd'
+        $result.ChangedAliases | Where-Object { $_ -in $result.PreexistingCommandNames } |
+            Should -BeNullOrEmpty
+        $result.ChangedAliasesAfterRemoval | Should -BeNullOrEmpty
+        $result.Warnings | Should -BeNullOrEmpty
+    }
+
+    It 'preserves a pre-existing command name without the override preference' {
+        $result = & (Join-Path $PSScriptRoot 'Invoke-PscxImportProbe.ps1') `
+            -ModulePath $ModulePath -BuildScope $BuildScope -CollisionAliasName tail `
+            -PowerShellPath $PowerShellPath
+        $result.ChangedAliases | Should -Not -Contain 'tail'
+        $result.ExportedAliases | Should -Not -Contain 'tail'
+        $result.CollisionAliasDefinition | Should -Be 'Get-Date'
+        $result.CdAliasDefinition | Should -Be 'Pscx\Set-PscxLocation'
+        $result.ChangedAliasesAfterRemoval | Should -BeNullOrEmpty
+        $result.Warnings | Should -BeNullOrEmpty
+    }
+
+    It 'overrides every documented alias collision only when explicitly enabled' {
+        $expectedAliases = @($script:contract.Aliases.Core)
+        if ($BuildScope -eq 'Full') {
+            $expectedAliases += $script:contract.Aliases.Full
+        }
+        $result = & (Join-Path $PSScriptRoot 'Invoke-PscxImportProbe.ps1') `
+            -ModulePath $ModulePath -BuildScope $BuildScope -OverrideExistingAliases `
+            -CollisionAliasName tail `
+            -PowerShellPath $PowerShellPath
+        $expectedExportedAliases = @($expectedAliases | Where-Object { $_ -ne 'cd' })
+        Compare-Object ($expectedExportedAliases | Sort-Object) @($result.ExportedAliases) |
+            Should -BeNullOrEmpty
+        Compare-Object ($expectedAliases | Sort-Object) @($result.ChangedAliases) |
+            Should -BeNullOrEmpty
+        $result.CdAliasDefinition | Should -Be 'Pscx\Set-PscxLocation'
+        $result.CollisionAliasDefinition | Should -Be 'Pscx\Get-FileTail'
+        $result.ChangedAliasesAfterRemoval | Should -BeNullOrEmpty
+        $result.ExportedAliases | Should -Not -Contain 'help'
         $result.Warnings | Should -BeNullOrEmpty
     }
 }

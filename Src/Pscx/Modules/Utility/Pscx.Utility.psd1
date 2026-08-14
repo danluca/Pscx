@@ -3,7 +3,20 @@ ModuleVersion    = '0.0.0' # Stamped from Directory.Build.props during packaging
 PowerShellVersion = '0.0' # Stamped from Directory.Build.props during packaging.
     RootModule       = 'Pscx.Utility.psm1'
     FormatsToProcess = 'Pscx.Utility.Format.ps1xml'
-    AliasesToExport = '*'
+    AliasesToExport = @(
+        'call',
+        'e',
+        'ehp',
+        'ep',
+        'gpar',
+        'igc',
+        'ql',
+        'qs',
+        'rver',
+        'sro',
+        'swr'
+    )
+    CmdletsToExport = @()
     FunctionsToExport = @(
         'AddAccelerator',
         'RemoveAccelerator',

@@ -3,7 +3,8 @@ ModuleVersion    = '0.0.0' # Stamped from Directory.Build.props during packaging
 PowerShellVersion = '0.0' # Stamped from Directory.Build.props during packaging.
     RootModule      = 'Pscx.Wmi.psm1'
     FunctionsToExport = 'GetDhcpServer', 'GetWin32Processes'
-
+    CmdletsToExport = @()
+    AliasesToExport = @()
 }
 
 # SIG # Begin signature block

@@ -44,7 +44,8 @@ $powerShellFiles = @($allFiles | Where-Object Extension -In '.ps1', '.psm1', '.p
 $resultsPath = [IO.Path]::GetFullPath($ResultsPath)
 New-Item -ItemType Directory -Path $resultsPath -Force | Out-Null
 try {
-    $powerShellExecutable = (Get-Command -Name $PowerShellPath -CommandType Application -ErrorAction Stop).Source
+    $powerShellExecutable = Get-Command -Name $PowerShellPath -CommandType Application -ErrorAction Stop |
+        Select-Object -First 1 -ExpandProperty Source
 }
 catch {
     throw "Could not resolve the PowerShell executable '$PowerShellPath'."

@@ -41,7 +41,8 @@ if ((Get-Module Pester).Version -ne [version]$pesterVersion) {
 $modulePath = (Resolve-Path -LiteralPath $ModulePath).Path
 $resultsPath = [System.IO.Path]::GetFullPath($ResultsPath)
 try {
-    $powerShellExecutable = (Get-Command -Name $PowerShellPath -CommandType Application -ErrorAction Stop).Source
+    $powerShellExecutable = Get-Command -Name $PowerShellPath -CommandType Application -ErrorAction Stop |
+        Select-Object -First 1 -ExpandProperty Source
 }
 catch {
     throw "Could not resolve the PowerShell executable '$PowerShellPath'."

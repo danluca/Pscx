@@ -1,6 +1,7 @@
 @{
-    # The root and Utility manifests still use wildcard alias exports. Keep the
-    # small alias/provider baseline here until Phase 4 makes those exports explicit.
+    # PSCX aliases are created when their names are available. Existing commands
+    # are preserved unless OverrideExistingAliases is enabled; Pscx.CD always
+    # replaces cd when that submodule is selected.
     Aliases = @{
         Core = @(
             'call',

@@ -117,21 +117,6 @@ if ($args.Length -gt 0)
 }
 
 # -----------------------------------------------------------------------
-# Cmdlet aliases
-# -----------------------------------------------------------------------
-Set-Alias gtn   Pscx\Get-TypeName      -Description "PSCX alias"
-Set-Alias fhex  Pscx\Format-Hex        -Description "PSCX alias"
-Set-Alias cvxml Pscx\Convert-Xml       -Description "PSCX alias"
-Set-Alias fxml  Pscx\Format-Xml        -Description "PSCX alias"
-Set-Alias lorem Pscx\Get-LoremIpsum    -Description "PSCX alias"
-Set-Alias touch Pscx\Set-FileTime      -Description "PSCX alias"
-Set-Alias tail  Pscx\Get-FileTail      -Description "PSCX alias"
-Set-Alias skip  Pscx\Skip-Object       -Description "PSCX alias"
-
-# Compatibility alias
-# Set-Alias Resize-Bitmap Pscx\Set-BitmapSize -Description "PSCX alias"
-
-# -----------------------------------------------------------------------
 # Load the PscxWin companion module if running on Windows
 # -----------------------------------------------------------------------
 if ($IsWindows) {
@@ -145,9 +130,7 @@ if ($IsWindows) {
 }
 
 if ($Pscx:Preferences["PageHelpUsingLess"]) {
-    if ($PSVersionTable.PSVersion.Major -le 5) {
-        Set-Alias help PscxHelp -Option AllScope -Scope Global -Description "PSCX alias"
-    } elseif (!(Test-Path Env:PAGER)) {
+    if (!(Test-Path Env:PAGER)) {
         # Only set this env var if someone has not defined it themselves
         $env:PAGER = 'less'
         $env:LESS = "-FRsPPage %db?B of %D:.\. Press h for help or q to quit\.$"
@@ -249,9 +232,63 @@ if ($Pscx:Preferences.ShowModuleLoadDetails)
     Write-Host "`nTotal module load time: $totalModuleLoadTimeMs mS"
 }
 
+$aliasesToExport = @()
+$pscxAliases = [ordered]@{
+    cvxml = 'Pscx\Convert-Xml'
+    fhex  = 'Pscx\Format-Hex'
+    fxml  = 'Pscx\Format-Xml'
+    gtn   = 'Pscx\Get-TypeName'
+    lorem = 'Pscx\Get-LoremIpsum'
+    skip  = 'Pscx\Skip-Object'
+    tail  = 'Pscx\Get-FileTail'
+    touch = 'Pscx\Set-FileTime'
+}
+foreach ($aliasName in $pscxAliases.Keys) {
+    $existingCommand = Get-Command -Name $aliasName -ErrorAction SilentlyContinue |
+        Select-Object -First 1
+    if ($Pscx:Preferences.OverrideExistingAliases -or $null -eq $existingCommand) {
+        $target = $pscxAliases[$aliasName]
+        Set-Alias -Name $aliasName -Value $target -Scope Local -Force `
+            -Description 'PSCX compatibility alias'
+        $aliasesToExport += $aliasName
+    }
+}
+
+if ($Pscx:Preferences.ModulesToImport.CD -and (Get-Module Pscx.CD)) {
+    # PowerShell's built-in cd alias is AllScope and cannot be shadowed and
+    # exported by a module. Importing Pscx.CD explicitly selects its enhanced
+    # location-stack behavior, so replace cd for the session and restore the
+    # previous alias when PSCX is removed.
+    $script:previousCdAlias = Get-Alias -Name cd -ErrorAction SilentlyContinue
+    Set-Alias -Name cd -Value 'Pscx\Set-PscxLocation' -Scope Global `
+        -Option AllScope -Force -Description 'PSCX enhanced location alias'
+    $ExecutionContext.SessionState.Module.OnRemove = {
+        $cdAlias = Get-Alias -Name cd -ErrorAction SilentlyContinue
+        if ($cdAlias.Definition -eq 'Pscx\Set-PscxLocation') {
+            if ($null -ne $script:previousCdAlias) {
+                Set-Alias -Name cd -Value $script:previousCdAlias.Definition -Scope Global `
+                    -Option $script:previousCdAlias.Options -Force `
+                    -Description $script:previousCdAlias.Description
+            }
+            else {
+                Remove-Alias -Name cd -Scope Global -Force
+            }
+        }
+    }
+}
+if ($Pscx:Preferences.ModulesToImport.Utility -and (Get-Module Pscx.Utility)) {
+    $aliasesToExport += @(Get-Module Pscx.Utility).ExportedAliases.Keys
+}
+if ($IsWindows -and (Get-Module PscxWin)) {
+    $aliasesToExport += @(Get-Module PscxWin).ExportedAliases.Keys
+}
+
 Remove-Item Function:\WriteUsage
 Remove-Item Function:\UpdateDefaultPreferencesWithUserPreferences
-Export-ModuleMember -Alias * -Function * -Cmdlet *
+$publicContract = Import-PowerShellDataFile -LiteralPath (Join-Path $PSScriptRoot 'Pscx.psd1')
+Export-ModuleMember -Alias $aliasesToExport `
+    -Function $publicContract.FunctionsToExport `
+    -Cmdlet $publicContract.CmdletsToExport
 
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor

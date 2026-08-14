@@ -5,6 +5,8 @@ PowerShellVersion = '0.0' # Stamped from Directory.Build.props during packaging.
     FunctionsToExport = @(
         'Search-Transcript'
     )
+    CmdletsToExport = @()
+    AliasesToExport = @()
 }
 
 # SIG # Begin signature block

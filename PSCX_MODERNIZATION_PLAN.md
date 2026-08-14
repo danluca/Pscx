@@ -481,29 +481,30 @@ development line.
 
 ### Tasks
 
-- [ ] Replace `AliasesToExport = '*'` with an explicit alias list.
-- [ ] Replace all `Export-ModuleMember -Alias * -Function * -Cmdlet *` calls with explicit exports.
-- [ ] Ensure each child module explicitly exports its own API.
-- [ ] Generate or validate the parent manifest's aggregate exports.
-- [ ] Add `Remove-PathVariable` to the public API and documentation, or explicitly mark it private.
-- [ ] Review every alias for cross-platform collisions:
+- [x] Replace `AliasesToExport = '*'` with an explicit alias list.
+- [x] Replace all `Export-ModuleMember -Alias * -Function * -Cmdlet *` calls with explicit exports.
+- [x] Ensure each child module explicitly exports its own API.
+- [x] Generate or validate the parent manifest's aggregate exports.
+- [x] Add `Remove-PathVariable` to the public API and documentation, or explicitly mark it private.
+- [x] Review every alias for cross-platform collisions:
   - `tail`;
   - `touch`;
   - `skip`;
   - `ln`;
   - `help`;
   - all other short aliases.
-- [ ] Move convenience aliases into an opt-in preference or separate `Pscx.LegacyAliases` module.
-- [ ] Never replace the global `help` command during a default import.
-- [ ] Add module-qualified examples where a PSCX command intentionally resembles a built-in.
-- [ ] Give every public command a stable output type where structured output is expected.
-- [ ] Document compatibility aliases and their planned removal date.
+- [x] Preserve existing commands by default and allow deliberate alias collisions through
+  `OverrideExistingAliases`; always replace `cd` when the CD submodule is enabled.
+- [x] Never replace the global `help` command during a default import.
+- [x] Add module-qualified examples where a PSCX command intentionally resembles a built-in.
+- [x] Document the alias collision policy and retain the convenience aliases as supported API.
 
 ### Exit criteria
 
-- [ ] Default import has no wildcard exports.
-- [ ] Default import does not mutate global aliases.
-- [ ] An automated test catches every accidental API addition or removal.
+- [x] Default import has no wildcard exports.
+- [x] Default import does not replace existing commands except for the documented `cd`
+  behavior selected by enabling the CD submodule.
+- [x] An automated test catches every accidental API addition or removal.
 
 ---
 
@@ -547,6 +548,8 @@ These areas are distinctive enough to keep, subject to normal API and quality re
 For every retained command:
 
 - [ ] Write a concise differentiation statement.
+- [ ] Audit and document its output contract; provide a stable output type wherever
+  structured output is expected.
 - [ ] Ensure output is structured rather than display-only where practical.
 - [ ] Review approved verbs and naming.
 - [ ] Support standard common parameters and expected path semantics.

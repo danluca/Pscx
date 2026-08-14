@@ -9,6 +9,8 @@ PowerShellVersion = '0.0' # Stamped from Directory.Build.props during packaging.
         'Add-DirectoryLength',
 		'Add-ShortPath'
     )
+    CmdletsToExport = @()
+    AliasesToExport = @()
 }
 
 # SIG # Begin signature block

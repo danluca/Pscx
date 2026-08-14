@@ -4,8 +4,10 @@ PowerShellVersion = '0.0' # Stamped from Directory.Build.props during packaging.
     RootModule       = 'Pscx.Vhd.psm1'
     FunctionsToExport = @(
         'Mount-PscxVHD',
-        'Dismount-PscxVHD'    
+        'Dismount-PscxVHD'
     )
+    CmdletsToExport = @()
+    AliasesToExport = @()
 }
 
 # SIG # Begin signature block

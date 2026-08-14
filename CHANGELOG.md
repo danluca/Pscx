@@ -4,6 +4,14 @@
 
 * Started PSCX 4.0 development after publishing the stabilized PSCX 3.8.0
   release.
+* Made module and child-module exports explicit, preventing accidental public
+  API additions and removals.
+* Made convenience aliases collision-aware: aliases are created normally when
+  their names are available, existing commands are preserved unless
+  `OverrideExistingAliases` is enabled, the CD submodule deliberately replaces
+  `cd`, and PowerShell's built-in `help` command is never replaced.
+* Added the previously internal `Remove-PathVariable` cmdlet to the supported
+  public API with help, `ShouldProcess`, and packaged-module tests.
 
 ## 3.8.0 - August 2026
 

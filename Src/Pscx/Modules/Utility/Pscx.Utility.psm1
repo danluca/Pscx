@@ -1807,17 +1807,29 @@ function Get-ExecutionTime {
 ## Main - Module load
 #######################################
 
-Set-Alias e     Pscx\Edit-File              -Description "PSCX alias"
-Set-Alias ehp   Pscx\Edit-HostProfile       -Description "PSCX alias"
-Set-Alias ep    Pscx\Edit-Profile           -Description "PSCX alias"
-Set-Alias gpar  Pscx\Get-Parameter          -Description "PSCX alias"
-Set-Alias igc   Pscx\Invoke-GC              -Description "PSCX alias"
-Set-Alias call  Pscx\Invoke-Method          -Description "PSCX alias"
-Set-Alias ql    Pscx\QuoteList              -Description "PSCX alias"
-Set-Alias qs    Pscx\QuoteString            -Description "PSCX alias"
-Set-Alias rver  Pscx\Resolve-ErrorRecord    -Description "PSCX alias"
-Set-Alias sro   Pscx\Set-ReadOnly           -Description "PSCX alias"
-Set-Alias swr   Pscx\Set-Writable           -Description "PSCX alias"
+$aliasesToExport = @()
+$pscxAliases = [ordered]@{
+    e    = 'Pscx\Edit-File'
+    ehp  = 'Edit-HostProfile'
+    ep   = 'Edit-Profile'
+    gpar = 'Get-Parameter'
+    igc  = 'Invoke-GC'
+    call = 'Invoke-Method'
+    ql   = 'QuoteList'
+    qs   = 'QuoteString'
+    rver = 'Resolve-ErrorRecord'
+    sro  = 'Set-ReadOnly'
+    swr  = 'Set-Writable'
+}
+foreach ($aliasName in $pscxAliases.Keys) {
+    $existingCommand = Get-Command -Name $aliasName -ErrorAction SilentlyContinue |
+        Select-Object -First 1
+    if ($Pscx:Preferences.OverrideExistingAliases -or $null -eq $existingCommand) {
+        Set-Alias -Name $aliasName -Value $pscxAliases[$aliasName] -Scope Local `
+            -Description 'PSCX compatibility alias'
+        $aliasesToExport += $aliasName
+    }
+}
 
 <#
 .SYNOPSIS
@@ -1899,7 +1911,31 @@ AddAccelerator "tz"  ([NodaTime.DateTimeZone])
 AddAccelerator "tzi"  ([System.TimeZoneInfo])
 
 
-Export-ModuleMember -Alias * -Function * -Cmdlet *
+Export-ModuleMember -Alias $aliasesToExport -Function @(
+    'AddAccelerator',
+    'RemoveAccelerator',
+    'PscxHelp',
+    'PscxLess',
+    'Edit-Profile',
+    'Edit-HostProfile',
+    'Resolve-ErrorRecord',
+    'QuoteList',
+    'QuoteString',
+    'Invoke-GC',
+    'Invoke-BatchFile',
+    'Get-ViewDefinition',
+    'Stop-RemoteProcess',
+    'Get-ScreenCss',
+    'Get-ScreenHtml',
+    'Invoke-Method',
+    'Set-Writable',
+    'Set-FileAttributes',
+    'Set-ReadOnly',
+    'Show-Tree',
+    'Get-Parameter',
+    'Get-ExecutionTime',
+    'AddRegex'
+)
 
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor

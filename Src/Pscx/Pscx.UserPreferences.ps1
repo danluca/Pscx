@@ -37,6 +37,9 @@
                                       # If this value is set to $true, file sizes are displayed in
                                       # using KB,MG,GB and TB units.
 
+     OverrideExistingAliases = $false # Create PSCX aliases unless their names already resolve to a command.
+                                      # Set true to override collisions. The CD module always replaces cd.
+
     ModulesToImport = @{
         CD                = $true
         DirectoryServices = $false    # provided by submodule PscxWin only on Windows

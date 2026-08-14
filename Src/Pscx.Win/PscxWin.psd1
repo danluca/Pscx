@@ -11,7 +11,7 @@
     RequiredAssemblies = 'Pscx.Win.dll'
     RootModule         = 'PscxWin.psm1'
     NestedModules      = @('Pscx.Win.dll', 'SevenZipSharp.dll')
-    AliasesToExport    = '*'
+    AliasesToExport    = @('ln', 'rvhr', 'rvwer')
     CmdletsToExport    = @(
         'Invoke-OleDbCommand',
         'Remove-ReparsePoint',
