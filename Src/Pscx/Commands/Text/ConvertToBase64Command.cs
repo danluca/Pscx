@@ -15,6 +15,7 @@ using Pscx.Core.IO;
 
 namespace Pscx.Commands.Text
 {
+    [OutputType(typeof(string))]
     [Cmdlet(VerbsData.ConvertTo, PscxNouns.Base64, DefaultParameterSetName = ParameterSetPath)]
     [Description("Converts byte array to base64 string.")]
     [RelatedLink(typeof(ConvertFromBase64Command))]
@@ -88,7 +89,6 @@ namespace Pscx.Commands.Text
             if (_byteInput.Count > 0)
             {
                 WriteByteList(_byteInput, GetFormattingOptions());
-                Host.UI.WriteLine();
             }
 
             base.EndProcessing();
@@ -109,7 +109,7 @@ namespace Pscx.Commands.Text
                 bytes = new List<byte>(numBytesToRead);
             }
 
-            Host.UI.WriteLine("Processing file: " + filePath);
+            WriteVerbose("Processing file: " + filePath);
 
             while (numBytesToRead > 0)
             {
@@ -158,7 +158,6 @@ namespace Pscx.Commands.Text
                 WriteByteList(bytes, options);
             }
 
-            Host.UI.WriteLine();
         }
 
         private void WriteByteList(List<byte> bytes, Base64FormattingOptions options)

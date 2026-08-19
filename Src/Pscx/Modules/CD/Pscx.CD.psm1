@@ -74,6 +74,10 @@ $forewardStack = new-object System.Collections.ArrayList
 .EXAMPLE
     C:\PS> set-alias cd Set-PscxLocation -Option AllScope; $profile | cd
     This example will change location to the parent location of $profile.
+.OUTPUTS
+    System.Management.Automation.PathInfo when -PassThru is used while changing
+    location. Invoking the command without a path emits formatted stack entries.
+    CD_GetChildItem can additionally enable child-item output after navigation.
 .NOTES
     This is a PSCX function.
 #>

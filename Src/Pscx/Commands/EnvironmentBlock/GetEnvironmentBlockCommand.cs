@@ -4,6 +4,7 @@ using System.Management.Automation;
 
 namespace Pscx.Commands.EnvironmentBlock
 {
+    [OutputType(typeof(EnvironmentFrame))]
     [Cmdlet(VerbsCommon.Get, PscxNouns.EnvironmentBlock), Description("Get the current environment block")]
     [RelatedLink(typeof(AddPathVariableCommand))]
     [RelatedLink(typeof(GetPathVariableCommand))]

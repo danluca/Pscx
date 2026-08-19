@@ -159,6 +159,31 @@ Describe 'Packaged PSCX module contract' {
     }
 }
 
+Describe 'Phase 5 command disposition inventory' {
+    It 'classifies every declared public command exactly once' {
+        $dispositionPath = Join-Path (Split-Path $PSScriptRoot -Parent) `
+            'PSCX_COMMAND_DISPOSITION.psd1'
+        $disposition = Import-PowerShellDataFile -LiteralPath $dispositionPath
+        $classifiedCommands = @(
+            foreach ($category in $disposition.Categories.Keys) {
+                @($disposition.Categories[$category])
+            }
+        )
+        $declaredCommands = @(
+            $script:manifestData.FunctionsToExport
+            $script:manifestData.CmdletsToExport
+        ) | Sort-Object -Unique
+
+        $duplicates = @(
+            $classifiedCommands | Group-Object | Where-Object Count -GT 1 |
+                ForEach-Object Name
+        )
+        $duplicates | Should -BeNullOrEmpty
+        Compare-Object $declaredCommands @($classifiedCommands | Sort-Object -Unique) |
+            Should -BeNullOrEmpty
+    }
+}
+
 Describe 'Path-variable mutation' {
     It 'exports Remove-PathVariable and honors WhatIf' {
         $name = 'PSCX_TEST_PATH_{0}' -f [guid]::NewGuid().ToString('N')
@@ -277,6 +302,66 @@ Describe 'Representative public command behavior' {
         $encoded = 1, 2, 3 | ConvertTo-Base64 -NoLineBreak
         $encoded | Should -BeOfType ([string])
         $encoded | Should -Be 'AQID'
+    }
+
+    It 'reports Base64 file progress only through the verbose stream' {
+        $path = Join-Path $script:temporaryRoot 'base64-input.bin'
+        [IO.File]::WriteAllBytes($path, [byte[]](1, 2, 3))
+
+        $result = @(ConvertTo-Base64 -LiteralPath $path -NoLineBreak -Verbose 4>&1)
+        $output = @($result | Where-Object { $_ -isnot [Management.Automation.VerboseRecord] })
+        $verbose = @($result | Where-Object { $_ -is [Management.Automation.VerboseRecord] })
+
+        $output | Should -HaveCount 1
+        $output[0] | Should -Be 'AQID'
+        $verbose.Message | Should -Contain "Processing file: $path"
+    }
+
+    It 'returns structured parser diagnostics from Test-Script on request' {
+        $warnings = @()
+        $result = 'function Broken {' | Test-Script -PassThru -WarningVariable warnings
+
+        $result.GetType().FullName | Should -Be 'Pscx.Commands.ScriptTestResult'
+        $result.Path | Should -BeNullOrEmpty
+        $result.IsValid | Should -BeFalse
+        $result.Errors.Count | Should -BeGreaterThan 0
+        $result.Errors[0].GetType().FullName |
+            Should -Be 'System.Management.Automation.Language.ParseError'
+        $warnings | Should -BeNullOrEmpty
+        ('1 + 1' | Test-Script) | Should -BeTrue
+    }
+
+    It 'returns structured error details with formatted text available explicitly' {
+        try {
+            Get-Item -LiteralPath (Join-Path $script:temporaryRoot 'not-present') `
+                -ErrorAction Stop
+        }
+        catch {
+            $errorRecord = $_
+        }
+
+        $detail = $errorRecord | Resolve-ErrorRecord
+        $text = @($errorRecord | Resolve-ErrorRecord -AsText)
+
+        $detail.PSTypeNames | Should -Contain 'Pscx.ErrorRecordDetail'
+        [object]::ReferenceEquals($detail.ErrorRecord, $errorRecord) | Should -BeTrue
+        $detail.FullyQualifiedErrorId | Should -Be $errorRecord.FullyQualifiedErrorId
+        $detail.ExceptionChain | Should -Not -BeNullOrEmpty
+        $detail.ExceptionChain[0].PSTypeNames | Should -Contain 'Pscx.ExceptionDetail'
+        $text | Should -Not -BeNullOrEmpty
+        ($text -join "`n") | Should -Match ([regex]::Escape($errorRecord.FullyQualifiedErrorId))
+    }
+
+    It 'returns PathInfo from Set-PscxLocation PassThru' {
+        $startingLocation = Get-Location
+        try {
+            $result = Set-PscxLocation -LiteralPath $script:temporaryRoot -PassThru
+            $result | Should -BeOfType ([Management.Automation.PathInfo])
+            $result.Path | Should -Be (Get-Item -LiteralPath $script:temporaryRoot).FullName
+        }
+        finally {
+            Set-Location -LiteralPath $startingLocation.Path
+        }
     }
 
     It 'registers the Base64 accelerator in the imported session' {

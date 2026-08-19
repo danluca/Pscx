@@ -20,19 +20,19 @@ PSCX Cmdlet: Determines whether a PowerShell script has any syntax errors.
 ### Path (Default)
 
 ```
-Test-Script [-Path] <PscxPathInfo[]> [-Context <int[]>] [<CommonParameters>]
+Test-Script [-Path] <PscxPathInfo[]> [-Context <int[]>] [-PassThru] [<CommonParameters>]
 ```
 
 ### Object
 
 ```
-Test-Script -InputObject <psobject> [-Context <int[]>] [<CommonParameters>]
+Test-Script -InputObject <psobject> [-Context <int[]>] [-PassThru] [<CommonParameters>]
 ```
 
 ### LiteralPath
 
 ```
-Test-Script [-LiteralPath] <PscxPathInfo[]> [-Context <int[]>] [<CommonParameters>]
+Test-Script [-LiteralPath] <PscxPathInfo[]> [-Context <int[]>] [-PassThru] [<CommonParameters>]
 ```
 
 ## ALIASES
@@ -41,7 +41,10 @@ None
 
 ## DESCRIPTION
 
-Determines whether a PowerShell script has any syntax errors using the PowerShell script tokenizer.
+Determines whether a PowerShell script has syntax errors using PowerShell's
+modern language parser. By default, the command returns a Boolean and reports
+formatted diagnostics as warnings. Use `-PassThru` to receive a structured
+`Pscx.Commands.ScriptTestResult` containing the parser errors instead.
 
 ## EXAMPLES
 
@@ -68,6 +71,16 @@ Test-Script foo.ps1 -Context 1
 ```
 
 Displays syntax errors as well as the line of script before and after the line containing each syntax error.  Returns a boolean indicating if there was a syntax error.
+
+### Example 4 - Return structured parser diagnostics
+
+```powershell
+$result = Test-Script ./build.ps1 -PassThru
+$result.Errors | Select-Object ErrorId, Message, Extent
+```
+
+Returns one result object for the script. `IsValid` reports overall validity,
+and `Errors` contains PowerShell parser-error objects with source extents.
 
 ## PARAMETERS
 
@@ -162,6 +175,28 @@ AcceptedValues: []
 HelpMessage: ''
 ```
 
+### -PassThru
+
+Returns a structured `Pscx.Commands.ScriptTestResult` instead of a Boolean.
+Structured mode does not also write formatted parser warnings.
+
+```yaml
+Type: System.Management.Automation.SwitchParameter
+DefaultValue: False
+SupportsWildcards: false
+Aliases: []
+ParameterSets:
+- Name: (All)
+  Position: Named
+  IsRequired: false
+  ValueFromPipeline: false
+  ValueFromPipelineByPropertyName: false
+  ValueFromRemainingArguments: false
+DontShow: false
+AcceptedValues: []
+HelpMessage: ''
+```
+
 ### CommonParameters
 
 This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable,
@@ -191,7 +226,12 @@ Accepts a Pscx.Core.IO.PscxPathInfo[] value.
 
 ### System.Boolean
 
-Returns a System.Boolean value.
+Returns a System.Boolean value by default.
+
+### Pscx.Commands.ScriptTestResult
+
+Returns a structured result with `Path`, `IsValid`, and `Errors` when
+`-PassThru` is specified.
 
 ## NOTES
 

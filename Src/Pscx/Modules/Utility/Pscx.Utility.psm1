@@ -317,24 +317,38 @@ function Edit-HostProfile {
 .PARAMETER ErrorRecord
     The ErrorRecord to resolve into a useful error report. The default value
     is $Error[0] - the last error that occurred.
+.PARAMETER AsText
+    Emits the PSCX 3.x formatted text representation instead of the structured
+    Pscx.ErrorRecordDetail object.
 .EXAMPLE
     C:\PS> Resolve-ErrorRecord
-    Resolves the most recent PowerShell error code to a textual description of the error.
+    Resolves the most recent PowerShell error into a structured detail object.
+.EXAMPLE
+    C:\PS> Resolve-ErrorRecord -AsText
+    Emits the PSCX 3.x formatted text representation for the most recent error.
+.OUTPUTS
+    Pscx.ErrorRecordDetail by default. System.String when -AsText is specified.
 .NOTES
     Aliases:  rver
 #>
 function Resolve-ErrorRecord {
+    [OutputType('Pscx.ErrorRecordDetail')]
+    [OutputType([string])]
     param(
         [Parameter(Position=0, ValueFromPipeline=$true)]
         [ValidateNotNull()]
         [System.Management.Automation.ErrorRecord[]]
-        $ErrorRecord
+        $ErrorRecord,
+
+        [Parameter()]
+        [switch]
+        $AsText
     )
 
     Process {
         if (!$ErrorRecord) {
             if ($global:Error.Count -eq 0) {
-                Write-Host "The `$Error collection is empty."
+                Write-Verbose "The `$Error collection is empty."
                 return
             }
             else {
@@ -342,23 +356,50 @@ function Resolve-ErrorRecord {
             }
         }
         foreach ($record in $ErrorRecord) {
-            $txt = @($record | Format-List * -Force | Out-String -Stream)
-            $txt += @($record.InvocationInfo | Format-List * | Out-String -Stream)
-            $Exception = $record.Exception
-            for ($i = 0; $Exception; $i++, ($Exception = $Exception.InnerException)) {
-               $txt += "Exception at nesting level $i ---------------------------------------------------"
-               $txt += @($Exception | Format-List * -Force | Out-String -Stream)
+            if ($AsText) {
+                $txt = @($record | Format-List * -Force | Out-String -Stream)
+                $txt += @($record.InvocationInfo | Format-List * | Out-String -Stream)
+                $exception = $record.Exception
+                for ($i = 0; $exception; $i++, ($exception = $exception.InnerException)) {
+                    $txt += "Exception at nesting level $i ---------------------------------------------------"
+                    $txt += @($exception | Format-List * -Force | Out-String -Stream)
+                }
+
+                $txt | ForEach-Object {$prevBlank=$false} {
+                           if ($_.Trim().Length -gt 0) {
+                               $_
+                               $prevBlank = $false
+                           } elseif (!$prevBlank) {
+                               $_
+                               $prevBlank = $true
+                           }
+                       }
+                continue
             }
 
-            $txt | ForEach-Object {$prevBlank=$false} {
-                       if ($_.Trim().Length -gt 0) {
-                           $_
-                           $prevBlank = $false
-                       } elseif (!$prevBlank) {
-                           $_
-                           $prevBlank = $true
-                       }
-                   }
+            $exceptionChain = @()
+            $exception = $record.Exception
+            for ($i = 0; $exception; $i++, ($exception = $exception.InnerException)) {
+                $exceptionChain += [pscustomobject]@{
+                    PSTypeName = 'Pscx.ExceptionDetail'
+                    Level = $i
+                    TypeName = $exception.GetType().FullName
+                    Message = $exception.Message
+                    HResult = $exception.HResult
+                    StackTrace = $exception.StackTrace
+                    Exception = $exception
+                }
+            }
+            [pscustomobject]@{
+                PSTypeName = 'Pscx.ErrorRecordDetail'
+                ErrorRecord = $record
+                FullyQualifiedErrorId = $record.FullyQualifiedErrorId
+                CategoryInfo = $record.CategoryInfo
+                InvocationInfo = $record.InvocationInfo
+                PositionMessage = $record.InvocationInfo.PositionMessage
+                ScriptStackTrace = $record.ScriptStackTrace
+                ExceptionChain = $exceptionChain
+            }
         }
     }
 }

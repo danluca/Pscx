@@ -12,6 +12,11 @@
   `cd`, and PowerShell's built-in `help` command is never replaced.
 * Added the previously internal `Remove-PathVariable` cmdlet to the supported
   public API with help, `ShouldProcess`, and packaged-module tests.
+* Added explicit output metadata to retained core commands, structured
+  `Test-Script -PassThru` parser results, and structured-by-default
+  `Resolve-ErrorRecord` output with `-AsText` compatibility.
+* Removed direct host output from Base64 conversion and documented
+  `Set-PscxLocation -PassThru` as returning `PathInfo`.
 
 ## 3.8.0 - August 2026
 

@@ -1,0 +1,52 @@
+# PSCX 4.0 command disposition review
+
+This document records the evidence and open decisions for Phase 5 of the
+[modernization plan](PSCX_MODERNIZATION_PLAN.md). The machine-readable inventory
+is [`PSCX_COMMAND_DISPOSITION.psd1`](PSCX_COMMAND_DISPOSITION.psd1).
+
+The inventory is intentionally marked `Proposed`. Placement in a bucket does
+not authorize a command removal, rename, package move, or compatibility change.
+Every public command must appear exactly once, and the packaged-module tests
+compare the inventory with the root manifest so additions, omissions, and
+duplicates fail CI.
+
+## Disposition buckets
+
+| Bucket | Meaning |
+| --- | --- |
+| `RetainCore` | Candidate for continued support in the cross-platform core. |
+| `RetainWindowsCore` | Candidate for the deliberately small default Windows payload. |
+| `MoveToArchive` | Candidate for the optional `Pscx.Archive` module. |
+| `MoveToWindowsAdmin` | Candidate for the optional `Pscx.WindowsAdmin` module. |
+| `MoveToCrossPlatformCore` | Platform-neutral command currently placed in a Windows assembly. |
+| `DeprecationCandidate` | Possible duplicate or low-value command requiring an explicit compatibility decision. |
+| `Review` | Public command whose value or destination still needs investigation. |
+
+## Phase 5.1 retained-core review
+
+| Area | Commands | Differentiation | Current output contract | Finding |
+| --- | --- | --- | --- | --- |
+| PATH editing | `Get-PathVariable`, `Add-PathVariable`, `Remove-PathVariable`, `Set-PathVariable` | Treats path-like environment variables as ordered entries, supports process/user/machine targets, and avoids ad hoc separator manipulation. | `Get-PathVariable` emits `System.String` entries; mutators emit no objects. | Retain. Output metadata was missing from `Get-PathVariable` and is now explicit. |
+| Environment frames | `Get-EnvironmentBlock`, `Push-EnvironmentBlock`, `Pop-EnvironmentBlock` | Snapshots and restores a process environment as a stack, which has no direct built-in equivalent. | `Get-EnvironmentBlock` emits `Pscx.EnvironmentBlock.EnvironmentFrame`; push/pop emit no objects. | Retain. The getter's output metadata is now explicit. |
+| Assembly and PE inspection | `Test-Assembly`, `Get-PEHeader` | Provides pipeline-friendly validation and structured portable-executable metadata without requiring callers to write reflection/parsing code. | `System.Boolean` and `Pscx.Reflection.PEHeader`. | Retain. Existing structured contracts are suitable. |
+| XML tooling | `Test-Xml`, `Format-Xml`, `Convert-Xml` | Combines validation, readable formatting, and XSL transformation with pipeline and path support. | `System.Boolean` or `System.String`, depending on command. | Retain pending the normal path/error audit. |
+| Unit and byte formatting | `ConvertTo-Unit`, `Format-Byte` | Supplies reusable measurement objects and concise human-readable byte formatting. | `Pscx.SimpleUnits.Measurement` and `System.String`. | Retain. `Format-Byte` is intentionally display-oriented. |
+| File/editor utilities | `Edit-File`, `Set-FileTime` | Adds configurable editor launching, in-place replacement, pipeline paths, timestamp selection, and `ShouldProcess`. | Both can emit `System.IO.FileInfo`; `Edit-File` does so only with `-PassThru`. | Retain. `Edit-File` output metadata is now explicit. |
+| Error inspection | `Resolve-ErrorRecord` | Walks `ErrorRecord`, invocation, and nested exception details more deeply than the default view. | Emits `Pscx.ErrorRecordDetail` by default; `-AsText` preserves the PSCX 3.x formatted representation. | Retain. Structured details include the original record, invocation metadata, category, position, script stack, and exception chain. |
+| Enhanced location navigation | `Set-PscxLocation` and `cd` | Adds backward/forward FIFO stacks, indexed navigation, repeated-dot parent traversal, pipeline paths, and `-PassThru`. | `-PassThru` emits `PathInfo`; stack display emits strings; preferences can cause child-item output. | Retain. Output modes need documentation and should not be collapsed into a misleading single type. |
+| Base64 conversion | `ConvertFrom-Base64`, `ConvertTo-Base64` | Supports pipeline aggregation, files, large-input chunking, optional streamed encoding, whitespace-tolerant decoding, and direct file output. | `System.Byte[]` when decoding to the pipeline; `System.String` when encoding; file output is otherwise silent. | Retain. Output metadata is explicit and file progress uses the verbose stream instead of writing directly to the host. |
+| Script parsing | `Test-Script` | Provides path and pipeline input around PowerShell's modern language parser without requiring callers to invoke parser APIs directly. | Emits `System.Boolean` by default. `-PassThru` emits `Pscx.Commands.ScriptTestResult` with structured `ParseError` objects and no duplicate warnings. | Retain with both compatibility and structured modes. |
+
+## Approved Phase 5.1 output decisions
+
+1. `Test-Script` retains Boolean output by default and provides structured
+   parser results through `-PassThru`.
+2. `Resolve-ErrorRecord` emits structured details by default in PSCX 4.0 and
+   preserves the prior representation through `-AsText`.
+3. `Set-PscxLocation` retains its context-dependent modes and documents
+   `PathInfo` as the stable `-PassThru` contract.
+4. Base64 file progress uses the verbose stream and never writes directly to
+   the host.
+
+The Archive, WindowsAdmin, relocation, deprecation, and unresolved-review
+buckets remain proposals until their Phase 5 sections are reviewed.

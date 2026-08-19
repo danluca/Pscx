@@ -512,6 +512,12 @@ development line.
 
 **Goal:** Decide what belongs in the modern core, what moves to an optional package, and what is deprecated.
 
+- [x] Create a machine-validated proposed disposition for every public command in
+  [`PSCX_COMMAND_DISPOSITION.psd1`](PSCX_COMMAND_DISPOSITION.psd1), with review
+  findings in [`PSCX_COMMAND_DISPOSITION.md`](PSCX_COMMAND_DISPOSITION.md).
+- [ ] Review and approve each proposed disposition before implementing removals or
+  package moves.
+
 ### 5.1 Retain and invest in the core
 
 These areas are distinctive enough to keep, subject to normal API and quality review:
@@ -539,11 +545,14 @@ These areas are distinctive enough to keep, subject to normal API and quality re
   - `Edit-File`;
   - `Set-FileTime`.
 - [ ] Error inspection:
-  - `Resolve-ErrorRecord`;
-  - platform-neutral portions of native error handling.
-- [ ] Enhanced location-stack behavior, if usage and tests support it.
-- [ ] Base64 conversion if its pipeline, file, and encoding behavior is meaningfully better than direct .NET calls.
-- [ ] `Test-Script` if it exposes useful parser diagnostics as structured objects.
+  - [x] retain `Resolve-ErrorRecord` with structured output by default and an
+    explicit `-AsText` compatibility mode;
+  - [ ] review platform-neutral portions of native error handling.
+- [x] Retain enhanced location-stack behavior and document `PathInfo` as the stable
+  `-PassThru` output contract.
+- [x] Retain Base64 conversion and route file progress through the verbose stream.
+- [x] Retain `Test-Script` with its Boolean default and a `-PassThru` structured
+  parser-result mode.
 
 For every retained command:
 
