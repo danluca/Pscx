@@ -4,8 +4,9 @@ This document records the evidence and open decisions for Phase 5 of the
 [modernization plan](PSCX_MODERNIZATION_PLAN.md). The machine-readable inventory
 is [`PSCX_COMMAND_DISPOSITION.psd1`](PSCX_COMMAND_DISPOSITION.psd1).
 
-The inventory is intentionally marked `Proposed`. Placement in a bucket does
-not authorize a command removal, rename, package move, or compatibility change.
+The inventory records the maintainer-approved destination for every PSCX 4.0
+public command. Approval establishes direction; the module moves, deprecations,
+and removals remain implementation work governed by the modernization plan.
 Every public command must appear exactly once, and the packaged-module tests
 compare the inventory with the root manifest so additions, omissions, and
 duplicates fail CI.
@@ -14,13 +15,16 @@ duplicates fail CI.
 
 | Bucket | Meaning |
 | --- | --- |
-| `RetainCore` | Candidate for continued support in the cross-platform core. |
-| `RetainWindowsCore` | Candidate for the deliberately small default Windows payload. |
-| `MoveToArchive` | Candidate for the optional `Pscx.Archive` module. |
-| `MoveToWindowsAdmin` | Candidate for the optional `Pscx.WindowsAdmin` module. |
+| `RetainCore` | Retain in the cross-platform core. |
+| `RetainWindowsCore` | Retain in the default Windows payload. Commands may require elevation when their purpose demands it. |
+| `MoveToArchive` | Move to the optional `Pscx.Archive` module. |
+| `MoveToWindowsAdmin` | Move to the optional `Pscx.WindowsAdmin` module. |
 | `MoveToCrossPlatformCore` | Platform-neutral command currently placed in a Windows assembly. |
-| `DeprecationCandidate` | Possible duplicate or low-value command requiring an explicit compatibility decision. |
-| `Review` | Public command whose value or destination still needs investigation. |
+| `DeprecationCandidate` | Deprecate or remove after applying the documented compatibility process. |
+
+The former `Review` commands are retained in their platform-appropriate core:
+22 are in `RetainCore`, while Windows-only `Invoke-Apartment` is in
+`RetainWindowsCore`.
 
 ## Phase 5.1 retained-core review
 
@@ -48,5 +52,6 @@ duplicates fail CI.
 4. Base64 file progress uses the verbose stream and never writes directly to
    the host.
 
-The Archive, WindowsAdmin, relocation, deprecation, and unresolved-review
-buckets remain proposals until their Phase 5 sections are reviewed.
+The Archive, WindowsAdmin, relocation, and deprecation buckets are approved
+destinations. Their implementation and compatibility work remains tracked in
+the corresponding Phase 5 sections.

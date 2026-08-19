@@ -515,39 +515,39 @@ development line.
 - [x] Create a machine-validated proposed disposition for every public command in
   [`PSCX_COMMAND_DISPOSITION.psd1`](PSCX_COMMAND_DISPOSITION.psd1), with review
   findings in [`PSCX_COMMAND_DISPOSITION.md`](PSCX_COMMAND_DISPOSITION.md).
-- [ ] Review and approve each proposed disposition before implementing removals or
+- [x] Review and approve each proposed disposition before implementing removals or
   package moves.
 
 ### 5.1 Retain and invest in the core
 
 These areas are distinctive enough to keep, subject to normal API and quality review:
 
-- [ ] PATH/environment-variable editing:
+- [x] PATH/environment-variable editing:
   - `Get-PathVariable`;
   - `Add-PathVariable`;
   - `Remove-PathVariable`;
   - `Set-PathVariable`.
-- [ ] Environment-frame management:
+- [x] Environment-frame management:
   - `Get-EnvironmentBlock`;
   - `Push-EnvironmentBlock`;
   - `Pop-EnvironmentBlock`.
-- [ ] Assembly and PE inspection:
+- [x] Assembly and PE inspection:
   - `Test-Assembly`;
   - `Get-PEHeader`.
-- [ ] XML tooling:
+- [x] XML tooling:
   - `Test-Xml`;
   - `Format-Xml`;
   - `Convert-Xml`.
-- [ ] Unit and byte formatting:
+- [x] Unit and byte formatting:
   - `ConvertTo-Unit`;
   - `Format-Byte`.
-- [ ] File/editor utilities:
+- [x] File/editor utilities:
   - `Edit-File`;
   - `Set-FileTime`.
-- [ ] Error inspection:
+- [x] Error inspection:
   - [x] retain `Resolve-ErrorRecord` with structured output by default and an
     explicit `-AsText` compatibility mode;
-  - [ ] review platform-neutral portions of native error handling.
+  - [x] retain Windows-native error decoding in the default Windows core.
 - [x] Retain enhanced location-stack behavior and document `PathInfo` as the stable
   `-PassThru` output contract.
 - [x] Retain Base64 conversion and route file progress through the verbose stream.
@@ -588,15 +588,15 @@ Candidate groups:
 
 - [ ] Active Directory and DHCP.
 - [ ] SQL Server, ADO, and OLE DB.
-- [ ] Privileges and user/group membership.
-- [ ] Terminal Services/Remote Desktop sessions.
+- [x] Retain privileges and user/group membership in the default Windows core.
+- [x] Retain Terminal Services/Remote Desktop sessions in the default Windows core.
 - [ ] VHD operations.
-- [ ] COM running-object access.
-- [ ] Shortcuts and short paths.
-- [ ] Mount points, reparse points, and volume labels.
-- [ ] Windows foreground-window APIs.
-- [ ] Windows-native error decoding.
-- [ ] Visual Studio environment import.
+- [x] Retain COM running-object access in the default Windows core.
+- [ ] Move `Add-ShortPath` to WindowsAdmin; retain shortcut creation and short-path lookup in Windows core.
+- [x] Retain mount points, reparse points, and volume labels in the default Windows core.
+- [ ] Move `Get-ForegroundWindow` to WindowsAdmin; retain `Set-ForegroundWindow` in Windows core.
+- [x] Retain Windows-native error decoding in the default Windows core.
+- [x] Retain Visual Studio environment import in the default Windows core.
 - [x] Keep elevation/gsudo integration in the default Windows core rather than moving it into this optional module.
 
 For each group:
@@ -610,7 +610,7 @@ For each group:
 
 - [ ] Move `ConvertFrom-Yaml` and `ConvertTo-Yaml` into the cross-platform core or a small optional data-format package.
 - [ ] Review archive commands for cross-platform placement.
-- [ ] Move `Get-ForegroundWindow` and `Set-ForegroundWindow` out of the cross-platform project and into `Pscx.WindowsAdmin`.
+- [ ] Move `Get-ForegroundWindow` out of the cross-platform project and into `Pscx.WindowsAdmin`; retain `Set-ForegroundWindow` in Windows core.
 - [ ] Audit every source file against its project's platform contract.
 
 ### 5.5 Deprecate and remove low-value duplicates
@@ -644,7 +644,7 @@ For each group:
 
 ### Exit criteria
 
-- [ ] Every existing public command has a documented disposition.
+- [x] Every existing public command has a documented disposition.
 - [ ] The core module has a coherent scope.
 - [ ] Optional dependencies are not loaded by the default core import.
 
