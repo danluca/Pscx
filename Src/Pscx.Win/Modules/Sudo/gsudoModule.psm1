@@ -89,6 +89,10 @@ Tests whether the gsudo credentials cache is available.
 Test-IsGsudoCacheAvailable
 Returns true when gsudo reports that its credentials cache is available.
 #>
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param()
+
     return ('true' -eq (gsudo status CacheAvailable))
 }
 
@@ -102,6 +106,10 @@ function Test-IsProcessElevated {
     Test-IsProcessElevated
     Returns true when the current process is elevated.
 #>	
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param()
+
     if ($PSVersionTable.Platform -eq 'Unix') {
         return (id -u) -eq 0
     }
@@ -120,6 +128,10 @@ The function Test-IsAdminMember checks if the currently logged-in user is a memb
 Test-IsAdminMember
 Returns true when the current user belongs to the local Administrators group.
 #>
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param()
+
     $userName = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
     $adminGroupSid = "S-1-5-32-544"
     $localAdminGroup = Get-LocalGroup -SID $adminGroupSid

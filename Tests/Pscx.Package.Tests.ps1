@@ -182,6 +182,87 @@ Describe 'Phase 5 command disposition inventory' {
         Compare-Object $declaredCommands @($classifiedCommands | Sort-Object -Unique) |
             Should -BeNullOrEmpty
     }
+
+    It 'documents every retained command contract exactly once' {
+        $repositoryRoot = Split-Path $PSScriptRoot -Parent
+        $disposition = Import-PowerShellDataFile -LiteralPath (
+            Join-Path $repositoryRoot 'PSCX_COMMAND_DISPOSITION.psd1'
+        )
+        $audit = Import-PowerShellDataFile -LiteralPath (
+            Join-Path $repositoryRoot 'PSCX_RETAINED_COMMAND_AUDIT.psd1'
+        )
+        $retainedCommands = @(
+            $disposition.Categories.RetainCore
+            $disposition.Categories.RetainWindowsCore
+        ) | Sort-Object -Unique
+        $groupedCommands = @(
+            $audit.Groups | ForEach-Object { $_.Commands }
+        )
+
+        @($groupedCommands | Group-Object | Where-Object Count -GT 1) |
+            Should -BeNullOrEmpty
+        Compare-Object $retainedCommands @($groupedCommands | Sort-Object -Unique) |
+            Should -BeNullOrEmpty
+        Compare-Object $retainedCommands @($audit.OutputContracts.Keys | Sort-Object) |
+            Should -BeNullOrEmpty
+        $audit.Status | Should -Be 'Complete'
+        foreach ($group in $audit.Groups) {
+            $group.Differentiation | Should -Not -BeNullOrEmpty
+        }
+        foreach ($commandName in $retainedCommands) {
+            $audit.OutputContracts[$commandName] | Should -Not -BeNullOrEmpty
+        }
+    }
+
+    It 'enforces retained command metadata, help, naming, and path contracts' {
+        $repositoryRoot = Split-Path $PSScriptRoot -Parent
+        $disposition = Import-PowerShellDataFile -LiteralPath (
+            Join-Path $repositoryRoot 'PSCX_COMMAND_DISPOSITION.psd1'
+        )
+        $audit = Import-PowerShellDataFile -LiteralPath (
+            Join-Path $repositoryRoot 'PSCX_RETAINED_COMMAND_AUDIT.psd1'
+        )
+        $commandNames = @($disposition.Categories.RetainCore)
+        if ($BuildScope -eq 'Full') {
+            $commandNames += $disposition.Categories.RetainWindowsCore
+        }
+        foreach ($optionalCommand in $audit.OptionalCommands.Keys) {
+            $optionalModulePath = Join-Path $ModulePath $audit.OptionalCommands[$optionalCommand]
+            Import-Module $optionalModulePath -Force -ErrorAction Stop
+        }
+        $commandNames = @($commandNames | Sort-Object -Unique)
+        $approvedVerbs = @(Get-Verb | ForEach-Object Verb)
+
+        foreach ($commandName in $commandNames) {
+            $command = Get-Command -Name $commandName -ErrorAction Stop |
+                Where-Object { $_.ModuleName -Like 'Pscx*' } |
+                Select-Object -First 1
+            $command | Should -Not -BeNullOrEmpty -Because "$commandName is retained"
+
+            $help = Get-Help -Name $commandName -Full -ErrorAction Stop
+            @($help.Examples.Example).Count | Should -BeGreaterThan 0 `
+                -Because "$commandName needs a realistic example"
+
+            if (-not $audit.OutputMetadataExceptions.ContainsKey($commandName)) {
+                @($command.OutputType).Count | Should -BeGreaterThan 0 `
+                    -Because "$commandName has a documented output contract"
+            }
+            if (-not $audit.CommonParameterExceptions.ContainsKey($commandName)) {
+                $command.Parameters.ContainsKey('Verbose') | Should -BeTrue `
+                    -Because "$commandName should support common parameters"
+            }
+            if (-not $audit.NamingExceptions.ContainsKey($commandName)) {
+                $commandName | Should -Match '^[^-]+-.+$'
+                $command.Verb | Should -BeIn $approvedVerbs `
+                    -Because "$commandName should use an approved verb"
+            }
+            if ($command.Parameters.ContainsKey('Path') -and
+                -not $audit.LiteralPathExceptions.ContainsKey($commandName)) {
+                $command.Parameters.ContainsKey('LiteralPath') | Should -BeTrue `
+                    -Because "$commandName exposes wildcard-capable Path"
+            }
+        }
+    }
 }
 
 Describe 'Path-variable mutation' {
@@ -362,6 +443,19 @@ Describe 'Representative public command behavior' {
         finally {
             Set-Location -LiteralPath $startingLocation.Path
         }
+    }
+
+    It 'treats wildcard characters literally in Get-ViewDefinition LiteralPath' {
+        $sourceFormatPath = Join-Path $ModulePath 'FormatData/Pscx.Format.ps1xml'
+        $literalFormatPath = Join-Path $script:temporaryRoot 'views[1].format.ps1xml'
+        Copy-Item -LiteralPath $sourceFormatPath -Destination $literalFormatPath
+
+        $views = @(Get-ViewDefinition -LiteralPath $literalFormatPath)
+
+        $views | Should -Not -BeNullOrEmpty
+        $views[0].PSTypeNames |
+            Should -Contain 'Pscx.Commands.Modules.Utility.ViewDefinition'
+        $views[0].Path | Should -Be (Resolve-Path -LiteralPath $literalFormatPath).Path
     }
 
     It 'registers the Base64 accelerator in the imported session' {

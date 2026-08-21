@@ -12,6 +12,7 @@ namespace Pscx.Win.Commands.IO.ImageMastering {
     /// 
     /// </summary>
     [Cmdlet(VerbsCommon.Get, PscxWinNouns.OpticalDriveInfo), Description("Lists Optical drive information")]
+    [OutputType(typeof(OpticalDriveInfo))]
     [SupportedOSPlatform("windows")]
     public class GetOpticalDriveInfoCommand : Imapi2CommandBase {
         /// <summary>

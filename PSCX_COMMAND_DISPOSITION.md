@@ -26,6 +26,12 @@ The former `Review` commands are retained in their platform-appropriate core:
 22 are in `RetainCore`, while Windows-only `Invoke-Apartment` is in
 `RetainWindowsCore`.
 
+The completed per-command value, output, naming, common-parameter, path, and
+help audit is maintained in
+[`PSCX_RETAINED_COMMAND_AUDIT.psd1`](PSCX_RETAINED_COMMAND_AUDIT.psd1). Packaged
+tests require it to cover all 69 retained commands exactly once and enforce its
+runtime metadata decisions.
+
 ## Phase 5.1 retained-core review
 
 | Area | Commands | Differentiation | Current output contract | Finding |
@@ -55,3 +61,22 @@ The former `Review` commands are retained in their platform-appropriate core:
 The Archive, WindowsAdmin, relocation, and deprecation buckets are approved
 destinations. Their implementation and compatibility work remains tracked in
 the corresponding Phase 5 sections.
+
+## Phase 5.1 audit conclusions
+
+- All retained commands have a concise group-level differentiation statement
+  and an explicit output contract.
+- Structured and pass-through commands expose output metadata. Silent mutators,
+  host/native wrappers, and context-dependent commands have documented reasons
+  when a single output type would be misleading.
+- Existing non-Verb-Noun names are limited to seven reviewed compatibility or
+  native-integration exceptions.
+- Common parameters are available everywhere except `gsudo`, `QuoteList`, and
+  `QuoteString`, whose arbitrary argument forwarding would be broken by advanced
+  parameter binding.
+- Wildcard-capable `-Path` parameters pair with `-LiteralPath`.
+  `Set-VolumeLabel -Path` is the sole documented exception because it identifies
+  a native volume root rather than a provider path.
+- Every retained command has at least one installed or authoritative-source
+  example. Optional `Add-DirectoryLength` is validated from its FileSystem
+  submodule source; default-loaded commands are validated at package runtime.

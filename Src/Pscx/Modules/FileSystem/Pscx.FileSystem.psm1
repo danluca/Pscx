@@ -27,6 +27,7 @@ if (!$Pscx:Session['FileSystem_PrependedFormatData'])
 function Add-DirectoryLength
 {
     [CmdletBinding()]
+    [OutputType([System.IO.DirectoryInfo])]
     param(
         [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
         [AllowNull()]

@@ -556,13 +556,16 @@ These areas are distinctive enough to keep, subject to normal API and quality re
 
 For every retained command:
 
-- [ ] Write a concise differentiation statement.
-- [ ] Audit and document its output contract; provide a stable output type wherever
+- [x] Write a concise differentiation statement in
+  [`PSCX_RETAINED_COMMAND_AUDIT.psd1`](PSCX_RETAINED_COMMAND_AUDIT.psd1).
+- [x] Audit and document its output contract; provide a stable output type wherever
   structured output is expected.
-- [ ] Ensure output is structured rather than display-only where practical.
-- [ ] Review approved verbs and naming.
-- [ ] Support standard common parameters and expected path semantics.
-- [ ] Provide at least one realistic example.
+- [x] Ensure output is structured rather than display-only where practical.
+- [x] Review approved verbs and naming, documenting compatibility exceptions.
+- [x] Support standard common parameters and expected path semantics, documenting
+  the few intentional exceptions.
+- [x] Provide at least one realistic example and enforce example coverage for
+  default-loaded retained commands in packaged tests.
 
 ### 5.2 Move to `Pscx.Archive`
 

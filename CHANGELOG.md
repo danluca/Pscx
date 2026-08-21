@@ -17,6 +17,9 @@
   `Resolve-ErrorRecord` output with `-AsText` compatibility.
 * Removed direct host output from Base64 conversion and documented
   `Set-PscxLocation -PassThru` as returning `PathInfo`.
+* Completed the retained-command contract audit, added missing output metadata
+  and common-parameter support, and added literal-path handling to
+  `Get-ViewDefinition`.
 
 ## 3.8.0 - August 2026
 

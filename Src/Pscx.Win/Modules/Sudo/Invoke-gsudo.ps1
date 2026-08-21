@@ -43,6 +43,7 @@ https://github.com/gerardog/gsudo
 
     #>
 [CmdletBinding(DefaultParameterSetName = 'None')]
+[OutputType([object])]
 param
 (
     # The script block to execute in an elevated context.

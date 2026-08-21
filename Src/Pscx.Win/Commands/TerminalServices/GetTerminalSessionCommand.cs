@@ -13,6 +13,7 @@ using System.Management.Automation;
 namespace Pscx.Win.Commands.TerminalServices
 {
     [Cmdlet(VerbsCommon.Get, PscxWinNouns.TerminalSession), Description("Get the terminal session")]
+    [OutputType(typeof(TerminalSession))]
     public class GetTerminalSessionCommand : TerminalSessionCommandBase
     {
         [Parameter]

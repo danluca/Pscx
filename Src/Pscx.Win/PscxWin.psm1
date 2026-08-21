@@ -1,4 +1,4 @@
-﻿# -----------------------------------------------------------------------
+# -----------------------------------------------------------------------
 # Desc: This is the PscxWin initialization module script. This module is
 # not meant to be used standalone, only as a companion module for PSCX
 # when running on Windows OS
@@ -19,6 +19,8 @@ Set-StrictMode -Version Latest
     Aliases:  rvhr
 #>
 function Resolve-HResult {
+    [CmdletBinding()]
+    [OutputType([string])]
     param(
         [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true)]
         [long[]]
@@ -54,6 +56,8 @@ function Resolve-HResult {
     Aliases:  rvwer
 #>
 function Resolve-WindowsError {
+    [CmdletBinding()]
+    [OutputType([string])]
     param(
         [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true)]
         [int[]]

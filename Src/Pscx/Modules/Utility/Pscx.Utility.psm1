@@ -17,7 +17,10 @@
     AddAccelerator -name uri -type ([System.Uri])
     Registers `[uri]` as an accelerator for System.Uri when that name is available.
 #>
-function AddAccelerator($name, $type) {
+function AddAccelerator {
+    [CmdletBinding()]
+    param($name, $type)
+
     if (!$acceleratorsType::Get.ContainsKey($name)) {
         $acceleratorsType::Add($name, $type)
     } else {
@@ -34,7 +37,10 @@ function AddAccelerator($name, $type) {
     RemoveAccelerator -name uri
     Removes the `uri` accelerator when it is registered.
 #>
-function RemoveAccelerator($name) {
+function RemoveAccelerator {
+    [CmdletBinding()]
+    param($name)
+
     if ($acceleratorsType::Get.ContainsKey($name)) {
         $acceleratorsType::Remove($name)
     } else {
@@ -233,6 +239,8 @@ function PscxHelp
 #>
 function PscxLess
 {
+    [CmdletBinding()]
+    [OutputType([object])]
     param([string[]]$Path, [string[]]$LiteralPath)
 
     if ($host.Name -ne 'ConsoleHost') {
@@ -287,6 +295,9 @@ function PscxLess
     Author:   Keith Hill
 #>
 function Edit-Profile {
+    [CmdletBinding()]
+    param()
+
     Edit-File $Profile.CurrentUserAllHosts
 }
 
@@ -303,6 +314,9 @@ function Edit-Profile {
     Author:   Keith Hill
 #>
 function Edit-HostProfile {
+    [CmdletBinding()]
+    param()
+
     Edit-File $Profile.CurrentUserCurrentHost
 }
 
@@ -509,7 +523,10 @@ function Invoke-BatchFile {
 .PARAMETER Path
     Path to a specific format data PS1XML file.  Wildcards are accepted.  The default
     value is an empty array which will load the default .ps1xml files and exported
-    format files from modules loaded in the current session
+    format files from modules loaded in the current session.
+.PARAMETER LiteralPath
+    Literal path to one or more format data PS1XML files. Wildcard characters are
+    treated as ordinary characters.
 .PARAMETER IncludeSnapInFormatting
     Include the exported format information from v1 PSSnapins.
 .EXAMPLE
@@ -522,13 +539,17 @@ function Invoke-BatchFile {
     C:\PS> Get-Process | Get-ViewDefinition | ft Name,Style -groupby SelectedBy
     Retrieves all view definitions for the .NET type System.Diagnostics.Process.
 .EXAMPLE
-    C:\PS> Get-ViewDefinition Pscx.Commands.Net.PingHostStatistics $Pscx:Home\Modules\Net\Pscx.Net.Format.ps1xml
-    Retrieves all view definitions for the .NET type Pscx.Commands.Net.PingHostStatistics.
+    C:\PS> Get-ViewDefinition -LiteralPath .\MyModule.Format.ps1xml
+    Retrieves every view definition from the specified format file without expanding
+    wildcard characters in its path.
+.OUTPUTS
+    Pscx.Commands.Modules.Utility.ViewDefinition
 .NOTES
     Author: Joris van Lier and Keith Hill
 #>
 function Get-ViewDefinition {
     [CmdletBinding(DefaultParameterSetName = "Name")]
+    [OutputType('Pscx.Commands.Modules.Utility.ViewDefinition')]
     param(
         [Parameter(Position=0, ParameterSetName="Name")]
         [string]
@@ -542,19 +563,38 @@ function Get-ViewDefinition {
         [string[]]
         $Path = @(),
 
+        [Alias('PSPath')]
+        [Parameter()]
+        [string[]]
+        $LiteralPath = @(),
+
         [Parameter(Position=2)]
         [switch]
         $IncludeSnapInFormatting
     )
 
     Begin {
+        if ($PSBoundParameters.ContainsKey('Path') -and
+            $PSBoundParameters.ContainsKey('LiteralPath')) {
+            throw 'Path and LiteralPath cannot be used together.'
+        }
+
         # Setup arrays to hold Format XMLDocument objects and the paths to them
         $arrFormatFiles = @()
         $arrFormatFilePaths = @()
         # If a specific Path is specified, use that, otherwise load all defaults
         # which consist of the default formatting files, and exported format files
         # from modules
-        if ($Path.count -eq 0) {
+        $useLiteralPath = $PSBoundParameters.ContainsKey('LiteralPath')
+        $formatPaths = @(
+            if ($useLiteralPath) {
+                $LiteralPath
+            }
+            else {
+                $Path
+            }
+        )
+        if ($formatPaths.Count -eq 0) {
             # Populate the arrays with the standard ps1xml format file information
             Get-ChildItem $PsHome *.format.ps1xml | ForEach-Object {
                 if (Test-Path $_.fullname) {
@@ -598,12 +638,18 @@ function Get-ViewDefinition {
             }
         }
         else {
-            foreach ($p in $path) {
-                $x = New-Object xml.xmldocument
-                if (Test-Path $p) {
-                    $x.load($p)
+            foreach ($p in $formatPaths) {
+                $resolvedPaths = if ($useLiteralPath) {
+                    @(Resolve-Path -LiteralPath $p -ErrorAction Stop)
+                }
+                else {
+                    @(Resolve-Path -Path $p -ErrorAction Stop)
+                }
+                foreach ($resolvedPath in $resolvedPaths) {
+                    $x = New-Object xml.xmldocument
+                    $x.load($resolvedPath.ProviderPath)
                     $arrFormatFiles += $x
-                    $arrFormatFilePaths += $p
+                    $arrFormatFilePaths += $resolvedPath.Path
                 }
             }
         }
@@ -660,6 +706,10 @@ function Get-ViewDefinition {
                 Add-Member NoteProperty Style 'Unknown' -Input $ViewDefinition
             }
 
+            $ViewDefinition.PSTypeNames.Insert(
+                0,
+                'Pscx.Commands.Modules.Utility.ViewDefinition'
+            )
             $ViewDefinition
         }
 
@@ -955,6 +1005,7 @@ function Get-ScreenHtml
 #>
 function Invoke-Method {
     [CmdletBinding()]
+    [OutputType([object])]
     param(
         [parameter(valuefrompipeline=$true, mandatory=$true)]
         [allownull()]
@@ -1035,6 +1086,7 @@ function Invoke-Method {
 function Set-Writable
 {
     [CmdletBinding(DefaultParameterSetName="Path", SupportsShouldProcess=$true)]
+    [OutputType([System.IO.FileSystemInfo])]
     param(
         [Parameter(Position=0, Mandatory=$true, ValueFromPipeline=$true, ParameterSetName="Path")]
         [ValidateNotNullOrEmpty()]
@@ -1117,6 +1169,7 @@ function Set-Writable
 #>
 function Set-FileAttributes {
     [CmdletBinding(DefaultParameterSetName = "Path", SupportsShouldProcess = $true)]
+    [OutputType([System.IO.FileSystemInfo])]
     param(
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Path")]
         [ValidateNotNullOrEmpty()]
@@ -1216,6 +1269,7 @@ function Set-FileAttributes {
 #>
 function Set-ReadOnly {
     [CmdletBinding(DefaultParameterSetName = "Path", SupportsShouldProcess = $true)]
+    [OutputType([System.IO.FileSystemInfo])]
     param(
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Path")]
         [ValidateNotNullOrEmpty()]
@@ -1311,6 +1365,7 @@ function Set-ReadOnly {
 #>
 function Show-Tree {
     [CmdletBinding(DefaultParameterSetName = "Path")]
+    [OutputType([string])]
     param(
         [Parameter(Position = 0,
             ParameterSetName = "Path",
@@ -1589,6 +1644,7 @@ function Show-Tree {
 #>
 function Get-Parameter {
    [CmdletBinding(DefaultParameterSetName="ParameterName")]
+   [OutputType('System.Management.Automation.ParameterMetadataEx')]
    param(
       [Parameter(Position = 1, Mandatory = $true, ValueFromPipelineByPropertyName = $true)]
       [Alias("Name")]
@@ -1824,6 +1880,8 @@ function Get-Parameter {
     Gets the execution time for all commands in the session history.
 #>
 function Get-ExecutionTime {
+    [CmdletBinding()]
+    [OutputType('Pscx.Commands.Modules.Utility.ExecutionTimeInfo')]
     param(
         [Parameter(Position = 0)]
         [ValidateScript({$_ -ge 1})]
@@ -1885,7 +1943,10 @@ foreach ($aliasName in $pscxAliases.Keys) {
     AddRegex -name SemanticVersion -regex '^\d+\.\d+\.\d+$'
     Adds a pattern available as `$Pscx:RegexLib.SemanticVersion`.
 #>
-function AddRegex($name, $regex) {
+function AddRegex {
+    [CmdletBinding()]
+    param($name, $regex)
+
     Add-Member -InputObject $Pscx:RegexLib -MemberType NoteProperty -Name $name -Value $regex
 }
 
