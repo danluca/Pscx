@@ -13,6 +13,9 @@ param(
     [Parameter(Mandatory)]
     [version] $ExpectedVersion,
 
+    [ValidateSet('Pscx', 'Pscx.Archive')]
+    [string] $ModuleName = 'Pscx',
+
     [string] $PowerShellPath = 'pwsh',
 
     [Parameter(DontShow)]
@@ -26,10 +29,9 @@ $PSStyle.OutputRendering = [Management.Automation.OutputRendering]::PlainText
 if ($InstalledModuleRoot) {
     $env:PSModulePath = $InstalledModuleRoot
     $warnings = @()
-    Import-Module Pscx -Force -ErrorAction Stop -WarningVariable warnings
-    $module = Get-Module Pscx -ErrorAction Stop
-    $commands = @(Get-Command -Module Pscx*)
-    $aboutHelp = Get-Help about_Pscx -ErrorAction Stop
+    Import-Module $ModuleName -Force -ErrorAction Stop -WarningVariable warnings
+    $module = Get-Module $ModuleName -ErrorAction Stop
+    $commands = @(Get-Command -Module $ModuleName)
 
     if (-not $module.Path.StartsWith($InstalledModuleRoot, [StringComparison]::OrdinalIgnoreCase)) {
         throw "PowerShell imported PSCX from an unexpected location: $($module.Path)"
@@ -40,20 +42,25 @@ if ($InstalledModuleRoot) {
     if ($commands.Count -eq 0) {
         throw 'The installed package exported no commands.'
     }
-    if (-not $aboutHelp) {
-        throw 'The installed package did not expose about_Pscx help.'
+    if ($ModuleName -eq 'Pscx') {
+        if (-not (Get-Help about_Pscx -ErrorAction Stop)) {
+            throw 'The installed package did not expose about_Pscx help.'
+        }
+        $windowsAssemblyPath = Join-Path (Split-Path -Parent $module.Path) 'Pscx.Win.dll'
+        $windowsCommand = Get-Command Get-Privilege -ErrorAction SilentlyContinue
+        if ($ExpectedBuildScope -eq 'Full' -and (
+            -not (Test-Path -LiteralPath $windowsAssemblyPath) -or -not $windowsCommand
+        )) {
+            throw 'The installed Full package did not expose its Windows companion payload.'
+        }
+        if ($ExpectedBuildScope -eq 'Core' -and (
+            (Test-Path -LiteralPath $windowsAssemblyPath) -or $windowsCommand
+        )) {
+            throw 'The installed Core package unexpectedly exposed a Windows companion payload.'
+        }
     }
-    $windowsAssemblyPath = Join-Path (Split-Path -Parent $module.Path) 'Pscx.Win.dll'
-    $windowsCommand = Get-Command Get-Privilege -ErrorAction SilentlyContinue
-    if ($ExpectedBuildScope -eq 'Full' -and (
-        -not (Test-Path -LiteralPath $windowsAssemblyPath) -or -not $windowsCommand
-    )) {
-        throw 'The installed Full package did not expose its Windows companion payload.'
-    }
-    if ($ExpectedBuildScope -eq 'Core' -and (
-        (Test-Path -LiteralPath $windowsAssemblyPath) -or $windowsCommand
-    )) {
-        throw 'The installed Core package unexpectedly exposed a Windows companion payload.'
+    elseif ($commands.Count -ne 3) {
+        throw "The installed Pscx.Archive package exported $($commands.Count) commands; expected 3."
     }
 
     [ordered]@{
@@ -75,9 +82,9 @@ try {
     New-Item -ItemType Directory -Path $modulePath -Force | Out-Null
     Expand-Archive -LiteralPath $resolvedPackagePath -DestinationPath $modulePath
 
-    $manifestPath = Join-Path $modulePath 'Pscx/Pscx.psd1'
+    $manifestPath = Join-Path $modulePath "$ModuleName/$ModuleName.psd1"
     if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
-        throw 'The release archive does not contain Pscx/Pscx.psd1 at its installation root.'
+        throw "The release archive does not contain $ModuleName/$ModuleName.psd1 at its installation root."
     }
 
     $arguments = @(
@@ -92,6 +99,8 @@ try {
         $ExpectedBuildScope,
         '-ExpectedVersion',
         $ExpectedVersion.ToString(),
+        '-ModuleName',
+        $ModuleName,
         '-InstalledModuleRoot',
         $modulePath
     )

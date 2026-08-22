@@ -1,12 +1,11 @@
 # Redistributed Binary Inventory
 
 This inventory covers third-party native executables and libraries in the
-checked-in PSCX 3.8.0 package. NuGet-provided managed assemblies are covered by
+PSCX 4.0 default package. NuGet-provided managed assemblies are covered by
 the generated [NuGet dependency inventory](NUGET_DEPENDENCIES.md).
 
 | Component | Version | Packaged files | License | Source and license record |
 | --- | --- | --- | --- | --- |
-| 7-Zip | 24.09 | `Apps/Win/7z.exe`, `Apps/Win/7z.dll`, `Apps/Linux/7zz`, `Apps/macOS/7zz` | GNU LGPL 2.1 or later, subject to the bundled 7-Zip license terms | [Import metadata and license](../../Imports/7zip/) |
 | gsudo | 2.6.0 | `Apps/Win/gsudo.exe`, `Apps/Win/sudo.exe` | MIT | [Import metadata and license](../../Imports/gsudo/) |
 | less | 678 | `Apps/Win/less.exe`, `Apps/Win/lesskey.exe` | less upstream license; Windows-port changes under MIT | [Import metadata and licenses](../../Imports/Less-678/) |
 

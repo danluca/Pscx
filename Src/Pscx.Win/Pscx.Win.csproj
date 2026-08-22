@@ -44,16 +44,10 @@
     <Content Include="TypeData\Pscx.TerminalServices.Type.ps1xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="TypeData\Pscx.Archive.Type.ps1xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <Content Include="TypeData\Pscx.Wmi.Type.ps1xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="FormatData\Pscx.Security.Format.ps1xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="FormatData\Pscx.Archive.Format.ps1xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Modules\Sudo\gsudoModule.psm1">
@@ -77,9 +71,6 @@
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.2" />
     <PackageReference Include="Microsoft.NETCore.Platforms" Version="7.0.4" />
     <PackageReference Include="Microsoft.PowerShell.SDK" Version="$(PowerShellSdkVersion)" />
-    <PackageReference Include="Squid-Box.SevenZipSharp" Version="1.6.2.24">
-      <GeneratePathProperty>True</GeneratePathProperty>
-    </PackageReference>
     <PackageReference Include="System.DirectoryServices" Version="10.0.10" />
     <PackageReference Include="System.Reflection.MetadataLoadContext" Version="10.0.10" />
     <PackageReference Include="YamlDotNet" Version="18.1.0">
@@ -111,9 +102,6 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-      <!--some old(er) nuget packages do not copy their artifacts in output folder using newer project style - workaround based on https://github.com/NuGet/Home/issues/4837-->
-      <Copy SourceFiles="$(PkgSquid-Box_SevenZipSharp)/lib/netcoreapp3.1/SevenZipSharp.dll" DestinationFolder="$(TargetDir)" />
-      <Copy SourceFiles="$(PkgSquid-Box_SevenZipSharp)/lib/netcoreapp3.1/SevenZipSharp.xml" DestinationFolder="$(TargetDir)" />
       <!-- <Copy SourceFiles="$(PkgYamlDotNet)/lib/$(TargetFramework)/YamlDotNet.dll" DestinationFolder="$(TargetDir)" /> -->
       <!-- <Copy SourceFiles="$(PkgYamlDotNet)/lib/$(TargetFramework)/YamlDotNet.xml" DestinationFolder="$(TargetDir)" /> -->
       <Copy SourceFiles="$(PkgYamlDotNet)/lib/net8.0/YamlDotNet.dll" DestinationFolder="$(TargetDir)" />

@@ -58,9 +58,10 @@ runtime metadata decisions.
 4. Base64 file progress uses the verbose stream and never writes directly to
    the host.
 
-The Archive, WindowsAdmin, relocation, and deprecation buckets are approved
-destinations. Their implementation and compatibility work remains tracked in
-the corresponding Phase 5 sections.
+The archive commands now ship in the optional, cross-platform `Pscx.Archive`
+module using the managed SharpCompress backend. WindowsAdmin, other relocation,
+and deprecation buckets remain approved destinations whose implementation and
+compatibility work is tracked in the corresponding Phase 5 sections.
 
 ## Phase 5.1 audit conclusions
 

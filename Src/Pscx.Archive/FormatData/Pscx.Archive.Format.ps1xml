@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Configuration>
+  <ViewDefinitions>
+    <View>
+      <Name>PscxArchiveEntry</Name>
+      <ViewSelectedBy>
+        <TypeName>Pscx.Commands.IO.Compression.ArchiveEntry</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader><Label>Path</Label></TableColumnHeader>
+          <TableColumnHeader><Label>Size</Label><Alignment>Right</Alignment></TableColumnHeader>
+          <TableColumnHeader><Label>Modified</Label></TableColumnHeader>
+          <TableColumnHeader><Label>Encrypted</Label></TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem><PropertyName>Path</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Size</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>ModifiedDate</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>IsEncrypted</PropertyName></TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+  </ViewDefinitions>
+</Configuration>

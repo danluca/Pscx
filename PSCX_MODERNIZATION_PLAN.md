@@ -30,7 +30,7 @@ The proposed package family is:
 | Package | Purpose | Typical contents |
 | --- | --- | --- |
 | `Pscx` | Platform-aware CLI essentials | PATH/environment tools, file metadata, editor integration, XML tools, units, reflection/PE inspection, error helpers; gsudo and less in the default Windows payload |
-| `Pscx.Archive` | Optional archive support beginning with PSCX 4.0; exact platform contract to be proven | Read, create, and expand archives; 7-Zip integration or another selected backend |
+| `Pscx.Archive` | Optional, cross-platform archive support beginning with PSCX 4.0 | Read, create, and safely expand archives through the managed SharpCompress backend |
 | `Pscx.WindowsAdmin` | Optional Windows administration | AD, DHCP, SQL/OLE DB, privileges, terminal services, VHD, COM, shortcuts, mount/reparse-point operations |
 | `Pscx.Time` | Optional date/time helpers beginning with PSCX 4.0 | NodaTime-backed types and accelerators with a documented supported API |
 
@@ -569,21 +569,28 @@ For every retained command:
 
 ### 5.2 Move to `Pscx.Archive`
 
-Backend selection and the supported-platform contract are intentionally
-deferred until this module is designed. Cross-platform support must be
-demonstrated rather than assumed.
+`Pscx.Archive` is a separately imported, managed-only sibling module using
+SharpCompress 0.50.4 and distributed in the unified PSCX release ZIP. It
+supports PowerShell 7.6/.NET 10 on Windows, Linux, and macOS without loading
+archive dependencies during the default `Pscx` import. PSCX 4.0 creates ZIP,
+7z, TAR, TAR.GZ/TGZ, and TAR.BZ2/TBZ2 archives;
+listing and extraction use SharpCompress's detected read formats. Extraction
+is intentionally unencrypted and rejects rooted paths, parent traversal, and
+symbolic-link entries before writing. File timestamps are preserved when
+available; ACL and Unix-mode preservation are not part of the portable 4.0
+contract.
 
-- [ ] `Write-PscxArchive`.
-- [ ] `Read-PscxArchive`.
-- [ ] `Expand-PscxArchive`.
-- [ ] Select and document the archive backend.
-- [ ] Define the supported-platform contract from demonstrated backend behavior.
+- [x] `Write-PscxArchive`.
+- [x] `Read-PscxArchive`.
+- [x] `Expand-PscxArchive`.
+- [x] Select and document the archive backend.
+- [x] Define the supported-platform contract from demonstrated backend behavior.
 - [ ] Verify archive creation, listing, and extraction on every claimed platform.
-- [ ] Add zip-slip/path-traversal tests.
-- [ ] Add symbolic-link and permission-handling tests.
-- [ ] Decide whether encrypted archives are supported and test password handling without exposing secrets.
-- [ ] Package only required architecture-specific binaries.
-- [ ] Avoid storing duplicate source archives, NuGet packages, framework builds, and runtime binaries in the main repository.
+- [x] Add zip-slip/path-traversal tests.
+- [x] Add symbolic-link and permission-handling tests.
+- [x] Decide that encrypted archive extraction is unsupported in 4.0 and reject it explicitly without accepting or exposing passwords.
+- [x] Eliminate architecture-specific archive binaries by using the managed-only backend.
+- [x] Avoid storing duplicate source archives, NuGet packages, framework builds, and runtime binaries in the main repository.
 
 ### 5.3 Move to `Pscx.WindowsAdmin`
 
@@ -612,7 +619,7 @@ For each group:
 ### 5.4 Move platform-neutral features out of the Windows assembly
 
 - [ ] Move `ConvertFrom-Yaml` and `ConvertTo-Yaml` into the cross-platform core or a small optional data-format package.
-- [ ] Review archive commands for cross-platform placement.
+- [x] Review archive commands for cross-platform placement; they ship in the optional cross-platform `Pscx.Archive` module.
 - [ ] Move `Get-ForegroundWindow` out of the cross-platform project and into `Pscx.WindowsAdmin`; retain `Set-ForegroundWindow` in Windows core.
 - [ ] Audit every source file against its project's platform contract.
 
@@ -857,11 +864,11 @@ The following issues are small enough to begin independently:
 | Phase | Status | Completion |
 | --- | --- | --- |
 | 0. Baseline and decisions | Complete | 100% |
-| 1. Correctness, security, builds | In progress | 25% |
-| 2. Tests and CI | In progress | 62% |
-| 3. Metadata, docs, releases | In progress | 50% |
-| 4. Explicit public API | Not started | 0% |
-| 5. Feature classification | Not started | 0% |
+| 1. Correctness, security, builds | Complete | 100% |
+| 2. Tests and CI | Complete | 100% |
+| 3. Metadata, docs, releases | Complete | 100% |
+| 4. Explicit public API | Complete | 100% |
+| 5. Feature classification | In progress | 30% |
 | 6. Dependency and binary reduction | Not started | 0% |
 | 7. Cohesive improvements | Not started | 0% |
 | 8. PSCX 4.0 release | Not started | 0% |

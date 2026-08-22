@@ -4,6 +4,9 @@ param(
     [string] $ModulePath,
 
     [Parameter(Mandatory)]
+    [string] $ArchiveModulePath,
+
+    [Parameter(Mandatory)]
     [ValidateSet('Core', 'Full')]
     [string] $BuildScope,
 
@@ -39,6 +42,7 @@ if ((Get-Module Pester).Version -ne [version]$pesterVersion) {
 }
 
 $modulePath = (Resolve-Path -LiteralPath $ModulePath).Path
+$archiveModulePath = (Resolve-Path -LiteralPath $ArchiveModulePath).Path
 $resultsPath = [System.IO.Path]::GetFullPath($ResultsPath)
 try {
     $powerShellExecutable = Get-Command -Name $PowerShellPath -CommandType Application -ErrorAction Stop |
@@ -51,17 +55,23 @@ New-Item -ItemType Directory -Path $resultsPath -Force | Out-Null
 $testResultPath = Join-Path $resultsPath 'Pscx.Pester.xml'
 $coveragePath = Join-Path $resultsPath 'Pscx.PowerShell.coverage.xml'
 $coverageFiles = @(
-    Get-ChildItem -LiteralPath $modulePath -Recurse -File -Filter *.psm1 |
+    Get-ChildItem -LiteralPath $modulePath, $archiveModulePath -Recurse -File -Filter *.psm1 |
         Select-Object -ExpandProperty FullName
 )
 
-$container = New-PesterContainer `
-    -Path (Join-Path $repositoryRoot 'Tests/Pscx.Package.Tests.ps1') `
-    -Data @{
-        ModulePath = $modulePath
-        BuildScope = $BuildScope
-        PowerShellPath = $powerShellExecutable
-    }
+$container = @(
+    New-PesterContainer `
+        -Path (Join-Path $repositoryRoot 'Tests/Pscx.Package.Tests.ps1') `
+        -Data @{
+            ModulePath = $modulePath
+            ArchiveModulePath = $archiveModulePath
+            BuildScope = $BuildScope
+            PowerShellPath = $powerShellExecutable
+        }
+    New-PesterContainer `
+        -Path (Join-Path $repositoryRoot 'Tests/Pscx.Archive.Package.Tests.ps1') `
+        -Data @{ ArchiveModulePath = $archiveModulePath }
+)
 $configuration = New-PesterConfiguration
 $configuration.Run.Container = $container
 $configuration.Run.PassThru = $true

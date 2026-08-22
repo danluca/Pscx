@@ -49,11 +49,13 @@ $PSStyle.OutputRendering = [System.Management.Automation.OutputRendering]::Plain
 $repositoryRoot = $PSScriptRoot
 $solutionPath = Join-Path $repositoryRoot 'Src/Pscx.sln'
 $coreProjectPath = Join-Path $repositoryRoot 'Src/Pscx.InternalTests/Pscx.InternalTests.csproj'
+$archiveProjectPath = Join-Path $repositoryRoot 'Src/Pscx.Archive/Pscx.Archive.csproj'
 $internalTestProjectPath = Join-Path $repositoryRoot 'Src/Pscx.InternalTests/Pscx.InternalTests.csproj'
 $versionFilePath = Join-Path $repositoryRoot 'Directory.Build.props'
 $testPolicyFilePath = Join-Path $repositoryRoot 'Tests/TestPolicy.psd1'
 $artifactsRoot = [System.IO.Path]::GetFullPath($ArtifactsPath)
 $moduleRoot = Join-Path $artifactsRoot 'module/Pscx'
+$archiveModuleRoot = Join-Path $artifactsRoot 'module/Pscx.Archive'
 $helpOutputPath = Join-Path $artifactsRoot 'help'
 $packageOutputPath = Join-Path $artifactsRoot 'packages'
 $testResultsPath = Join-Path $artifactsRoot 'test-results'
@@ -199,7 +201,7 @@ function Set-ManifestVersion {
         1
     )
 
-    if ([System.IO.Path]::GetFileName($Path) -eq 'Pscx.psd1') {
+    if ([System.IO.Path]::GetFileName($Path) -in @('Pscx.psd1', 'Pscx.Archive.psd1')) {
         if ($Prerelease) {
             $content = [regex]::Replace(
                 $content,
@@ -236,6 +238,9 @@ function Invoke-Clean {
 function Invoke-Restore {
     Write-Step "Restore $resolvedBuildScope build"
     Invoke-NativeCommand dotnet @('restore', $buildTargetPath, '--nologo')
+    if ($resolvedBuildScope -eq 'Core') {
+        Invoke-NativeCommand dotnet @('restore', $archiveProjectPath, '--nologo')
+    }
 }
 
 function Get-MSBuildVersionArguments {
@@ -259,15 +264,28 @@ function Invoke-Compile {
         '--nologo'
     ) + (Get-MSBuildVersionArguments)
     Invoke-NativeCommand dotnet $arguments
+    if ($resolvedBuildScope -eq 'Core') {
+        $archiveArguments = @(
+            'build',
+            $archiveProjectPath,
+            '--configuration',
+            $Configuration,
+            '--no-restore',
+            '--nologo'
+        ) + (Get-MSBuildVersionArguments)
+        Invoke-NativeCommand dotnet $archiveArguments
+    }
 }
 
 function New-ModuleStage {
     Write-Step "Assemble module $packageVersion"
     Remove-BuildDirectory (Join-Path $artifactsRoot 'module')
     New-Item -ItemType Directory -Path $moduleRoot -Force | Out-Null
+    New-Item -ItemType Directory -Path $archiveModuleRoot -Force | Out-Null
 
     $coreOutput = Join-Path $repositoryRoot "Src/Pscx/bin/$Configuration/net10.0"
     $windowsOutput = Join-Path $repositoryRoot "Src/Pscx.Win/bin/$Configuration/net10.0"
+    $archiveOutput = Join-Path $repositoryRoot "Src/Pscx.Archive/bin/$Configuration/net10.0"
 
     @(
         'Pscx.Core.dll',
@@ -290,7 +308,6 @@ function New-ModuleStage {
             Copy-RequiredItem (Join-Path $windowsOutput $_) $moduleRoot
         }
 
-        Copy-MatchingItem $windowsOutput 'SevenZipSharp.*' $moduleRoot
         Copy-MatchingItem $windowsOutput 'YamlDotNet.*' $moduleRoot
         @('FormatData', 'Modules', 'TypeData') | ForEach-Object {
             Copy-RequiredItem (Join-Path $windowsOutput $_) $moduleRoot
@@ -299,9 +316,7 @@ function New-ModuleStage {
 
     $appsRoot = Join-Path $moduleRoot 'Apps'
     $windowsApps = Join-Path $appsRoot 'Win'
-    $macApps = Join-Path $appsRoot 'macOS'
-    $linuxApps = Join-Path $appsRoot 'Linux'
-    New-Item -ItemType Directory -Path $windowsApps, $macApps, $linuxApps -Force | Out-Null
+    New-Item -ItemType Directory -Path $windowsApps -Force | Out-Null
 
     Copy-MatchingItem (Join-Path $repositoryRoot 'Imports/Less-678') 'less*.*' $windowsApps
     Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/Less-678/license') (Join-Path $windowsApps 'LICENSE_less_orig.txt')
@@ -310,16 +325,19 @@ function New-ModuleStage {
     Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/gsudo/win/gsudo.exe') (Join-Path $windowsApps 'sudo.exe')
     Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/gsudo/win/Invoke-ElevatedCommand.ps1') (Join-Path $windowsApps 'Invoke-Elevated.ps1')
     Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/gsudo/LICENSE.txt') (Join-Path $windowsApps 'LICENSE_sudo.txt')
-    Copy-MatchingItem (Join-Path $repositoryRoot 'Imports/7zip/win/x64') '7z.*' $windowsApps
-    Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/7zip/macOS/7zz') (Join-Path $macApps '7zz')
-    Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/7zip/linux/x64/7zz') (Join-Path $linuxApps '7zz')
-    Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/7zip/License.txt') (Join-Path $windowsApps 'LICENSE_7zip.txt')
-    Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/7zip/License.txt') (Join-Path $macApps 'LICENSE_7zip.txt')
-    Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/7zip/License.txt') (Join-Path $linuxApps 'LICENSE_7zip.txt')
     Copy-RequiredItem (Join-Path $repositoryRoot 'CHANGELOG.md') (Join-Path $moduleRoot 'CHANGELOG.md')
     Copy-RequiredItem (Join-Path $repositoryRoot 'LICENSE') (Join-Path $moduleRoot 'LICENSE.txt')
 
-    Get-ChildItem -LiteralPath $moduleRoot -Recurse -Filter *.psd1 -File |
+    @('Pscx.Archive.dll', 'Pscx.Archive.psd1', 'SharpCompress.dll', 'THIRD-PARTY-NOTICES.md') | ForEach-Object {
+        Copy-RequiredItem (Join-Path $archiveOutput $_) $archiveModuleRoot
+    }
+    @('FormatData', 'TypeData') | ForEach-Object {
+        Copy-RequiredItem (Join-Path $archiveOutput $_) $archiveModuleRoot
+    }
+    Copy-RequiredItem (Join-Path $repositoryRoot 'CHANGELOG.md') (Join-Path $archiveModuleRoot 'CHANGELOG.md')
+    Copy-RequiredItem (Join-Path $repositoryRoot 'LICENSE') (Join-Path $archiveModuleRoot 'LICENSE.txt')
+
+    Get-ChildItem -LiteralPath (Join-Path $artifactsRoot 'module') -Recurse -Filter *.psd1 -File |
         ForEach-Object {
             Set-ManifestVersion -Path $_.FullName -ModuleVersion $moduleVersion -Prerelease $manifestPrerelease `
                 -RequiredPowerShellVersion $powerShellMinimumVersion
@@ -327,7 +345,7 @@ function New-ModuleStage {
 }
 
 function Invoke-Help {
-    if (-not (Test-Path -LiteralPath (Join-Path $moduleRoot 'Pscx.psd1'))) {
+    if (-not (Test-Path -LiteralPath (Join-Path $archiveModuleRoot 'Pscx.Archive.psd1'))) {
         New-ModuleStage
     }
 
@@ -351,6 +369,25 @@ function Invoke-Help {
     )
 
     Copy-RequiredItem $cultureOutputPath $moduleRoot
+
+    $archiveCultureOutputPath = Join-Path $helpOutputPath 'Pscx.Archive/en-US'
+    New-Item -ItemType Directory -Path $archiveCultureOutputPath -Force | Out-Null
+    Invoke-NativeCommand $PowerShellPath @(
+        '-NoLogo',
+        '-NoProfile',
+        '-NonInteractive',
+        '-File',
+        (Join-Path $repositoryRoot 'Tools/Invoke-PscxHelp.ps1'),
+        '-ModulePath',
+        $archiveModuleRoot,
+        '-OutputPath',
+        $archiveCultureOutputPath,
+        '-BuildScope',
+        $resolvedBuildScope,
+        '-PackageName',
+        'Pscx.Archive'
+    )
+    Copy-RequiredItem $archiveCultureOutputPath $archiveModuleRoot
 }
 
 function Invoke-Test {
@@ -420,6 +457,8 @@ function Invoke-PesterTest {
         (Join-Path $repositoryRoot 'Tools/Invoke-PscxPester.ps1'),
         '-ModulePath',
         $moduleRoot,
+        '-ArchiveModulePath',
+        $archiveModuleRoot,
         '-BuildScope',
         $resolvedBuildScope,
         '-ResultsPath',
@@ -509,11 +548,11 @@ function Invoke-Package {
     New-ModuleStage
     Invoke-Help
 
-    Write-Step "Create Pscx-$packageVersion.zip"
+    Write-Step "Create unified Pscx $packageVersion ZIP"
     Remove-BuildDirectory $packageOutputPath
     New-Item -ItemType Directory -Path $packageOutputPath -Force | Out-Null
     $archivePath = Join-Path $packageOutputPath "Pscx-$packageVersion.zip"
-    Compress-Archive -LiteralPath (Join-Path $artifactsRoot 'module/Pscx') -DestinationPath $archivePath
+    Compress-Archive -LiteralPath $moduleRoot, $archiveModuleRoot -DestinationPath $archivePath
 }
 
 function Invoke-Validate {
@@ -523,6 +562,7 @@ function Invoke-Validate {
         'Src/ConsoleApp/ConsoleApp.csproj',
         'Src/Pscx/Pscx.csproj',
         'Src/Pscx.Core/Pscx.Core.csproj',
+        'Src/Pscx.Archive/Pscx.Archive.csproj',
         'Src/Pscx.InternalTests/Pscx.InternalTests.csproj',
         'Src/Pscx.Win/Pscx.Win.csproj',
         'Src/AssemblyInfo.Shared.cs',
@@ -578,6 +618,16 @@ function Invoke-Validate {
         throw "Staged module prerelease '$($manifest.PrivateData.PSData.Prerelease)' does not match '$manifestPrerelease'."
     }
 
+    $archiveManifestPath = Join-Path $archiveModuleRoot 'Pscx.Archive.psd1'
+    $archiveManifest = Test-ModuleManifest -Path $archiveManifestPath
+    if ($archiveManifest.Version -ne [version]$moduleVersion -or
+        $archiveManifest.PowerShellVersion -ne [version]$powerShellMinimumVersion) {
+        throw 'The staged Pscx.Archive manifest does not match the centralized version policy.'
+    }
+    if ($manifestPrerelease -and $archiveManifest.PrivateData.PSData.Prerelease -ne $manifestPrerelease) {
+        throw "Staged Pscx.Archive prerelease '$($archiveManifest.PrivateData.PSData.Prerelease)' does not match '$manifestPrerelease'."
+    }
+
     $assemblyNames = @('Pscx.Core.dll', 'Pscx.dll')
     if ($resolvedBuildScope -eq 'Full') {
         $assemblyNames += 'Pscx.Win.dll'
@@ -601,11 +651,30 @@ function Invoke-Validate {
         }
     }
 
+    $archiveAssemblyPath = Join-Path $archiveModuleRoot 'Pscx.Archive.dll'
+    $archiveAssemblyVersion = [System.Reflection.AssemblyName]::GetAssemblyName($archiveAssemblyPath).Version
+    $archiveFileInfo = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($archiveAssemblyPath)
+    if ($archiveAssemblyVersion.ToString() -ne "$moduleVersion.0" -or
+        $archiveFileInfo.FileVersion -ne "$moduleVersion.$BuildNumber" -or
+        $archiveFileInfo.ProductVersion -ne $informationalVersion) {
+        throw 'Pscx.Archive.dll does not match the centralized assembly version policy.'
+    }
+
+    $forbiddenMainPayload = @('Pscx.Archive.dll', 'SharpCompress.dll', 'SevenZipSharp.dll', '7z.dll', '7z.exe', '7zz')
+    foreach ($name in $forbiddenMainPayload) {
+        if (Get-ChildItem -LiteralPath $moduleRoot -Recurse -File -Filter $name) {
+            throw "The default Pscx package must not contain optional or legacy archive payload '$name'."
+        }
+    }
+    $archivePayloadNames = @(Get-ChildItem -LiteralPath $archiveModuleRoot -Recurse -File | Select-Object -ExpandProperty Name)
+    if ($archivePayloadNames -match 'SevenZipSharp|^(7z\.dll|7z\.exe|7zz)$') {
+        throw 'Pscx.Archive must contain only the managed SharpCompress backend, not legacy native payloads.'
+    }
+
     $archivePath = Join-Path $packageOutputPath "Pscx-$packageVersion.zip"
     if (-not (Test-Path -LiteralPath $archivePath)) {
         throw "Expected package archive is missing: $(Get-RelativePath $archivePath)"
     }
-
     $changeLogPath = Join-Path $moduleRoot 'CHANGELOG.md'
     $changeLogContent = Get-Content -LiteralPath $changeLogPath -Raw
     if ($changeLogContent -notmatch "(?m)^##\s+$([regex]::Escape($moduleVersion))(?:\s|$)") {
@@ -689,7 +758,7 @@ function Assert-UnsignedPscxBinaries {
     }
 
     $signedBinaries = @(
-        Get-ChildItem -LiteralPath $moduleRoot -Filter 'Pscx*.dll' -File |
+        Get-ChildItem -LiteralPath $moduleRoot, $archiveModuleRoot -Filter 'Pscx*.dll' -File |
             Where-Object {
                 (Get-AuthenticodeSignature -LiteralPath $_.FullName).Status -ne 'NotSigned'
             }
@@ -702,25 +771,37 @@ function Assert-UnsignedPscxBinaries {
 
 function Invoke-InstalledPackageTest {
     $archivePath = Join-Path $packageOutputPath "Pscx-$packageVersion.zip"
-    Write-Step 'Validate installation from the release ZIP in a clean environment'
-    Invoke-NativeCommand $PowerShellPath @(
-        '-NoLogo',
-        '-NoProfile',
-        '-NonInteractive',
-        '-File',
-        (Join-Path $repositoryRoot 'Tools/Test-PscxReleasePackage.ps1'),
-        '-PackagePath',
-        $archivePath,
-        '-ExpectedBuildScope',
-        $resolvedBuildScope,
-        '-ExpectedVersion',
-        $moduleVersion,
-        '-PowerShellPath',
-        $PowerShellPath
-    )
+    Write-Step 'Validate both bundled modules from the release ZIP in clean environments'
+    foreach ($releasePackage in @(
+        @{ Path = $archivePath; ModuleName = 'Pscx' },
+        @{ Path = $archivePath; ModuleName = 'Pscx.Archive' }
+    )) {
+        Invoke-NativeCommand $PowerShellPath @(
+            '-NoLogo',
+            '-NoProfile',
+            '-NonInteractive',
+            '-File',
+            (Join-Path $repositoryRoot 'Tools/Test-PscxReleasePackage.ps1'),
+            '-PackagePath',
+            $releasePackage.Path,
+            '-ExpectedBuildScope',
+            $resolvedBuildScope,
+            '-ExpectedVersion',
+            $moduleVersion,
+            '-ModuleName',
+            $releasePackage.ModuleName,
+            '-PowerShellPath',
+            $PowerShellPath
+        )
+    }
 }
 
 function New-ReleaseSbom {
+    param(
+        [string] $PackageName,
+        [string] $ModulePath
+    )
+
     $sbomToolRoot = Join-Path $repositoryRoot ".tools/sbom/$sbomToolVersion"
     $sbomExecutable = Join-Path $sbomToolRoot $(
         if ($IsWindows) { 'sbom-tool.exe' } else { 'sbom-tool' }
@@ -738,17 +819,17 @@ function New-ReleaseSbom {
         ) | Out-Host
     }
 
-    $manifestRoot = Join-Path $moduleRoot '_manifest'
+    $manifestRoot = Join-Path $ModulePath '_manifest'
     Remove-BuildDirectory $manifestRoot
     Write-Step "Generate SPDX 2.2 SBOM with Microsoft SBOM Tool $sbomToolVersion"
     Invoke-NativeCommand $sbomExecutable @(
         'generate',
         '-b',
-        $moduleRoot,
+        $ModulePath,
         '-bc',
         (Join-Path $repositoryRoot 'Src'),
         '-pn',
-        'Pscx',
+        $PackageName,
         '-pv',
         $packageVersion,
         '-ps',
@@ -764,19 +845,19 @@ function New-ReleaseSbom {
         throw "The SBOM tool did not create its expected manifest: $generatedSbom"
     }
 
-    $validationPath = Join-Path $testResultsPath 'Pscx.Sbom.validation.json'
+    $validationPath = Join-Path $testResultsPath "$PackageName.Sbom.validation.json"
     New-Item -ItemType Directory -Path $testResultsPath -Force | Out-Null
     Invoke-NativeCommand $sbomExecutable @(
         'validate',
         '-b',
-        $moduleRoot,
+        $ModulePath,
         '-o',
         $validationPath,
         '-mi',
         'SPDX:2.2'
     ) | Out-Host
 
-    $sbomPath = Join-Path $packageOutputPath "Pscx-$packageVersion.spdx.json"
+    $sbomPath = Join-Path $packageOutputPath "$PackageName-$packageVersion.spdx.json"
     Copy-Item -LiteralPath $generatedSbom -Destination $sbomPath -Force
     Remove-BuildDirectory $manifestRoot
     return $sbomPath
@@ -805,7 +886,7 @@ function Invoke-PublishPrep {
     $archivePath = Join-Path $packageOutputPath "Pscx-$packageVersion.zip"
     Invoke-InstalledPackageTest
     Assert-UnsignedPscxBinaries
-    $sbomPath = New-ReleaseSbom
+    $sbomPath = New-ReleaseSbom -PackageName Pscx -ModulePath (Join-Path $artifactsRoot 'module')
     $checksumPath = New-ReleaseChecksums -AssetPath @($archivePath, $sbomPath)
 
     Write-Step 'Release preparation complete'

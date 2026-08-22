@@ -306,9 +306,6 @@ function Import-VisualStudioVars {
 }
 
 
-# set the 7zip library path
-[SevenZip.SevenZipBase]::SetLibraryPath([System.IO.Path]::Join([Pscx.Core.PscxContext]::Instance.AppsDir, "7z.dll"))
-
 $acceleratorsType = [psobject].Assembly.GetType('System.Management.Automation.TypeAccelerators')
 
 # If these accelerators have already been defined, don't override (and don't error)

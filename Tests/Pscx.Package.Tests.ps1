@@ -3,6 +3,9 @@ param(
     [string] $ModulePath,
 
     [Parameter(Mandatory)]
+    [string] $ArchiveModulePath,
+
+    [Parameter(Mandatory)]
     [ValidateSet('Core', 'Full')]
     [string] $BuildScope,
 
@@ -169,9 +172,14 @@ Describe 'Phase 5 command disposition inventory' {
                 @($disposition.Categories[$category])
             }
         )
+        $archiveManifest = Import-PowerShellDataFile -LiteralPath (
+            Join-Path $ArchiveModulePath 'Pscx.Archive.psd1'
+        )
         $declaredCommands = @(
             $script:manifestData.FunctionsToExport
             $script:manifestData.CmdletsToExport
+            $archiveManifest.FunctionsToExport
+            $archiveManifest.CmdletsToExport
         ) | Sort-Object -Unique
 
         $duplicates = @(

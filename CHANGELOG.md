@@ -20,6 +20,11 @@
 * Completed the retained-command contract audit, added missing output metadata
   and common-parameter support, and added literal-path handling to
   `Get-ViewDefinition`.
+* Moved `Read-PscxArchive`, `Write-PscxArchive`, and `Expand-PscxArchive` into
+  an optional cross-platform `Pscx.Archive` module shipped beside `Pscx` in a
+  unified release ZIP and backed by SharpCompress;
+  removed SevenZipSharp and bundled 7-Zip binaries from the default package,
+  and added safe-extraction and portable archive round-trip tests.
 
 ## 3.8.0 - August 2026
 
