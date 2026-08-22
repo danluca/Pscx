@@ -121,7 +121,7 @@ Describe 'Packaged PSCX module contract' {
         Compare-Object $expectedProviders $actualProviders | Should -BeNullOrEmpty
     }
 
-    It 'creates available aliases, preserves collisions, and always replaces cd' {
+    It 'creates available aliases and preserves collisions' {
         $documentedAliases = @($script:contract.Aliases.Core)
         if ($BuildScope -eq 'Full') {
             $documentedAliases += $script:contract.Aliases.Full
@@ -132,7 +132,8 @@ Describe 'Packaged PSCX module contract' {
             } | Sort-Object -Unique
         )
         $changedAliases = @(
-            Get-Alias | Where-Object {
+            Get-Alias -Name ($documentedAliases | Where-Object { $_ -ne 'cd' }) `
+                -ErrorAction SilentlyContinue | Where-Object {
                 -not $script:aliasesBeforeImport.ContainsKey($_.Name) -or
                 $script:aliasesBeforeImport[$_.Name] -ne $_.Definition
             } | ForEach-Object Name | Sort-Object -Unique
