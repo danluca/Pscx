@@ -6,8 +6,7 @@ PowerShellVersion = '0.0' # Stamped from Directory.Build.props during packaging.
     FormatsToProcess = 'Pscx.FileSystem.Format.ps1xml'
 
 	FunctionsToExport = @(
-        'Add-DirectoryLength',
-		'Add-ShortPath'
+		'Add-DirectoryLength'
     )
     CmdletsToExport = @()
     AliasesToExport = @()

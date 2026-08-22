@@ -30,7 +30,9 @@ None
 
 ## DESCRIPTION
 
-Logs off a specific remote desktop session on a system running Terminal Services/Remote Desktop
+Logs off and terminates a specific remote desktop session. Programs running in
+the session are closed. Use `Disconnect-TerminalSession` when the session and
+its programs should remain available for later reconnection.
 
 ## EXAMPLES
 

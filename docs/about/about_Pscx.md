@@ -18,7 +18,7 @@ and optional-feature availability.
 
 ## Compatibility
 
-PSCX 3.8 requires PowerShell 7.6 LTS and .NET 10. Windows PowerShell 5.1 is not
+PSCX 4.0 requires PowerShell 7.6 LTS and .NET 10. Windows PowerShell 5.1 is not
 supported. The core payload supports Windows, Linux, and macOS; Windows-only
 commands and integrations are loaded only on Windows.
 
@@ -42,8 +42,13 @@ use the defaults built into PSCX.
 
 The `ModulesToImport` preference controls optional feature modules. Some
 optional modules are unavailable outside Windows. The default configuration
-keeps directory services, filesystem extensions, transcription, VHD, and WMI
+keeps directory services formatting, filesystem extensions, transcription, and WMI
 features disabled.
+
+The release ZIP also contains separately imported sibling modules.
+`Pscx.Archive` provides cross-platform archive commands, while the Windows-only
+`Pscx.WinAdmin` module provides optional ADO/OLE DB, batch-environment,
+short-path annotation, and foreground-window commands.
 
 ## Help and command discovery
 

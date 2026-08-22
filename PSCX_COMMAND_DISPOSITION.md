@@ -18,9 +18,13 @@ duplicates fail CI.
 | `RetainCore` | Retain in the cross-platform core. |
 | `RetainWindowsCore` | Retain in the default Windows payload. Commands may require elevation when their purpose demands it. |
 | `MoveToArchive` | Move to the optional `Pscx.Archive` module. |
-| `MoveToWindowsAdmin` | Move to the optional `Pscx.WindowsAdmin` module. |
+| `MoveToWinAdmin` | Move to the optional `Pscx.WinAdmin` module. |
 | `MoveToCrossPlatformCore` | Platform-neutral command currently placed in a Windows assembly. |
 | `DeprecationCandidate` | Deprecate or remove after applying the documented compatibility process. |
+
+Commands listed under `RemovedCommands.ModernMicrosoftAlternative` are removed
+from PSCX 4.0 in favor of maintained Microsoft modules. The README maps each
+removed command group to its replacement and installation method.
 
 The former `Review` commands are retained in their platform-appropriate core:
 22 are in `RetainCore`, while Windows-only `Invoke-Apartment` is in
@@ -29,7 +33,7 @@ The former `Review` commands are retained in their platform-appropriate core:
 The completed per-command value, output, naming, common-parameter, path, and
 help audit is maintained in
 [`PSCX_RETAINED_COMMAND_AUDIT.psd1`](PSCX_RETAINED_COMMAND_AUDIT.psd1). Packaged
-tests require it to cover all 69 retained commands exactly once and enforce its
+tests require it to cover all 70 retained commands exactly once and enforce its
 runtime metadata decisions.
 
 ## Phase 5.1 retained-core review
@@ -59,9 +63,11 @@ runtime metadata decisions.
    the host.
 
 The archive commands now ship in the optional, cross-platform `Pscx.Archive`
-module using the managed SharpCompress backend. WindowsAdmin, other relocation,
-and deprecation buckets remain approved destinations whose implementation and
-compatibility work is tracked in the corresponding Phase 5 sections.
+module using the managed SharpCompress backend. The nine WinAdmin commands
+ship in the separately imported `Pscx.WinAdmin` sibling module. Other
+relocation and deprecation buckets remain approved destinations whose
+implementation and compatibility work is tracked in the corresponding Phase 5
+sections.
 
 ## Phase 5.1 audit conclusions
 

@@ -25,6 +25,12 @@
   unified release ZIP and backed by SharpCompress;
   removed SevenZipSharp and bundled 7-Zip binaries from the default package,
   and added safe-extraction and portable archive round-trip tests.
+* Added the optional Windows-only `Pscx.WinAdmin` sibling module for nine
+  lower-frequency ADO/OLE DB, batch-environment, short-path, and foreground
+  window commands without loading them during the default import.
+* Removed PSCX's AD/DHCP, SQL Server-specific, and VHD commands in favor of the
+  maintained Microsoft ActiveDirectory, DhcpServer, SqlServer, and Hyper-V
+  modules, with replacement and installation guidance in the README.
 
 ## 3.8.0 - August 2026
 

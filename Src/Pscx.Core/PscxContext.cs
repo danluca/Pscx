@@ -65,7 +65,6 @@ namespace Pscx.Core {
                 { "Net", true},
                 { "TranscribeSession", false},
                 { "Utility", true},
-                { "Vhd", false},  //from PscxWin submodule
                 { "Wmi", false},  //from PscxWin submodule
                 { "Sudo", (OperatingSystem.IsWindows())}
             };

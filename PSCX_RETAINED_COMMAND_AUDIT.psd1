@@ -105,8 +105,8 @@
         }
         @{
             Name = 'Windows sessions and processes'
-            Commands = @('Get-TerminalSession', 'Stop-RemoteProcess', 'Stop-TerminalSession')
-            Differentiation = 'Provides Terminal Services session objects and targeted remote process/session termination.'
+            Commands = @('Disconnect-TerminalSession', 'Get-TerminalSession', 'Stop-RemoteProcess', 'Stop-TerminalSession')
+            Differentiation = 'Provides Terminal Services session objects, non-destructive disconnection, and targeted remote process/session termination.'
         }
         @{
             Name = 'Windows environment and error decoding'
@@ -126,6 +126,7 @@
         'ConvertTo-Unit' = 'Pscx.SimpleUnits.Measurement.'
         'ConvertTo-UnixLineEnding' = 'No success output.'
         'ConvertTo-WindowsLineEnding' = 'No success output.'
+        'Disconnect-TerminalSession' = 'No success output; the session remains active for later reconnection.'
         'Edit-File' = 'System.IO.FileInfo only with PassThru.'
         'Edit-HostProfile' = 'No success output from the wrapper.'
         'Edit-Profile' = 'No success output from the wrapper.'
@@ -193,6 +194,7 @@
         'AddRegex' = 'Intentional silent session mutator.'
         'ConvertTo-UnixLineEnding' = 'Intentional in-place mutator.'
         'ConvertTo-WindowsLineEnding' = 'Intentional in-place mutator.'
+        'Disconnect-TerminalSession' = 'Intentional silent session mutator that preserves the disconnected session.'
         'Edit-HostProfile' = 'Intentional editor-launch wrapper with no success object.'
         'Edit-Profile' = 'Intentional editor-launch wrapper with no success object.'
         'gsudo' = 'Native-style wrapper whose output type is selected by the invoked command.'

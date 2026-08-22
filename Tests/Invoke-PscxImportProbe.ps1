@@ -91,7 +91,6 @@ if ($DisableOptionalFeatures) {
             TranscribeSession = $false
             Utility = $false
             Sudo = $false
-            Vhd = $false
             Wmi = $false
         }
     }
@@ -106,7 +105,6 @@ elseif ($EnableAllOptionalFeatures) {
             TranscribeSession = $true
             Utility = $true
             Sudo = $true
-            Vhd = $true
             Wmi = $true
         }
     }

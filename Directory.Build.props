@@ -32,6 +32,7 @@
       '$(MSBuildProjectName)' == 'Pscx' Or
       '$(MSBuildProjectName)' == 'Pscx.Core' Or
       '$(MSBuildProjectName)' == 'Pscx.Archive' Or
+      '$(MSBuildProjectName)' == 'Pscx.WinAdmin' Or
       '$(MSBuildProjectName)' == 'Pscx.InternalTests' Or
       '$(MSBuildProjectName)' == 'Pscx.Win'">
     <!--

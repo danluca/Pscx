@@ -1,27 +1,39 @@
 ---
 document type: cmdlet
-external help file: Pscx.Win.dll-Help.xml
+external help file: Pscx.WinAdmin.dll-Help.xml
 HelpUri: ''
 Locale: en-US
-Module Name: Pscx.Win
+Module Name: Pscx.WinAdmin
 ms.date: 08/06/2026
 PlatyPS schema version: 2024-05-01
-title: Get-OleDbData
+title: Get-AdoConnection
 ---
 
-# Get-OleDbData
+# Get-AdoConnection
 
 ## SYNOPSIS
 
-PSCX Cmdlet: Executes a sql query, and returns objects that correspond to the objects represented by the result set.
+PSCX Cmdlet: Create an ADO connection to any database supported by .NET on the current machine. You can enumerate available ADO.NET Data Providers with the Get-AdoDataProvider Cmdlet.
 
 ## SYNTAX
 
-### __AllParameterSets
+### string (Default)
 
 ```
-Get-OleDbData -Query <string> -ConnectionString <string> [-ReturnType <type>] [-IgnoreCase]
- [-WhatIf] [-Confirm] [<CommonParameters>]
+Get-AdoConnection [-ProviderName] <string> [-ConnectionString] <string> [<CommonParameters>]
+```
+
+### properties
+
+```
+Get-AdoConnection [-ProviderName] <string> [-ConnectionProperties] <hashtable> [<CommonParameters>]
+```
+
+### simple
+
+```
+Get-AdoConnection [-ProviderName] <string> [-Server <string>] [-UserName <string>]
+ [-Password <string>] [-Database <string>] [<CommonParameters>]
 ```
 
 ## ALIASES
@@ -30,35 +42,34 @@ None
 
 ## DESCRIPTION
 
-Get-OleDbData provides an easy way to query a database via ADO.Net 2.0, using an OleDb connection.
-It returns strongly typed objects containing the data returned by the query.
+Create an ADO connection to any database supported by .NET on the current machine.
+You can enumerate available ADO.NET Data Providers with the Get-AdoDataProvider Cmdlet.Data connections to supported providers are constructed using provider-agnostic common parameters like Server, Username, Password etc.
 
 ## EXAMPLES
 
 ### Example 1 - View detailed command help
 
 ```powershell
-Get-Help Get-OleDbData -Full
+Get-Help Get-AdoConnection -Full
 ```
 
 Displays the complete installed help for this command.
 
 ## PARAMETERS
 
-### -Confirm
+### -ConnectionProperties
 
-Prompts you for confirmation before running the cmdlet.
+
 
 ```yaml
-Type: System.Management.Automation.SwitchParameter
+Type: System.Collections.Hashtable
 DefaultValue: ''
 SupportsWildcards: false
-Aliases:
-- cf
+Aliases: []
 ParameterSets:
-- Name: (All)
-  Position: Named
-  IsRequired: false
+- Name: properties
+  Position: 1
+  IsRequired: true
   ValueFromPipeline: false
   ValueFromPipelineByPropertyName: false
   ValueFromRemainingArguments: false
@@ -69,7 +80,7 @@ HelpMessage: ''
 
 ### -ConnectionString
 
-Connection string to use.
+
 
 ```yaml
 Type: System.String
@@ -77,8 +88,8 @@ DefaultValue: ''
 SupportsWildcards: false
 Aliases: []
 ParameterSets:
-- Name: (All)
-  Position: Named
+- Name: string
+  Position: 1
   IsRequired: true
   ValueFromPipeline: false
   ValueFromPipelineByPropertyName: false
@@ -88,17 +99,17 @@ AcceptedValues: []
 HelpMessage: ''
 ```
 
-### -IgnoreCase
+### -Database
 
-If used in conjunction with ReturnType, will ignore case when setting public properties.
+
 
 ```yaml
-Type: System.Management.Automation.SwitchParameter
+Type: System.String
 DefaultValue: ''
 SupportsWildcards: false
 Aliases: []
 ParameterSets:
-- Name: (All)
+- Name: simple
   Position: Named
   IsRequired: false
   ValueFromPipeline: false
@@ -109,9 +120,9 @@ AcceptedValues: []
 HelpMessage: ''
 ```
 
-### -Query
+### -Password
 
-SQL Query to execute
+
 
 ```yaml
 Type: System.String
@@ -119,29 +130,7 @@ DefaultValue: ''
 SupportsWildcards: false
 Aliases: []
 ParameterSets:
-- Name: (All)
-  Position: Named
-  IsRequired: true
-  ValueFromPipeline: false
-  ValueFromPipelineByPropertyName: false
-  ValueFromRemainingArguments: false
-DontShow: false
-AcceptedValues: []
-HelpMessage: ''
-```
-
-### -ReturnType
-
-Return Type to use to return data.
-Requires a default constructor - public properties that match the returned columns will be set.
-
-```yaml
-Type: System.Type
-DefaultValue: ''
-SupportsWildcards: false
-Aliases: []
-ParameterSets:
-- Name: (All)
+- Name: simple
   Position: Named
   IsRequired: false
   ValueFromPipeline: false
@@ -152,18 +141,59 @@ AcceptedValues: []
 HelpMessage: ''
 ```
 
-### -WhatIf
+### -ProviderName
 
-Runs the command in a mode that only reports what would happen without performing the actions.
+
 
 ```yaml
-Type: System.Management.Automation.SwitchParameter
+Type: System.String
 DefaultValue: ''
 SupportsWildcards: false
-Aliases:
-- wi
+Aliases: []
 ParameterSets:
 - Name: (All)
+  Position: 0
+  IsRequired: true
+  ValueFromPipeline: false
+  ValueFromPipelineByPropertyName: true
+  ValueFromRemainingArguments: false
+DontShow: false
+AcceptedValues: []
+HelpMessage: ''
+```
+
+### -Server
+
+
+
+```yaml
+Type: System.String
+DefaultValue: ''
+SupportsWildcards: false
+Aliases: []
+ParameterSets:
+- Name: simple
+  Position: Named
+  IsRequired: false
+  ValueFromPipeline: false
+  ValueFromPipelineByPropertyName: false
+  ValueFromRemainingArguments: false
+DontShow: false
+AcceptedValues: []
+HelpMessage: ''
+```
+
+### -UserName
+
+
+
+```yaml
+Type: System.String
+DefaultValue: ''
+SupportsWildcards: false
+Aliases: []
+ParameterSets:
+- Name: simple
   Position: Named
   IsRequired: false
   ValueFromPipeline: false
@@ -183,7 +213,15 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 
 ## INPUTS
 
+### System.String
+
+Accepts a System.String value.
+
 ## OUTPUTS
+
+### System.Data.Common.DbConnection
+
+Returns a System.Data.Common.DbConnection value.
 
 ## NOTES
 

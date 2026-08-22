@@ -13,7 +13,7 @@ using System.Management.Automation;
 namespace Pscx.Win.Commands.TerminalServices
 {
     [Cmdlet(VerbsLifecycle.Stop, PscxWinNouns.TerminalSession, ConfirmImpact = ConfirmImpact.High, SupportsShouldProcess = true)]
-    [Description("Logs off a specific remote desktop session on a system running Terminal Services/Remote Desktop")]
+    [Description("Logs off a remote desktop session and closes the programs running in it")]
     public class StopTerminalSessionCommand : TerminalSessionCommandBase
     {
         private SwitchParameter _force;

@@ -1,34 +1,27 @@
 ---
 document type: cmdlet
-external help file: Pscx.Win.dll-Help.xml
+external help file: Pscx.WinAdmin.dll-Help.xml
 HelpUri: ''
 Locale: en-US
-Module Name: Pscx.Win
+Module Name: Pscx.WinAdmin
 ms.date: 08/06/2026
 PlatyPS schema version: 2024-05-01
-title: Invoke-SqlCommand
+title: Get-OleDbData
 ---
 
-# Invoke-SqlCommand
+# Get-OleDbData
 
 ## SYNOPSIS
 
-PSCX Cmdlet: Invoke-SqlCommand provides an easy way to execute a sql command against a SqlServer database via ADO.Net 2.0. It returns an int value, reflecting the number of rows affected by the command.
+PSCX Cmdlet: Executes a sql query, and returns objects that correspond to the objects represented by the result set.
 
 ## SYNTAX
 
-### BuildConnectionString (Default)
+### __AllParameterSets
 
 ```
-Invoke-SqlCommand -Query <string> [-Server <string>] [-UserName <string>] [-Password <string>]
- [-InitialCatalog <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
-```
-
-### SupplyConnectionString
-
-```
-Invoke-SqlCommand -Query <string> [-ConnectionString <string>] [-WhatIf] [-Confirm]
- [<CommonParameters>]
+Get-OleDbData -Query <string> -ConnectionString <string> [-ReturnType <type>] [-IgnoreCase]
+ [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
 ## ALIASES
@@ -37,15 +30,15 @@ None
 
 ## DESCRIPTION
 
-Invoke-SqlCommand provides an easy way to execute a sql command against a SqlServer database via ADO.Net 2.0.
-It returns an int value, reflecting the number of rows affected by the command.
+Get-OleDbData provides an easy way to query a database via ADO.Net 2.0, using an OleDb connection.
+It returns strongly typed objects containing the data returned by the query.
 
 ## EXAMPLES
 
 ### Example 1 - View detailed command help
 
 ```powershell
-Get-Help Invoke-SqlCommand -Full
+Get-Help Get-OleDbData -Full
 ```
 
 Displays the complete installed help for this command.
@@ -84,9 +77,9 @@ DefaultValue: ''
 SupportsWildcards: false
 Aliases: []
 ParameterSets:
-- Name: SupplyConnectionString
+- Name: (All)
   Position: Named
-  IsRequired: false
+  IsRequired: true
   ValueFromPipeline: false
   ValueFromPipelineByPropertyName: false
   ValueFromRemainingArguments: false
@@ -95,41 +88,17 @@ AcceptedValues: []
 HelpMessage: ''
 ```
 
-### -InitialCatalog
+### -IgnoreCase
 
-Target Database to run query against
-
-```yaml
-Type: System.String
-DefaultValue: ''
-SupportsWildcards: false
-Aliases:
-- Database
-- Catalog
-ParameterSets:
-- Name: BuildConnectionString
-  Position: Named
-  IsRequired: false
-  ValueFromPipeline: false
-  ValueFromPipelineByPropertyName: false
-  ValueFromRemainingArguments: false
-DontShow: false
-AcceptedValues: []
-HelpMessage: ''
-```
-
-### -Password
-
-Password if standard security (username / password) is to be used.
-Note: By default a trusted connection is used.
+If used in conjunction with ReturnType, will ignore case when setting public properties.
 
 ```yaml
-Type: System.String
+Type: System.Management.Automation.SwitchParameter
 DefaultValue: ''
 SupportsWildcards: false
 Aliases: []
 ParameterSets:
-- Name: BuildConnectionString
+- Name: (All)
   Position: Named
   IsRequired: false
   ValueFromPipeline: false
@@ -161,39 +130,18 @@ AcceptedValues: []
 HelpMessage: ''
 ```
 
-### -Server
+### -ReturnType
 
-Target Database Server
+Return Type to use to return data.
+Requires a default constructor - public properties that match the returned columns will be set.
 
 ```yaml
-Type: System.String
+Type: System.Type
 DefaultValue: ''
 SupportsWildcards: false
 Aliases: []
 ParameterSets:
-- Name: BuildConnectionString
-  Position: Named
-  IsRequired: false
-  ValueFromPipeline: false
-  ValueFromPipelineByPropertyName: false
-  ValueFromRemainingArguments: false
-DontShow: false
-AcceptedValues: []
-HelpMessage: ''
-```
-
-### -UserName
-
-Username if standard security (username / password) is to be used.
-Note: By default a trusted connection is used.
-
-```yaml
-Type: System.String
-DefaultValue: ''
-SupportsWildcards: false
-Aliases: []
-ParameterSets:
-- Name: BuildConnectionString
+- Name: (All)
   Position: Named
   IsRequired: false
   ValueFromPipeline: false

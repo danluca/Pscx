@@ -68,38 +68,7 @@ function Add-DirectoryLength
     }
 }
 
-<#
-.SYNOPSIS
-    Adds the file or directory's short path as a "ShortPath" NoteProperty to each input object. 
-.DESCRIPTION
-    Adds the file or directory's short path as a "ShortPath" NoteProperty to each input object.
-    NOTE: This filter requires the PSCX cmdlet Get-ShortPath
-.PARAMETER InputObject
-    A DirectoryInfo or FileInfo object on which to add the ShortPath property
-.EXAMPLE
-    C:\PS> Get-ChildItem | Add-ShortPath | Format-Table ShortPath,FullName
-    This example shows how you can add the short path to each DirectoryInfo or FileInfo object in the pipeline.
-#>
-function Add-ShortPath
-{
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
-        [AllowNull()]
-        [PSObject]
-        $InputObject
-    )
-
-    Process {
-        if ($InputObject -is [System.IO.FileSystemInfo]) {
-            $shortPathInfo = Get-ShortPath -LiteralPath $_.Fullname 
-            Add-Member NoteProperty ShortPath $shortPathInfo.ShortPath -InputObject $InputObject
-        }
-        $InputObject
-    }
-}
-
-Export-ModuleMember -Function Add-DirectoryLength, Add-ShortPath
+Export-ModuleMember -Function Add-DirectoryLength
 
 
 # SIG # Begin signature block

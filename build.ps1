@@ -50,12 +50,14 @@ $repositoryRoot = $PSScriptRoot
 $solutionPath = Join-Path $repositoryRoot 'Src/Pscx.sln'
 $coreProjectPath = Join-Path $repositoryRoot 'Src/Pscx.InternalTests/Pscx.InternalTests.csproj'
 $archiveProjectPath = Join-Path $repositoryRoot 'Src/Pscx.Archive/Pscx.Archive.csproj'
+$winAdminProjectPath = Join-Path $repositoryRoot 'Src/Pscx.WinAdmin/Pscx.WinAdmin.csproj'
 $internalTestProjectPath = Join-Path $repositoryRoot 'Src/Pscx.InternalTests/Pscx.InternalTests.csproj'
 $versionFilePath = Join-Path $repositoryRoot 'Directory.Build.props'
 $testPolicyFilePath = Join-Path $repositoryRoot 'Tests/TestPolicy.psd1'
 $artifactsRoot = [System.IO.Path]::GetFullPath($ArtifactsPath)
 $moduleRoot = Join-Path $artifactsRoot 'module/Pscx'
 $archiveModuleRoot = Join-Path $artifactsRoot 'module/Pscx.Archive'
+$winAdminModuleRoot = Join-Path $artifactsRoot 'module/Pscx.WinAdmin'
 $helpOutputPath = Join-Path $artifactsRoot 'help'
 $packageOutputPath = Join-Path $artifactsRoot 'packages'
 $testResultsPath = Join-Path $artifactsRoot 'test-results'
@@ -201,7 +203,11 @@ function Set-ManifestVersion {
         1
     )
 
-    if ([System.IO.Path]::GetFileName($Path) -in @('Pscx.psd1', 'Pscx.Archive.psd1')) {
+    if ([System.IO.Path]::GetFileName($Path) -in @(
+        'Pscx.psd1',
+        'Pscx.Archive.psd1',
+        'Pscx.WinAdmin.psd1'
+    )) {
         if ($Prerelease) {
             $content = [regex]::Replace(
                 $content,
@@ -282,10 +288,14 @@ function New-ModuleStage {
     Remove-BuildDirectory (Join-Path $artifactsRoot 'module')
     New-Item -ItemType Directory -Path $moduleRoot -Force | Out-Null
     New-Item -ItemType Directory -Path $archiveModuleRoot -Force | Out-Null
+    if ($resolvedBuildScope -eq 'Full') {
+        New-Item -ItemType Directory -Path $winAdminModuleRoot -Force | Out-Null
+    }
 
     $coreOutput = Join-Path $repositoryRoot "Src/Pscx/bin/$Configuration/net10.0"
     $windowsOutput = Join-Path $repositoryRoot "Src/Pscx.Win/bin/$Configuration/net10.0"
     $archiveOutput = Join-Path $repositoryRoot "Src/Pscx.Archive/bin/$Configuration/net10.0"
+    $winAdminOutput = Join-Path $repositoryRoot "Src/Pscx.WinAdmin/bin/$Configuration/net10.0-windows"
 
     @(
         'Pscx.Core.dll',
@@ -336,6 +346,22 @@ function New-ModuleStage {
     }
     Copy-RequiredItem (Join-Path $repositoryRoot 'CHANGELOG.md') (Join-Path $archiveModuleRoot 'CHANGELOG.md')
     Copy-RequiredItem (Join-Path $repositoryRoot 'LICENSE') (Join-Path $archiveModuleRoot 'LICENSE.txt')
+
+    if ($resolvedBuildScope -eq 'Full') {
+        @(
+            'Pscx.Core.dll',
+            'Pscx.WinAdmin.dll',
+            'Pscx.WinAdmin.psd1',
+            'Pscx.WinAdmin.psm1'
+        ) |
+            ForEach-Object {
+                Copy-RequiredItem (Join-Path $winAdminOutput $_) $winAdminModuleRoot
+            }
+        Copy-RequiredItem (Join-Path $repositoryRoot 'CHANGELOG.md') `
+            (Join-Path $winAdminModuleRoot 'CHANGELOG.md')
+        Copy-RequiredItem (Join-Path $repositoryRoot 'LICENSE') `
+            (Join-Path $winAdminModuleRoot 'LICENSE.txt')
+    }
 
     Get-ChildItem -LiteralPath (Join-Path $artifactsRoot 'module') -Recurse -Filter *.psd1 -File |
         ForEach-Object {
@@ -388,6 +414,27 @@ function Invoke-Help {
         'Pscx.Archive'
     )
     Copy-RequiredItem $archiveCultureOutputPath $archiveModuleRoot
+
+    if ($resolvedBuildScope -eq 'Full') {
+        $winAdminCultureOutputPath = Join-Path $helpOutputPath 'Pscx.WinAdmin/en-US'
+        New-Item -ItemType Directory -Path $winAdminCultureOutputPath -Force | Out-Null
+        Invoke-NativeCommand $PowerShellPath @(
+            '-NoLogo',
+            '-NoProfile',
+            '-NonInteractive',
+            '-File',
+            (Join-Path $repositoryRoot 'Tools/Invoke-PscxHelp.ps1'),
+            '-ModulePath',
+            $winAdminModuleRoot,
+            '-OutputPath',
+            $winAdminCultureOutputPath,
+            '-BuildScope',
+            $resolvedBuildScope,
+            '-PackageName',
+            'Pscx.WinAdmin'
+        )
+        Copy-RequiredItem $winAdminCultureOutputPath $winAdminModuleRoot
+    }
 }
 
 function Invoke-Test {
@@ -459,6 +506,8 @@ function Invoke-PesterTest {
         $moduleRoot,
         '-ArchiveModulePath',
         $archiveModuleRoot,
+        '-WinAdminModulePath',
+        $winAdminModuleRoot,
         '-BuildScope',
         $resolvedBuildScope,
         '-ResultsPath',
@@ -552,7 +601,11 @@ function Invoke-Package {
     Remove-BuildDirectory $packageOutputPath
     New-Item -ItemType Directory -Path $packageOutputPath -Force | Out-Null
     $archivePath = Join-Path $packageOutputPath "Pscx-$packageVersion.zip"
-    Compress-Archive -LiteralPath $moduleRoot, $archiveModuleRoot -DestinationPath $archivePath
+    $packageRoots = @($moduleRoot, $archiveModuleRoot)
+    if ($resolvedBuildScope -eq 'Full') {
+        $packageRoots += $winAdminModuleRoot
+    }
+    Compress-Archive -LiteralPath $packageRoots -DestinationPath $archivePath
 }
 
 function Invoke-Validate {
@@ -563,6 +616,7 @@ function Invoke-Validate {
         'Src/Pscx/Pscx.csproj',
         'Src/Pscx.Core/Pscx.Core.csproj',
         'Src/Pscx.Archive/Pscx.Archive.csproj',
+        'Src/Pscx.WinAdmin/Pscx.WinAdmin.csproj',
         'Src/Pscx.InternalTests/Pscx.InternalTests.csproj',
         'Src/Pscx.Win/Pscx.Win.csproj',
         'Src/AssemblyInfo.Shared.cs',
@@ -628,6 +682,22 @@ function Invoke-Validate {
         throw "Staged Pscx.Archive prerelease '$($archiveManifest.PrivateData.PSData.Prerelease)' does not match '$manifestPrerelease'."
     }
 
+    $winAdminManifestPath = Join-Path $winAdminModuleRoot 'Pscx.WinAdmin.psd1'
+    if ($resolvedBuildScope -eq 'Full') {
+        $winAdminManifest = Import-PowerShellDataFile -LiteralPath $winAdminManifestPath
+        if ([version]$winAdminManifest.ModuleVersion -ne [version]$moduleVersion -or
+            [version]$winAdminManifest.PowerShellVersion -ne [version]$powerShellMinimumVersion) {
+            throw 'The staged Pscx.WinAdmin manifest does not match the centralized version policy.'
+        }
+        if ($manifestPrerelease -and
+            $winAdminManifest.PrivateData.PSData.Prerelease -ne $manifestPrerelease) {
+            throw "Staged Pscx.WinAdmin prerelease '$($winAdminManifest.PrivateData.PSData.Prerelease)' does not match '$manifestPrerelease'."
+        }
+    }
+    elseif (Test-Path -LiteralPath $winAdminManifestPath) {
+        throw 'A Core package must not contain Pscx.WinAdmin.'
+    }
+
     $assemblyNames = @('Pscx.Core.dll', 'Pscx.dll')
     if ($resolvedBuildScope -eq 'Full') {
         $assemblyNames += 'Pscx.Win.dll'
@@ -660,7 +730,35 @@ function Invoke-Validate {
         throw 'Pscx.Archive.dll does not match the centralized assembly version policy.'
     }
 
-    $forbiddenMainPayload = @('Pscx.Archive.dll', 'SharpCompress.dll', 'SevenZipSharp.dll', '7z.dll', '7z.exe', '7zz')
+    if ($resolvedBuildScope -eq 'Full') {
+        $winAdminAssemblyPath = Join-Path $winAdminModuleRoot 'Pscx.WinAdmin.dll'
+        $winAdminAssemblyVersion =
+            [System.Reflection.AssemblyName]::GetAssemblyName($winAdminAssemblyPath).Version
+        $winAdminFileInfo =
+            [System.Diagnostics.FileVersionInfo]::GetVersionInfo($winAdminAssemblyPath)
+        if ($winAdminAssemblyVersion.ToString() -ne "$moduleVersion.0" -or
+            $winAdminFileInfo.FileVersion -ne "$moduleVersion.$BuildNumber" -or
+            $winAdminFileInfo.ProductVersion -ne $informationalVersion) {
+            throw 'Pscx.WinAdmin.dll does not match the centralized assembly version policy.'
+        }
+
+        $mainCoreAssemblyPath = Join-Path $moduleRoot 'Pscx.Core.dll'
+        $winAdminCoreAssemblyPath = Join-Path $winAdminModuleRoot 'Pscx.Core.dll'
+        if ((Get-FileHash -LiteralPath $mainCoreAssemblyPath -Algorithm SHA256).Hash -ne
+            (Get-FileHash -LiteralPath $winAdminCoreAssemblyPath -Algorithm SHA256).Hash) {
+            throw 'The Pscx and Pscx.WinAdmin copies of Pscx.Core.dll are not identical.'
+        }
+    }
+
+    $forbiddenMainPayload = @(
+        'Pscx.Archive.dll',
+        'Pscx.WinAdmin.dll',
+        'SharpCompress.dll',
+        'SevenZipSharp.dll',
+        '7z.dll',
+        '7z.exe',
+        '7zz'
+    )
     foreach ($name in $forbiddenMainPayload) {
         if (Get-ChildItem -LiteralPath $moduleRoot -Recurse -File -Filter $name) {
             throw "The default Pscx package must not contain optional or legacy archive payload '$name'."
@@ -758,7 +856,11 @@ function Assert-UnsignedPscxBinaries {
     }
 
     $signedBinaries = @(
-        Get-ChildItem -LiteralPath $moduleRoot, $archiveModuleRoot -Filter 'Pscx*.dll' -File |
+        Get-ChildItem -LiteralPath @(
+            $moduleRoot,
+            $archiveModuleRoot,
+            $winAdminModuleRoot
+        ) -Filter 'Pscx*.dll' -File -ErrorAction SilentlyContinue |
             Where-Object {
                 (Get-AuthenticodeSignature -LiteralPath $_.FullName).Status -ne 'NotSigned'
             }
@@ -775,6 +877,9 @@ function Invoke-InstalledPackageTest {
     foreach ($releasePackage in @(
         @{ Path = $archivePath; ModuleName = 'Pscx' },
         @{ Path = $archivePath; ModuleName = 'Pscx.Archive' }
+        if ($resolvedBuildScope -eq 'Full') {
+            @{ Path = $archivePath; ModuleName = 'Pscx.WinAdmin' }
+        }
     )) {
         Invoke-NativeCommand $PowerShellPath @(
             '-NoLogo',

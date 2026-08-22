@@ -1,4 +1,4 @@
-﻿//---------------------------------------------------------------------
+//---------------------------------------------------------------------
 // Authors: Oisin Grehan
 //
 // Description: List or search registered ADO.NET data providers on the local system.
@@ -15,7 +15,7 @@ using System.Management.Automation;
 namespace Pscx.Commands.Database.Ado
 {
     [OutputType(typeof(PSObject))]
-    [Cmdlet(VerbsCommon.Get, PscxWinNouns.AdoDataProvider), Description("Get ADO data provider")]
+    [Cmdlet(VerbsCommon.Get, PscxWinAdminNouns.AdoDataProvider), Description("Get ADO data provider")]
     public class GetAdoDataProviderCommand : PscxCmdlet
     {       
         protected override void EndProcessing()

@@ -10,7 +10,7 @@ param(
     [ValidateSet('Core', 'Full')]
     [string] $BuildScope,
 
-    [ValidateSet('Pscx', 'Pscx.Archive')]
+    [ValidateSet('Pscx', 'Pscx.Archive', 'Pscx.WinAdmin')]
     [string] $PackageName = 'Pscx'
 )
 
@@ -82,9 +82,18 @@ $commandHelp = @(
 )
 
 try {
-    $manifestName = if ($PackageName -eq 'Pscx') { 'Pscx.psd1' } else { 'Pscx.Archive.psd1' }
+    $manifestName = "$PackageName.psd1"
     Import-Module (Join-Path $modulePath $manifestName) -Force -ErrorAction Stop
-    $commands = @(Get-Command -Module $PackageName -CommandType Cmdlet | Sort-Object Name)
+    $commands = if ($PackageName -eq 'Pscx.WinAdmin') {
+        @(
+            Get-Module $PackageName -All |
+                ForEach-Object { $_.ExportedCmdlets.Values } |
+                Sort-Object Name -Unique
+        )
+    }
+    else {
+        @(Get-Command -Module $PackageName -CommandType Cmdlet | Sort-Object Name)
+    }
     $documentedNames = @($commandHelp.Title | Sort-Object)
     $commandNames = @($commands.Name | Sort-Object)
     $missingTopics = @($commandNames | Where-Object { $_ -notin $documentedNames })
@@ -99,7 +108,7 @@ try {
         'ProgressAction', 'Verbose', 'WarningAction', 'WarningVariable'
     )
     foreach ($help in $commandHelp) {
-        $command = Get-Command -Name $help.Title -Module $PackageName
+        $command = $commands | Where-Object Name -EQ $help.Title | Select-Object -First 1
         $actualParameters = @(
             $command.Parameters.Keys |
                 Where-Object { $_ -notin $commonParameterNames } |

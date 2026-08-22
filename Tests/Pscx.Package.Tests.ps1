@@ -5,6 +5,8 @@ param(
     [Parameter(Mandatory)]
     [string] $ArchiveModulePath,
 
+    [string] $WinAdminModulePath,
+
     [Parameter(Mandatory)]
     [ValidateSet('Core', 'Full')]
     [string] $BuildScope,
@@ -164,6 +166,11 @@ Describe 'Packaged PSCX module contract' {
 
 Describe 'Phase 5 command disposition inventory' {
     It 'classifies every declared public command exactly once' {
+        if ($BuildScope -ne 'Full') {
+            Set-ItResult -Skipped -Because 'The repository-wide disposition includes Windows-only package roots absent from Core artifacts.'
+            return
+        }
+
         $dispositionPath = Join-Path (Split-Path $PSScriptRoot -Parent) `
             'PSCX_COMMAND_DISPOSITION.psd1'
         $disposition = Import-PowerShellDataFile -LiteralPath $dispositionPath
@@ -175,11 +182,20 @@ Describe 'Phase 5 command disposition inventory' {
         $archiveManifest = Import-PowerShellDataFile -LiteralPath (
             Join-Path $ArchiveModulePath 'Pscx.Archive.psd1'
         )
+        $winAdminManifest = if ($BuildScope -eq 'Full') {
+            Import-PowerShellDataFile -LiteralPath (
+                Join-Path $WinAdminModulePath 'Pscx.WinAdmin.psd1'
+            )
+        }
         $declaredCommands = @(
             $script:manifestData.FunctionsToExport
             $script:manifestData.CmdletsToExport
             $archiveManifest.FunctionsToExport
             $archiveManifest.CmdletsToExport
+            if ($winAdminManifest) {
+                $winAdminManifest.FunctionsToExport
+                $winAdminManifest.CmdletsToExport
+            }
         ) | Sort-Object -Unique
 
         $duplicates = @(

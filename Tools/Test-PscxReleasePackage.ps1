@@ -13,7 +13,7 @@ param(
     [Parameter(Mandatory)]
     [version] $ExpectedVersion,
 
-    [ValidateSet('Pscx', 'Pscx.Archive')]
+    [ValidateSet('Pscx', 'Pscx.Archive', 'Pscx.WinAdmin')]
     [string] $ModuleName = 'Pscx',
 
     [string] $PowerShellPath = 'pwsh',
@@ -31,7 +31,16 @@ if ($InstalledModuleRoot) {
     $warnings = @()
     Import-Module $ModuleName -Force -ErrorAction Stop -WarningVariable warnings
     $module = Get-Module $ModuleName -ErrorAction Stop
-    $commands = @(Get-Command -Module $ModuleName)
+    $commands = if ($ModuleName -eq 'Pscx.WinAdmin') {
+        @(
+            Get-Module $ModuleName -All |
+                ForEach-Object { $_.ExportedCommands.Values } |
+                Sort-Object Name -Unique
+        )
+    }
+    else {
+        @(Get-Command -Module $ModuleName)
+    }
 
     if (-not $module.Path.StartsWith($InstalledModuleRoot, [StringComparison]::OrdinalIgnoreCase)) {
         throw "PowerShell imported PSCX from an unexpected location: $($module.Path)"
@@ -59,8 +68,11 @@ if ($InstalledModuleRoot) {
             throw 'The installed Core package unexpectedly exposed a Windows companion payload.'
         }
     }
-    elseif ($commands.Count -ne 3) {
+    elseif ($ModuleName -eq 'Pscx.Archive' -and $commands.Count -ne 3) {
         throw "The installed Pscx.Archive package exported $($commands.Count) commands; expected 3."
+    }
+    elseif ($ModuleName -eq 'Pscx.WinAdmin' -and $commands.Count -ne 9) {
+        throw "The installed Pscx.WinAdmin package exported $($commands.Count) commands; expected 9."
     }
 
     [ordered]@{

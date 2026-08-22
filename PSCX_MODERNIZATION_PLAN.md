@@ -31,7 +31,7 @@ The proposed package family is:
 | --- | --- | --- |
 | `Pscx` | Platform-aware CLI essentials | PATH/environment tools, file metadata, editor integration, XML tools, units, reflection/PE inspection, error helpers; gsudo and less in the default Windows payload |
 | `Pscx.Archive` | Optional, cross-platform archive support beginning with PSCX 4.0 | Read, create, and safely expand archives through the managed SharpCompress backend |
-| `Pscx.WindowsAdmin` | Optional Windows administration | AD, DHCP, SQL/OLE DB, privileges, terminal services, VHD, COM, shortcuts, mount/reparse-point operations |
+| `Pscx.WinAdmin` | Optional Windows administration | Generic ADO/OLE DB access, batch environment import, short-path annotation, and foreground-window inspection |
 | `Pscx.Time` | Optional date/time helpers beginning with PSCX 4.0 | NodaTime-backed types and accelerators with a documented supported API |
 
 `Pscx.Time` will be packaged separately so consumers explicitly choose whether
@@ -592,35 +592,47 @@ contract.
 - [x] Eliminate architecture-specific archive binaries by using the managed-only backend.
 - [x] Avoid storing duplicate source archives, NuGet packages, framework builds, and runtime binaries in the main repository.
 
-### 5.3 Move to `Pscx.WindowsAdmin`
+### 5.3 Move to `Pscx.WinAdmin`
 
-Candidate groups:
+Implemented disposition:
 
-- [ ] Active Directory and DHCP.
-- [ ] SQL Server, ADO, and OLE DB.
+- [x] Remove PSCX Active Directory and DHCP commands in favor of the Windows
+  ActiveDirectory and DhcpServer modules; document their installation and
+  command replacements.
+- [x] Remove the SQL Server-specific PSCX commands in favor of Microsoft's
+  SqlServer module; retain the provider-neutral ADO and OLE DB commands in
+  `Pscx.WinAdmin`.
 - [x] Retain privileges and user/group membership in the default Windows core.
 - [x] Retain Terminal Services/Remote Desktop sessions in the default Windows core.
-- [ ] VHD operations.
+- [x] Remove PSCX VHD operations in favor of the Hyper-V module's `Mount-VHD`
+  and `Dismount-VHD` commands.
 - [x] Retain COM running-object access in the default Windows core.
-- [ ] Move `Add-ShortPath` to WindowsAdmin; retain shortcut creation and short-path lookup in Windows core.
+- [x] Move `Add-ShortPath` to WinAdmin; retain shortcut creation and short-path lookup in Windows core.
 - [x] Retain mount points, reparse points, and volume labels in the default Windows core.
-- [ ] Move `Get-ForegroundWindow` to WindowsAdmin; retain `Set-ForegroundWindow` in Windows core.
+- [x] Move `Get-ForegroundWindow` to WinAdmin; retain `Set-ForegroundWindow` in Windows core.
 - [x] Retain Windows-native error decoding in the default Windows core.
 - [x] Retain Visual Studio environment import in the default Windows core.
 - [x] Keep elevation/gsudo integration in the default Windows core rather than moving it into this optional module.
+- [x] Keep `Disconnect-TerminalSession` with its Terminal Services companions:
+  unlike `Stop-TerminalSession`, it preserves the session and its programs for
+  later reconnection.
+- [x] Move `Invoke-BatchFile` to WinAdmin because its arbitrary batch-file
+  environment capture remains broader than Visual Studio's developer shells.
 
 For each group:
 
-- [ ] Identify maintained Microsoft or community modules that already cover it.
-- [ ] Retain PSCX only when it offers simpler installation, better pipeline behavior, or otherwise distinctive value.
-- [ ] Avoid importing heavy dependencies until a related command is invoked.
-- [ ] Add `[SupportedOSPlatform("windows")]` consistently.
+- [x] Identify maintained Microsoft or community modules that already cover it.
+- [x] Retain PSCX only when it offers simpler installation, better pipeline behavior, or otherwise distinctive value.
+- [x] Avoid importing heavy dependencies until a related command is invoked.
+- [x] Add `[SupportedOSPlatform("windows")]` consistently.
+- [x] Package `Pscx.WinAdmin` as a separately imported sibling root in the
+  unified Full Windows ZIP and validate its nine-command public contract.
 
 ### 5.4 Move platform-neutral features out of the Windows assembly
 
 - [ ] Move `ConvertFrom-Yaml` and `ConvertTo-Yaml` into the cross-platform core or a small optional data-format package.
 - [x] Review archive commands for cross-platform placement; they ship in the optional cross-platform `Pscx.Archive` module.
-- [ ] Move `Get-ForegroundWindow` out of the cross-platform project and into `Pscx.WindowsAdmin`; retain `Set-ForegroundWindow` in Windows core.
+- [x] Move `Get-ForegroundWindow` out of the cross-platform project and into `Pscx.WinAdmin`; retain `Set-ForegroundWindow` in Windows core.
 - [ ] Audit every source file against its project's platform contract.
 
 ### 5.5 Deprecate and remove low-value duplicates
@@ -855,7 +867,7 @@ The following issues are small enough to begin independently:
 18. Inventory and reduce bundled third-party binaries.
 19. Draft the 4.0 command deprecation and migration table.
 20. Prototype the `Pscx.Archive` package.
-21. Prototype the `Pscx.WindowsAdmin` package.
+21. Prototype the `Pscx.WinAdmin` package.
 22. Add PATH normalization and validation.
 23. Add `Test-PscxInstallation`.
 
@@ -868,7 +880,7 @@ The following issues are small enough to begin independently:
 | 2. Tests and CI | Complete | 100% |
 | 3. Metadata, docs, releases | Complete | 100% |
 | 4. Explicit public API | Complete | 100% |
-| 5. Feature classification | In progress | 30% |
+| 5. Feature classification | In progress | 60% |
 | 6. Dependency and binary reduction | Not started | 0% |
 | 7. Cohesive improvements | Not started | 0% |
 | 8. PSCX 4.0 release | Not started | 0% |

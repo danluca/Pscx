@@ -30,7 +30,9 @@ None
 
 ## DESCRIPTION
 
-Disconnects a specific remote desktop session on a system running Terminal Services/Remote Desktop
+Disconnects a specific remote desktop session without logging it off. Programs
+continue running in the disconnected session, and the user can reconnect later.
+Use `Stop-TerminalSession` when the session should be logged off and terminated.
 
 ## EXAMPLES
 

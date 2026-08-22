@@ -79,20 +79,56 @@ the [Imports](Imports/) folder for the applicable license files.
    Get-Module Pscx
    ```
 
-The release ZIP includes `Pscx` and `Pscx.Archive` as sibling module roots.
-Install both using versioned layouts (`Pscx/<version>/...` and
-`Pscx.Archive/<version>/...`), then import the archive module only when needed:
+The cross-platform release ZIP includes `Pscx` and `Pscx.Archive` as sibling
+module roots. The Full Windows ZIP also includes `Pscx.WinAdmin`. Install
+each root using a versioned layout (`<module-name>/<version>/...`), then import
+the optional modules only when needed:
 
 ```powershell
 Import-Module Pscx.Archive
 Get-Command -Module Pscx.Archive
+
+# Windows only
+Import-Module Pscx.WinAdmin
+Get-Command -Module Pscx.WinAdmin
 ```
 
 The optional archive module is managed-only and cross-platform. PSCX 4.0 uses
 SharpCompress 0.50.4 and deliberately does not support encrypted extraction.
+`Pscx.WinAdmin` contains nine lower-frequency Windows commands for generic
+ADO/OLE DB access, foreground-window inspection, short-path annotation, and
+retaining environment changes from arbitrary batch files. Importing `Pscx`
+does not load either optional sibling module.
 
 The release ZIP includes local offline help. PSCX does not configure
 `Update-Help` or publish separate online help packages.
+
+### Replacements for removed Windows administration commands
+
+PSCX 4.0 removes command groups that are superseded by maintained Microsoft
+modules. Install only the Windows capabilities or module needed by the machine:
+
+```powershell
+# Run the Windows capability/feature commands from an elevated session.
+Add-WindowsCapability -Online -Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0
+Add-WindowsCapability -Online -Name Rsat.DHCP.Tools~~~~0.0.1.0
+Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-Management-PowerShell
+
+# SQL tooling can be installed for the current user.
+Install-PSResource -Name SqlServer -Repository PSGallery -Scope CurrentUser -TrustRepository
+```
+
+| Removed PSCX commands | Maintained replacement |
+| --- | --- |
+| `Get-PscxADObject`, `Get-DomainController` | ActiveDirectory module: `Get-ADObject`, `Get-ADDomainController` |
+| `Get-DhcpServer` | DhcpServer module: `Get-DhcpServerInDC` |
+| `Get-SqlData`, `Get-SqlDataSet`, `Invoke-SqlCommand` | SqlServer module: `Invoke-Sqlcmd` and its structured-output commands |
+| `Mount-PscxVHD`, `Dismount-PscxVHD` | Hyper-V module: `Mount-VHD`, `Dismount-VHD` |
+
+See Microsoft's installation guidance for
+[RSAT](https://learn.microsoft.com/en-us/windows-server/administration/install-remote-server-administration-tools),
+[the SqlServer module](https://learn.microsoft.com/en-us/powershell/sql-server/download-sql-server-ps-module),
+and [Hyper-V management tools](https://learn.microsoft.com/en-us/windows-server/virtualization/hyper-v/get-started/install-hyper-v).
 
 ### Alias collision policy
 
@@ -129,10 +165,12 @@ platform-aware payload during import:
   supported on all three operating systems, except for the foreground-window
   commands called out in the catalog.
 - The PSCX Windows companion assembly, commands under **Windows only**, YAML
-  commands and accelerators, gsudo integration, and optional VHD/WMI modules
+  commands and accelerators, gsudo integration, and the optional WMI module
   are available only on Windows.
 - The separately imported `Pscx.Archive` module provides archive creation,
   listing, and safe extraction on all three operating systems.
+- The separately imported `Pscx.WinAdmin` module provides the optional
+  Windows administration commands described above.
 - Optional submodules are controlled through `ModulesToImport` in
   `Pscx.UserPreferences.ps1` or an import argument. Their default state is
   shown in the catalog.
@@ -205,15 +243,17 @@ Required annotations:
 - `Description`, containing a summary of what the cmdlet accomplishes.
 - Optionally, `DetailedDescription` for additional context.
 
-Place a new C# cmdlet in the OS-appropriate project: `Pscx` for cross-platform
-commands and `Pscx.Win` for Windows-specific commands. `Pscx.Core` is a
-framework-level library shared by both projects; it contains base classes and
-utilities rather than exportable cmdlets.
+Place a new C# cmdlet in the project matching its package boundary: `Pscx` for
+cross-platform commands, `Pscx.Win` for default Windows commands, and
+`Pscx.WinAdmin` for the separately imported Windows administration surface.
+`Pscx.Core` is a framework-level library shared by these projects; it contains
+base classes and utilities rather than exportable cmdlets.
 
 When this OS based functionality separation is not self evident and a class is not entirely cross-platform nor OS specific, at a minimum do annotate the functions that are OS specific with `SupportedOSPlatform` attribute. Refactoring the design where the OS specific classes extend a basic common functionality is encouraged.
 
 Add or update compiled-command help under `docs/commands/Pscx`,
-`docs/commands/Pscx.Win`, or `docs/commands/Pscx.Archive`. The build pins `Microsoft.PowerShell.PlatyPS`,
+`docs/commands/Pscx.Win`, `docs/commands/Pscx.Archive`, or
+`docs/commands/Pscx.WinAdmin`. The build pins `Microsoft.PowerShell.PlatyPS`,
 validates the Markdown against the packaged command metadata, and generates
 offline MAML beneath the package's `en-US` directory. Public script functions
 continue to use their single authoritative comment-based help source.
@@ -231,7 +271,7 @@ Several conveniences are made available in support of release process:
 
 ### Release artifacts and local signing
 
-`./build.ps1 -Task CI,PublishPrep` validates both bundled modules from the
+`./build.ps1 -Task CI,PublishPrep` validates every bundled module from the
 completed ZIP in isolated module paths, generates an SPDX 2.2 SBOM with the pinned
 Microsoft SBOM Tool, and creates SHA-256 checksums. A tagged release workflow
 attaches these three files directly to a draft GitHub Release for maintainer
@@ -271,7 +311,7 @@ marked **Windows** require the Windows companion payload. Use
 <!-- BEGIN GENERATED PSCX PUBLIC API -->
 <!-- Generated by Tools/Update-PscxReadmeCatalog.ps1. Do not edit this region manually. -->
 
-### Cmdlets (68)
+### Cmdlets (55)
 
 | Command | Platform | Availability | Description |
 | --- | --- | --- | --- |
@@ -285,42 +325,29 @@ marked **Windows** require the Windows companion payload. Use
 | `ConvertTo-UnixLineEnding` | All | Default | Converts the line endings in the specified file to Unix line endings "\n". |
 | `ConvertTo-WindowsLineEnding` | All | Default | Converts the line endings in the specified file to Windows line endings "\r\n". |
 | `ConvertTo-Yaml` | Windows | Default | Converts YAML document or PowerShell structured objects into YAML file (leverages YamlDotNet library). |
-| `Disconnect-TerminalSession` | Windows | Default | Disconnects a specific remote desktop session on a system running Terminal Services/Remote Desktop |
+| `Disconnect-TerminalSession` | Windows | Default | Disconnects a remote desktop session while preserving its programs for later reconnection |
 | `Edit-File` | All | Default | Edit file with configured editor - VSCode, Notepad++/TextMate, default for OS |
 | `Format-Byte` | All | Default | Format the byte sizes in human readable forms - progressively increasing the unit based on byte size value |
 | `Format-Hex` | All | Default | Displays contents of files for byte streams in hex. |
 | `Format-Xml` | All | Default | Pretty print for XML files and XmlDocument objects. |
-| `Get-AdoConnection` | Windows | Default | Get an ADO connection |
-| `Get-AdoDataProvider` | Windows | Default | Get ADO data provider |
-| `Get-DhcpServer` | Windows | Default | Gets a list of authorized DHCP servers. |
-| `Get-DomainController` | Windows | Default | Finds the domain controller |
 | `Get-DriveInfo` | All | Default | Get drive information |
 | `Get-EnvironmentBlock` | All | Default | Get the current environment block |
 | `Get-FileTail` | All | Default | Tails the contents of a file - optionally waiting on new content. |
 | `Get-FileVersionInfo` | All | Default | Get the file version information |
-| `Get-ForegroundWindow` | Windows | Default | Returns the hWnd or handle of the window in the foreground on the current desktop. See also Set-ForegroundWindow. |
 | `Get-LoremIpsum` | All | Default | Generates a lorem-ipsum text of specified length |
 | `Get-MountPoint` | Windows | Default | Returns all mount points defined for a specific root path. |
-| `Get-OleDbData` | Windows | Default | Retrieves DB data through an OLE-DB connection |
-| `Get-OleDbDataSet` | Windows | Default | Retrieve data set through an OLE-DB connection |
 | `Get-OpticalDriveInfo` | Windows | Default | Lists Optical drive information |
 | `Get-PathVariable` | All | Default | Gets the specified path-like environment variable, defaults to PATH |
 | `Get-PEHeader` | All | Default | Get the Portable Executable file header |
 | `Get-Privilege` | Windows | Default | Lists privileges held by the session and their current status. |
-| `Get-PscxADObject` | Windows | Default | Search for objects in the Active Directory/Global Catalog. |
 | `Get-PscxHash` | All | Default | Gets the hash value for the specified file or byte array via the pipeline. |
 | `Get-PscxUptime` | Windows | Default | Get the amount of time the system was up |
 | `Get-ReparsePoint` | Windows | Default | Gets NTFS reparse point data. |
 | `Get-RunningObject` | Windows | Default | Retrieves currently running COM object |
 | `Get-ShortPath` | Windows | Default | Gets the short, 8.3 name for the given path. |
-| `Get-SqlData` | Windows | Default | Query and retrieves SQL data |
-| `Get-SqlDataSet` | Windows | Default | Query and retrieve SQL data set |
 | `Get-TerminalSession` | Windows | Default | Get the terminal session |
 | `Get-TypeName` | All | Default | Get type name as conveniently detailed information |
-| `Invoke-AdoCommand` | Windows | Default | Invokes an ADO command |
 | `Invoke-Apartment` | Windows | Default | Invokes using apartment threading model |
-| `Invoke-OleDbCommand` | Windows | Default | Invoke commands on OleDb datasources |
-| `Invoke-SqlCommand` | Windows | Default | Invokes sql commands on Sql Server database |
 | `Join-PscxString` | All | Default | Joins an array of strings into a single string. |
 | `New-Hardlink` | Windows | Default | Creates filesystem hard links. The hardlink and the target must reside on the same NTFS volume. |
 | `New-Junction` | Windows | Default | Creates NTFS directory junctions. |
@@ -332,27 +359,25 @@ marked **Windows** require the Windows companion payload. Use
 | `Remove-PathVariable` | All | Default | Removes values from an environment variable of type PATH (default is PATH variable) |
 | `Remove-ReparsePoint` | Windows | Default | Removes NTFS reparse junctions and symbolic links. |
 | `Set-FileTime` | All | Default | Sets a file or folder's created and last accessed/write times. |
-| `Set-ForegroundWindow` | Windows | Default | Given an hWnd or window handle, brings that window to the foreground. Useful for restoring a window to uppermost after an application which seizes the foreground is invoked. See also Get-ForegroundWindow |
+| `Set-ForegroundWindow` | Windows | Default | Given an hWnd or window handle, brings that window to the foreground. Useful for restoring a window to uppermost after an application which seizes the foreground is invoked. See also Get-ForegroundWindow in Pscx.WinAdmin |
 | `Set-PathVariable` | All | Default | Sets/overrides a path-like variable (defaults to PATH) to the value specified |
 | `Set-Privilege` | Windows | Default | Adjusts privileges held by the session. |
 | `Set-VolumeLabel` | Windows | Default | Modifies the label shown in Windows Explorer for a particular disk volume. |
 | `Skip-Object` | All | Default | Skips an object - similar with LINQ Skip() method, allows the user to skip the first N and/or last N objects in a sequence |
 | `Split-PscxString` | All | Default | Splits a single string into an array of strings. |
-| `Stop-TerminalSession` | Windows | Default | Logs off a specific remote desktop session on a system running Terminal Services/Remote Desktop |
+| `Stop-TerminalSession` | Windows | Default | Logs off a remote desktop session and closes the programs running in it |
 | `Test-Assembly` | All | Default | Tests whether or not the specified file is a .NET assembly. |
 | `Test-Script` | All | Default | Test script for validity |
 | `Test-UserGroupMembership` | Windows | Default | Check group membership for the requested user identity |
 | `Test-Xml` | All | Default | Tests for well formedness and optionally validates against XML Schema. |
 
-### Functions (36)
+### Functions (32)
 
 | Command | Platform | Availability | Description |
 | --- | --- | --- | --- |
 | `Add-DirectoryLength` | All | Optional (FileSystem) | Calculates the sizes of the specified directory and adds that size as a "Length" NoteProperty to the input DirectoryInfo object. |
-| `Add-ShortPath` | All | Optional (FileSystem) | Adds the file or directory's short path as a "ShortPath" NoteProperty to each input object. |
 | `AddAccelerator` | All | Default | Adds a PowerShell type accelerator without replacing an existing accelerator. |
 | `AddRegex` | All | Default | Adds a named regular-expression pattern to the PSCX RegexLib object. |
-| `Dismount-PscxVHD` | Windows | Optional (Vhd) | Dismounts a Virtual Hard Drive (VHD) file. |
 | `Edit-HostProfile` | All | Default | Opens the current user's profile for the current host in a text editor. |
 | `Edit-Profile` | All | Default | Opens the current user's "all hosts" profile in a text editor. |
 | `Get-ExecutionTime` | All | Default | Gets the execution time for the specified Id of a command in the current session history. |
@@ -362,11 +387,9 @@ marked **Windows** require the Windows companion payload. Use
 | `Get-ViewDefinition` | All | Default | Gets the possible alternate views for the specified object. |
 | `gsudo` | Windows | Default | gsudo is a sudo for windows. It allows to run a command/ScriptBlock with elevated permissions. If no command is specified, it starts an elevated Powershell session. |
 | `Import-VisualStudioVars` | Windows | Default | Imports environment variables for the specified version of Visual Studio. |
-| `Invoke-BatchFile` | Windows | Default | Invokes the specified batch file and retains any environment variable changes it makes. |
 | `Invoke-GC` | All | Default | Invokes the .NET garbage collector to clean up garbage objects. |
 | `Invoke-Gsudo` | Windows | Default | Executes a ScriptBlock in a new elevated instance of powershell, using `gsudo`. |
 | `Invoke-Method` | All | Default | Calls a single method on an incoming stream of piped objects. |
-| `Mount-PscxVHD` | Windows | Optional (Vhd) | Mounts a Virtual Hard Drive (VHD) file. |
 | `PscxHelp` | All | Default | Displays PowerShell help using PSCX pager behavior. |
 | `PscxLess` | All | Default | PscxLess provides better paging of output from cmdlets. |
 | `QuoteList` | All | Default | Convenience function for creating an array of strings without requiring quotes or commas. |

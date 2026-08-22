@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <OutputType>Library</OutputType>
+    <RootNamespace>Pscx</RootNamespace>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <Company>PowerShell Core Community Team</Company>
+    <Authors>https://github.com/pscx/Pscx; fork https://github.com/danluca/Pscx</Authors>
+    <Copyright>Copyright © 2005-2026 Keith Hill, Oisin Grehan, Dan Luca, and contributors</Copyright>
+    <RepositoryUrl>git@github.com:danluca/Pscx.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <Title>PSCX optional Windows administration extensions</Title>
+    <Description>Optional Windows administration commands for PowerShell Core Community Extensions</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.PowerShell.SDK" Version="$(PowerShellSdkVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pscx.Core\Pscx.Core.csproj" />
+    <Compile Include="..\Pscx.Win\Reflection\DynamicType\DataReaderIndexer.cs">
+      <Link>Reflection\DynamicType\DataReaderIndexer.cs</Link>
+    </Compile>
+    <Compile Include="..\Pscx.Win\Reflection\DynamicType\DataReaderObjectFactory.cs">
+      <Link>Reflection\DynamicType\DataReaderObjectFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\Pscx.Win\Reflection\DynamicType\DataTypeBuilder.cs">
+      <Link>Reflection\DynamicType\DataTypeBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\Pscx.Win\Reflection\DynamicType\IIndexedByName.cs">
+      <Link>Reflection\DynamicType\IIndexedByName.cs</Link>
+    </Compile>
+    <Compile Include="..\Pscx.Win\Reflection\DynamicType\PropertySetter.cs">
+      <Link>Reflection\DynamicType\PropertySetter.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Pscx.WinAdmin.psd1">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Pscx.WinAdmin.psm1">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+</Project>

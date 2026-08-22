@@ -15,7 +15,7 @@ using System.Management.Automation;
 
 namespace Pscx.Commands.Database
 {
-    [Cmdlet(VerbsCommon.Get, PscxWinNouns.OleDbData, SupportsShouldProcess=true), Description("Retrieves DB data through an OLE-DB connection")]
+    [Cmdlet(VerbsCommon.Get, PscxWinAdminNouns.OleDbData, SupportsShouldProcess=true), Description("Retrieves DB data through an OLE-DB connection")]
     public class GetOleDbData : OleDbCommandBase
     {
         [Parameter]

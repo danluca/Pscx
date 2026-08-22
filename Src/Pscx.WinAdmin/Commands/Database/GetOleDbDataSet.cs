@@ -13,7 +13,7 @@ using System.Management.Automation;
 
 namespace Pscx.Commands.Database
 {
-    [Cmdlet(VerbsCommon.Get, PscxWinNouns.OleDbDataSet, SupportsShouldProcess=true), Description("Retrieve data set through an OLE-DB connection")]
+    [Cmdlet(VerbsCommon.Get, PscxWinAdminNouns.OleDbDataSet, SupportsShouldProcess=true), Description("Retrieve data set through an OLE-DB connection")]
     public class GetOleDbDataSet : OleDbCommandBase
     {
         protected override void ProcessRecord()

@@ -28,7 +28,6 @@ PowerShellVersion = '0.0' # Stamped from Directory.Build.props during packaging.
         'QuoteList',
         'QuoteString',
         'Invoke-GC',
-        'Invoke-BatchFile',
         'Get-ViewDefinition',
         'Stop-RemoteProcess',
         'Get-ScreenCss',

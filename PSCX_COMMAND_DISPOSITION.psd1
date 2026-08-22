@@ -4,6 +4,19 @@
     SchemaVersion = 1
     Status = 'Approved'
 
+    RemovedCommands = @{
+        ModernMicrosoftAlternative = @(
+            'Dismount-PscxVHD'
+            'Get-DhcpServer'
+            'Get-DomainController'
+            'Get-PscxADObject'
+            'Get-SqlData'
+            'Get-SqlDataSet'
+            'Invoke-SqlCommand'
+            'Mount-PscxVHD'
+        )
+    }
+
     Categories = @{
         RetainCore = @(
             'Add-DirectoryLength'
@@ -77,6 +90,7 @@
             'Set-VolumeLabel'
             'Stop-RemoteProcess'
             'Stop-TerminalSession'
+            'Disconnect-TerminalSession'
             'Test-UserGroupMembership'
         )
 
@@ -86,25 +100,16 @@
             'Write-PscxArchive'
         )
 
-        MoveToWindowsAdmin = @(
+        MoveToWinAdmin = @(
             'Add-ShortPath'
-            'Disconnect-TerminalSession'
-            'Dismount-PscxVHD'
             'Get-AdoConnection'
             'Get-AdoDataProvider'
-            'Get-DhcpServer'
-            'Get-DomainController'
             'Get-ForegroundWindow'
             'Get-OleDbData'
             'Get-OleDbDataSet'
-            'Get-PscxADObject'
-            'Get-SqlData'
-            'Get-SqlDataSet'
             'Invoke-AdoCommand'
             'Invoke-BatchFile'
             'Invoke-OleDbCommand'
-            'Invoke-SqlCommand'
-            'Mount-PscxVHD'
         )
 
         MoveToCrossPlatformCore = @(

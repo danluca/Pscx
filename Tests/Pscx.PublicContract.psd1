@@ -36,7 +36,6 @@
         # Keep the exceptional Windows-only functions here until their module
         # placement makes the platform boundary self-describing.
         WindowsOnlyCommands = @(
-            'Invoke-BatchFile',
             'Stop-RemoteProcess'
         )
     }
@@ -51,7 +50,6 @@
         Full = @(
             @{ Name = 'DirectoryServices'; ModuleName = 'Pscx.DirectoryServices' },
             @{ Name = 'Sudo'; ModuleName = 'Pscx.Sudo' },
-            @{ Name = 'Vhd'; ModuleName = 'Pscx.Vhd' },
             @{ Name = 'Wmi'; ModuleName = 'Pscx.Wmi' }
         )
     }

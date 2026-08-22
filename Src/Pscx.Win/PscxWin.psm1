@@ -142,6 +142,27 @@ function Import-VisualStudioVars {
     )
 
     begin {
+        function Invoke-PscxBatchFile([string] $Path, [string] $Parameters) {
+            $tempFile = [IO.Path]::GetTempFileName()
+            try {
+                cmd.exe /d /c " `"$Path`" $Parameters && set " > $tempFile
+                if ($LASTEXITCODE -ne 0) {
+                throw "Batch file exited with code ${LASTEXITCODE}: $Path"
+                }
+                Get-Content -LiteralPath $tempFile | ForEach-Object {
+                    if ($_ -match '^(.*?)=(.*)$') {
+                        Set-Content -LiteralPath "env:\$($Matches[1])" -Value $Matches[2]
+                    }
+                    else {
+                        $_
+                    }
+                }
+            }
+            finally {
+                Remove-Item -LiteralPath $tempFile -Force -ErrorAction SilentlyContinue
+            }
+        }
+
         $ArchSpecified = $true
         if (!$Architecture) {
             $ArchSpecified = $false
@@ -202,7 +223,7 @@ function Import-VisualStudioVars {
                     "Invoking '$batchFilePath'"
                 }
 
-                Invoke-BatchFile $batchFilePath
+                Invoke-PscxBatchFile $batchFilePath
             }
             else {
                 if ($IsAppxInstall) {
@@ -217,7 +238,7 @@ function Import-VisualStudioVars {
                     "Invoking '$batchFilePath' $Architecture"
                 }
 
-                Invoke-BatchFile $batchFilePath $Architecture
+                Invoke-PscxBatchFile $batchFilePath $Architecture
             }
         }
     }
@@ -227,13 +248,13 @@ function Import-VisualStudioVars {
             '90|2008' {
                 Push-EnvironmentBlock -Description "Before importing VS 2008 $Architecture environment variables"
                 Write-Verbose "Invoking ${env:VS90COMNTOOLS}..\..\VC\vcvarsall.bat $Architecture"
-                Invoke-BatchFile "${env:VS90COMNTOOLS}..\..\VC\vcvarsall.bat" $Architecture
+                Invoke-PscxBatchFile "${env:VS90COMNTOOLS}..\..\VC\vcvarsall.bat" $Architecture
             }
 
             '100|2010' {
                 Push-EnvironmentBlock -Description "Before importing VS 2010 $Architecture environment variables"
                 Write-Verbose "Invoking ${env:VS100COMNTOOLS}..\..\VC\vcvarsall.bat $Architecture"
-                Invoke-BatchFile "${env:VS100COMNTOOLS}..\..\VC\vcvarsall.bat" $Architecture
+                Invoke-PscxBatchFile "${env:VS100COMNTOOLS}..\..\VC\vcvarsall.bat" $Architecture
             }
 
             '110|2012' {

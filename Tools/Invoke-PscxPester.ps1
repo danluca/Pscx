@@ -6,6 +6,8 @@ param(
     [Parameter(Mandatory)]
     [string] $ArchiveModulePath,
 
+    [string] $WinAdminModulePath,
+
     [Parameter(Mandatory)]
     [ValidateSet('Core', 'Full')]
     [string] $BuildScope,
@@ -43,6 +45,12 @@ if ((Get-Module Pester).Version -ne [version]$pesterVersion) {
 
 $modulePath = (Resolve-Path -LiteralPath $ModulePath).Path
 $archiveModulePath = (Resolve-Path -LiteralPath $ArchiveModulePath).Path
+$winAdminModulePath = if ($BuildScope -eq 'Full') {
+    (Resolve-Path -LiteralPath $WinAdminModulePath).Path
+}
+else {
+    $null
+}
 $resultsPath = [System.IO.Path]::GetFullPath($ResultsPath)
 try {
     $powerShellExecutable = Get-Command -Name $PowerShellPath -CommandType Application -ErrorAction Stop |
@@ -54,8 +62,12 @@ catch {
 New-Item -ItemType Directory -Path $resultsPath -Force | Out-Null
 $testResultPath = Join-Path $resultsPath 'Pscx.Pester.xml'
 $coveragePath = Join-Path $resultsPath 'Pscx.PowerShell.coverage.xml'
+$coverageModulePaths = @($modulePath, $archiveModulePath)
+if ($winAdminModulePath) {
+    $coverageModulePaths += $winAdminModulePath
+}
 $coverageFiles = @(
-    Get-ChildItem -LiteralPath $modulePath, $archiveModulePath -Recurse -File -Filter *.psm1 |
+    Get-ChildItem -LiteralPath $coverageModulePaths -Recurse -File -Filter *.psm1 |
         Select-Object -ExpandProperty FullName
 )
 
@@ -65,12 +77,21 @@ $container = @(
         -Data @{
             ModulePath = $modulePath
             ArchiveModulePath = $archiveModulePath
+            WinAdminModulePath = $winAdminModulePath
             BuildScope = $BuildScope
             PowerShellPath = $powerShellExecutable
         }
     New-PesterContainer `
         -Path (Join-Path $repositoryRoot 'Tests/Pscx.Archive.Package.Tests.ps1') `
         -Data @{ ArchiveModulePath = $archiveModulePath }
+    if ($BuildScope -eq 'Full') {
+        New-PesterContainer `
+            -Path (Join-Path $repositoryRoot 'Tests/Pscx.WinAdmin.Package.Tests.ps1') `
+            -Data @{
+                ModulePath = $modulePath
+                WinAdminModulePath = $winAdminModulePath
+            }
+    }
 )
 $configuration = New-PesterConfiguration
 $configuration.Run.Container = $container
