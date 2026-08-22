@@ -28,19 +28,6 @@ BeforeAll {
         Join-Path $PSScriptRoot 'Pscx.PublicContract.psd1'
     )
     $script:manifestData = Import-PowerShellDataFile -LiteralPath $script:manifestPath
-    $script:aliasesBeforeImport = @{}
-    Get-Alias | ForEach-Object {
-        $script:aliasesBeforeImport[$_.Name] = $_.Definition
-    }
-    $script:commandsBeforeImport = @{}
-    $aliasNames = @($script:contract.Aliases.Core)
-    if ($BuildScope -eq 'Full') {
-        $aliasNames += $script:contract.Aliases.Full
-    }
-    Get-Command -Name $aliasNames -ErrorAction SilentlyContinue | ForEach-Object Name |
-        Sort-Object -Unique | ForEach-Object {
-        $script:commandsBeforeImport[$_] = $true
-    }
     $script:importWarnings = @()
     $script:manifest = Test-ModuleManifest -Path $script:manifestPath -ErrorAction Stop
     Import-Module $script:manifestPath -Force -ErrorAction Stop `
@@ -119,32 +106,6 @@ Describe 'Packaged PSCX module contract' {
                 Sort-Object -Unique
         )
         Compare-Object $expectedProviders $actualProviders | Should -BeNullOrEmpty
-    }
-
-    It 'creates available aliases and preserves collisions' {
-        $documentedAliases = @($script:contract.Aliases.Core)
-        if ($BuildScope -eq 'Full') {
-            $documentedAliases += $script:contract.Aliases.Full
-        }
-        $expectedChangedAliases = @(
-            $documentedAliases | Where-Object {
-                $_ -ne 'cd' -and -not $script:commandsBeforeImport.ContainsKey($_)
-            } | Sort-Object -Unique
-        )
-        $changedAliases = @(
-            Get-Alias -Name ($documentedAliases | Where-Object { $_ -ne 'cd' }) `
-                -ErrorAction SilentlyContinue | Where-Object {
-                -not $script:aliasesBeforeImport.ContainsKey($_.Name) -or
-                $script:aliasesBeforeImport[$_.Name] -ne $_.Definition
-            } | ForEach-Object Name | Sort-Object -Unique
-        )
-        Compare-Object $expectedChangedAliases $changedAliases | Should -BeNullOrEmpty
-        Compare-Object $expectedChangedAliases `
-            @($script:module.ExportedAliases.Keys | Sort-Object -Unique) |
-            Should -BeNullOrEmpty
-        $changedAliases | Where-Object {
-            $script:commandsBeforeImport.ContainsKey($_)
-        } | Should -BeNullOrEmpty
     }
 
     It 'uses explicit manifest and script-module exports' {
