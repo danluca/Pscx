@@ -327,17 +327,18 @@ function New-ModuleStage {
         }
     }
 
-    $appsRoot = Join-Path $moduleRoot 'Apps'
-    $windowsApps = Join-Path $appsRoot 'Win'
-    New-Item -ItemType Directory -Path $windowsApps -Force | Out-Null
+    if ($resolvedBuildScope -eq 'Full') {
+        $windowsApps = Join-Path $moduleRoot 'Apps/Win'
+        New-Item -ItemType Directory -Path $windowsApps -Force | Out-Null
 
-    Copy-MatchingItem (Join-Path $repositoryRoot 'Imports/Less-678') 'less*.*' $windowsApps
-    Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/Less-678/license') (Join-Path $windowsApps 'LICENSE_less_orig.txt')
-    Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/Less-678/LICENSE_win.txt') (Join-Path $windowsApps 'LICENSE_less_win.txt')
-    Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/gsudo/win/gsudo.exe') (Join-Path $windowsApps 'gsudo.exe')
-    Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/gsudo/win/gsudo.exe') (Join-Path $windowsApps 'sudo.exe')
-    Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/gsudo/win/Invoke-ElevatedCommand.ps1') (Join-Path $windowsApps 'Invoke-Elevated.ps1')
-    Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/gsudo/LICENSE.txt') (Join-Path $windowsApps 'LICENSE_sudo.txt')
+        Copy-MatchingItem (Join-Path $repositoryRoot 'Imports/Less-678') 'less*.*' $windowsApps
+        Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/Less-678/license') (Join-Path $windowsApps 'LICENSE_less_orig.txt')
+        Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/Less-678/LICENSE_win.txt') (Join-Path $windowsApps 'LICENSE_less_win.txt')
+        Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/gsudo/win/gsudo.exe') (Join-Path $windowsApps 'gsudo.exe')
+        Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/gsudo/win/gsudo.exe') (Join-Path $windowsApps 'sudo.exe')
+        Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/gsudo/win/Invoke-ElevatedCommand.ps1') (Join-Path $windowsApps 'Invoke-Elevated.ps1')
+        Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/gsudo/LICENSE.txt') (Join-Path $windowsApps 'LICENSE_sudo.txt')
+    }
     Copy-RequiredItem (Join-Path $repositoryRoot 'CHANGELOG.md') (Join-Path $moduleRoot 'CHANGELOG.md')
     Copy-RequiredItem (Join-Path $repositoryRoot 'LICENSE') (Join-Path $moduleRoot 'LICENSE.txt')
 
@@ -568,6 +569,16 @@ function Invoke-StaticValidation {
         $testResultsPath,
         '-PowerShellPath',
         $PowerShellPath
+    )
+
+    Invoke-NativeCommand $PowerShellPath @(
+        '-NoLogo',
+        '-NoProfile',
+        '-NonInteractive',
+        '-File',
+        (Join-Path $repositoryRoot 'Tools/Test-PscxRedistributedBinary.ps1'),
+        '-ResultsPath',
+        (Join-Path $testResultsPath 'Pscx.RedistributedBinaries.json')
     )
 }
 
@@ -829,6 +840,22 @@ function Invoke-Validate {
         throw 'Pscx.Archive must contain only the managed SharpCompress backend, not legacy native payloads.'
     }
 
+    $binaryValidationArguments = @(
+        '-NoLogo',
+        '-NoProfile',
+        '-NonInteractive',
+        '-File',
+        (Join-Path $repositoryRoot 'Tools/Test-PscxRedistributedBinary.ps1'),
+        '-PackageRoot',
+        (Join-Path $artifactsRoot 'module'),
+        '-ResultsPath',
+        (Join-Path $testResultsPath 'Pscx.PackageContents.json')
+    )
+    if ($resolvedBuildScope -eq 'Full') {
+        $binaryValidationArguments += '-ExpectedWindowsPayload'
+    }
+    Invoke-NativeCommand $PowerShellPath $binaryValidationArguments
+
     $archivePath = Join-Path $packageOutputPath "Pscx-$packageVersion.zip"
     if (-not (Test-Path -LiteralPath $archivePath)) {
         throw "Expected package archive is missing: $(Get-RelativePath $archivePath)"
@@ -1053,6 +1080,17 @@ function Invoke-PublishPrep {
     $archivePath = Join-Path $packageOutputPath "Pscx-$packageVersion.zip"
     Invoke-InstalledPackageTest
     Assert-UnsignedPscxBinaries
+    Invoke-NativeCommand $PowerShellPath @(
+        '-NoLogo',
+        '-NoProfile',
+        '-NonInteractive',
+        '-File',
+        (Join-Path $repositoryRoot 'Tools/Test-PscxReleaseSecurity.ps1'),
+        '-PackagePath',
+        $archivePath,
+        '-ResultsPath',
+        (Join-Path $testResultsPath 'Pscx.ReleaseSecurity.json')
+    )
     $sbomPath = New-ReleaseSbom -PackageName Pscx -ModulePath (Join-Path $artifactsRoot 'module')
     $checksumPath = New-ReleaseChecksums -AssetPath @($archivePath, $sbomPath)
 

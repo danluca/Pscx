@@ -108,6 +108,12 @@ ADO/OLE DB access, foreground-window inspection, short-path annotation, and
 retaining environment changes from arbitrary batch files. Importing `Pscx`
 does not load any optional sibling module.
 
+The [redistributed binary inventory](docs/security/REDISTRIBUTED_BINARIES.md)
+documents the exact retained Windows executables, provenance, checksums,
+ownership, package-size reporting, and release security checks. Each build
+writes its exact module file counts and uncompressed sizes to
+`artifacts/test-results/Pscx.PackageContents.json`.
+
 The release ZIP includes local offline help. PSCX does not configure
 `Update-Help` or publish separate online help packages.
 

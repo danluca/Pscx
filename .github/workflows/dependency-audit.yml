@@ -29,3 +29,23 @@ jobs:
       - name: Restore and report vulnerable direct and transitive packages
         shell: pwsh
         run: ./build.ps1 -Task Audit
+
+      - name: Check redistributed third-party releases
+        if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: >-
+          ./Tools/Test-PscxRedistributedBinary.ps1
+          -CheckUpdates
+          -FailWhenUpdateAvailable
+          -ResultsPath artifacts/test-results/Pscx.ThirdPartyUpdates.json
+
+      - name: Upload third-party update report
+        if: ${{ always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: third-party-update-report
+          path: artifacts/test-results/Pscx.ThirdPartyUpdates.json
+          if-no-files-found: warn
+          retention-days: 30

@@ -1,12 +1,23 @@
 # Sudo for Windows
 
-Sudo utility embedded into PSCX is leveraged from [GSudo Project](https://github.com/gerardog/gsudo). The version chosen is 2.6.0 - as current, stable and robust for Windows 11.
+The sudo utility embedded into PSCX comes from the
+[gsudo project](https://github.com/gerardog/gsudo). PSCX currently pins the
+x64 executable from release 2.6.0. Its reviewed checksum, signer, source, and
+update owner are recorded in
+[`Imports/REDISTRIBUTED_BINARIES.psd1`](../REDISTRIBUTED_BINARIES.psd1).
 
 ## Integration
 
-* Download the `ZIP` from the release of choice and extract the contents of the `x64` folder. 
-* Move the files `x64\gsudo`, `x64\gsudo.exe` and `x64\Invoke-ElevatedCommand.ps1` into `win` folder (use force flag to override existing files)
-* Copy the PowerShell files from x64 folder into `Src/Pscx.Win/Modules/Sudo` and change the name of module files to _Pscx.Sudo.psd1_. Keep the other file names unchanged in the destination folder.
+* Download `gsudo.portable.zip` from the reviewed upstream release without
+  committing the archive to PSCX.
+* Extract and review the `x64` payload. Copy `gsudo.exe` and
+  `Invoke-ElevatedCommand.ps1` into the `win` folder.
+* Copy the PowerShell files from the x64 folder into
+  `Src/Pscx.Win/Modules/Sudo` and retain the PSCX module naming and local
+  integration changes.
+* Update the machine-readable inventory and both the repository and packaged
+  validation tests. Run the full Windows build before requesting review.
 
-The name of the (sub-)module is therefore __Pscx\Sudo__ and this should be reflected into the module files. As changes get integrated from the original project GgitHub source, the rename must be carried forward.
-The executable (`gsudo.exe`) is copied into the output folder renamed as `sudo.exe` (see `pscxwin-postbuild.ps1` script).
+The submodule is named **Pscx\Sudo**. Carry that rename and the PSCX integration
+changes forward when updating from upstream. The build packages the reviewed
+executable under both `gsudo.exe` and `sudo.exe` for command-name compatibility.

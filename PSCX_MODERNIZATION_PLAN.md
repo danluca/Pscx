@@ -702,24 +702,24 @@ For each group:
 
 ### Tasks
 
-- [ ] Inventory every copy of 7-Zip, gsudo, less, SevenZipSharp, PowerShell assemblies, and native support libraries.
-- [ ] Identify duplicate architectures, compressed source packages, NuGet packages, and extracted binaries.
-- [ ] Stop committing generated `Output` packages to the repository.
-- [ ] Prefer NuGet/package restore over committing third-party managed assemblies.
-- [ ] Do not redistribute PowerShell runtime assemblies unless there is a demonstrated runtime requirement.
+- [x] Inventory every copy of 7-Zip, gsudo, less, SevenZipSharp, PowerShell assemblies, and native support libraries.
+- [x] Identify duplicate architectures, compressed source packages, NuGet packages, and extracted binaries.
+- [x] Stop committing generated `Output` packages to the repository.
+- [x] Prefer NuGet/package restore over committing third-party managed assemblies.
+- [x] Do not redistribute PowerShell runtime assemblies unless there is a demonstrated runtime requirement.
 - [x] Retain bundled gsudo in the default Windows core package.
 - [x] Retain bundled less in the default Windows core package.
-- [ ] Determine whether the byte-identical `gsudo.exe` and `sudo.exe` files are both required for command-name compatibility or can share one payload safely.
-- [ ] Package only the archive binary for the user's operating system and architecture.
-- [ ] Add checksums and provenance records for every redistributed executable.
-- [ ] Automate third-party update detection.
-- [ ] Add malware/signature scanning to the release workflow where available.
+- [x] Determine whether the byte-identical `gsudo.exe` and `sudo.exe` files are both required for command-name compatibility or can share one payload safely.
+- [x] Package only the archive binary for the user's operating system and architecture. Superseded by the managed-only, cross-platform `Pscx.Archive` module; no native archive binary ships.
+- [x] Add checksums and provenance records for every redistributed executable.
+- [x] Automate third-party update detection.
+- [x] Add malware/signature scanning to the release workflow where available.
 
 ### Exit criteria
 
-- [ ] The default PSCX package contains no unrelated native executable.
-- [ ] Optional package size and contents are documented.
-- [ ] Every redistributed binary has version, license, source, checksum, and update ownership recorded.
+- [x] The default PSCX package contains no unrelated native executable.
+- [x] Optional package size and contents are documented.
+- [x] Every redistributed binary has version, license, source, checksum, and update ownership recorded.
 
 ---
 
