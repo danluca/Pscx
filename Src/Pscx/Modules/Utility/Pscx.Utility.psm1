@@ -703,104 +703,6 @@ function Get-ViewDefinition {
 
 <#
 .SYNOPSIS
-    Stops a process on a remote machine.
-.DESCRIPTION
-    Stops a process on a remote machine.
-    This command uses WMI to terminate the remote process.
-.PARAMETER ComputerName
-    The name of the remote computer that the process is executing on.
-    Type the NetBIOS name, an IP address, or a fully qualified domain name of the remote computer.
-.PARAMETER Name
-    The process name of the remote process to terminate.
-.PARAMETER Id
-    The process id of the remote process to terminate.
-.PARAMETER Credential
-    Specifies a user account that has permission to perform this action. The default is the current user.
-    Type a user name, such as "User01", "Domain01\User01", or User@Contoso.com. Or, enter a PSCredential
-    object, such as an object that is returned by the Get-Credential cmdlet. When you type a user name,
-    you will be prompted for a password.
-.EXAMPLE
-    C:\PS> Stop-RemoteProcess server1 notepad.exe
-    Stops all processes named notepad.exe on the remote computer server1.
-.EXAMPLE
-    C:\PS> Stop-RemoteProcess server1 3478
-    Stops the process with process id 3478 on the remote computer server1.
-.EXAMPLE
-    C:\PS> 3478,4005 | Stop-RemoteProcess server1
-    Stops the processes with process ids 3478 and 4005 on the remote computer server1.
-.NOTES
-    Author: Jachym Kouba and Keith Hill
-#>
-function Stop-RemoteProcess
-{
-    [CmdletBinding(SupportsShouldProcess=$true)]
-    param(
-        [Parameter(Position=0, Mandatory=$true)]
-        [string]
-        $ComputerName,
-
-        [Parameter(Position=1, Mandatory=$true, ValueFromPipeline=$true, ParameterSetName="Name")]
-        [string[]]
-        $Name,
-
-        [Parameter(Position=1, Mandatory=$true, ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true, ParameterSetName="Id")]
-        [int[]]
-        $Id,
-
-        [System.Management.Automation.PSCredential]
-        $Credential
-    )
-
-    Process
-    {
-        $params = @{
-            Class = 'Win32_Process'
-            ComputerName = $ComputerName
-        }
-
-        if ($Credential)
-        {
-            $params.Credential = $Credential
-        }
-
-        if ($pscmdlet.ParameterSetName -eq 'Name')
-        {
-            foreach ($item in $Name)
-            {
-                if (!$pscmdlet.ShouldProcess("process $item on computer $ComputerName"))
-                {
-                    continue
-                }
-                $params.Filter = "Name LIKE '%$item%'"
-                Get-WmiObject @params | ForEach-Object {
-                    if ($_.Terminate().ReturnValue -ne 0) {
-                        Write-Error "Failed to stop process $item on $ComputerName."
-                    }
-                }
-            }
-        }
-        else
-        {
-            foreach ($item in $Id)
-            {
-                if (!$pscmdlet.ShouldProcess("process id $item on computer $ComputerName"))
-                {
-                    continue
-                }
-                $params.Filter = "ProcessId = $item"
-                Get-WmiObject @params | ForEach-Object {
-                    if ($_.Terminate().ReturnValue -ne 0) {
-                        Write-Error "Failed to stop process id $item on $ComputerName."
-                    }
-                }
-            }
-        }
-    }
-}
-
-<#
-.SYNOPSIS
     Generate CSS header for HTML "screen shot" of the host buffer.
 .DESCRIPTION
     Generate CSS header for HTML "screen shot" of the host buffer.
@@ -1955,6 +1857,8 @@ if ($IsWindows) {
 
 AddAccelerator "accelerators" $acceleratorsType
 AddAccelerator "json"  ([Pscx.TypeAccelerators.Json])
+AddAccelerator "yaml"  ([Pscx.TypeAccelerators.Yaml])
+AddAccelerator "yml"  ([Pscx.TypeAccelerators.Yaml])
 AddAccelerator "hex"  ([Pscx.TypeAccelerators.Hex])
 AddAccelerator "base64"  ([Pscx.TypeAccelerators.Base64])
 AddAccelerator "b64"  ([Pscx.TypeAccelerators.Base64])
@@ -1978,7 +1882,6 @@ Export-ModuleMember -Alias $aliasesToExport -Function @(
     'QuoteString',
     'Invoke-GC',
     'Get-ViewDefinition',
-    'Stop-RemoteProcess',
     'Get-ScreenCss',
     'Get-ScreenHtml',
     'Invoke-Method',

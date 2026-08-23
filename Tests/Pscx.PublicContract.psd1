@@ -32,12 +32,9 @@
         Full = @('AssemblyCache', 'DirectoryServices')
     }
     Platforms = @{
-        # Script functions cannot carry SupportedOSPlatformAttribute metadata.
-        # Keep the exceptional Windows-only functions here until their module
-        # placement makes the platform boundary self-describing.
-        WindowsOnlyCommands = @(
-            'Stop-RemoteProcess'
-        )
+        # Windows-only commands now live in platform-specific modules or carry
+        # SupportedOSPlatformAttribute metadata, so no catalog exception remains.
+        WindowsOnlyCommands = @()
     }
     OptionalFeatures = @{
         Core = @(

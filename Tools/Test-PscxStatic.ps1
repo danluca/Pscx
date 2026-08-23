@@ -41,6 +41,77 @@ $allFiles = @(
         Where-Object FullName -NotMatch $excludedDirectoryPattern
 )
 $powerShellFiles = @($allFiles | Where-Object Extension -In '.ps1', '.psm1', '.psd1')
+
+# Enforce the platform ownership established by the Phase 5.4 source audit.
+$windowsAssemblyInfoFiles = @(
+    'Src/Pscx.Win/Properties/AssemblyInfo.cs'
+    'Src/Pscx.WinAdmin/AssemblyInfo.cs'
+)
+foreach ($relativePath in $windowsAssemblyInfoFiles) {
+    $content = Get-Content -LiteralPath (Join-Path $repositoryRoot $relativePath) -Raw
+    if ($content -notmatch 'SupportedOSPlatform\("windows"\)') {
+        throw "$relativePath must declare its assembly as Windows-only."
+    }
+}
+
+$crossPlatformSourceRoots = @(
+    'Src/Pscx.Core'
+    'Src/Pscx'
+    'Src/Pscx.Archive'
+)
+$crossPlatformCSharpFiles = @(
+    foreach ($relativeRoot in $crossPlatformSourceRoots) {
+        Get-ChildItem -LiteralPath (Join-Path $repositoryRoot $relativeRoot) -Recurse -Filter *.cs -File |
+            Where-Object FullName -NotMatch $excludedDirectoryPattern
+    }
+)
+$nativeInteropFiles = @(
+    $crossPlatformCSharpFiles |
+        Where-Object { (Get-Content -LiteralPath $_.FullName -Raw) -match '\b(?:DllImport|LibraryImport)\s*\(' } |
+        ForEach-Object { [IO.Path]::GetRelativePath($repositoryRoot, $_.FullName).Replace('\', '/') }
+)
+$approvedNativeInteropFiles = @(
+    'Src/Pscx.Core/EncodingConversion.cs'
+    'Src/Pscx/Commands/UIAutomation/SetForegroundWindowCommand.cs'
+)
+if ($difference = Compare-Object $approvedNativeInteropFiles $nativeInteropFiles) {
+    $difference | Format-Table -AutoSize | Out-String | Write-Output
+    throw 'Cross-platform native-interop ownership differs from the reviewed Phase 5.4 exceptions.'
+}
+
+$encodingConversion = Get-Content -LiteralPath (
+    Join-Path $repositoryRoot 'Src/Pscx.Core/EncodingConversion.cs'
+) -Raw
+if ($encodingConversion -notmatch 'OperatingSystem\.IsWindows\(\)' -or
+    $encodingConversion -notmatch "The 'oem' encoding is supported only on Windows") {
+    throw 'The native OEM encoding path must remain guarded from non-Windows execution.'
+}
+$foregroundWindow = Get-Content -LiteralPath (
+    Join-Path $repositoryRoot 'Src/Pscx/Commands/UIAutomation/SetForegroundWindowCommand.cs'
+) -Raw
+if ($foregroundWindow -notmatch 'SupportedOSPlatform\("windows"\)') {
+    throw 'Set-ForegroundWindow must retain its explicit Windows platform annotation.'
+}
+
+$crossPlatformPowerShellFiles = @(
+    foreach ($relativeRoot in $crossPlatformSourceRoots) {
+        Get-ChildItem -LiteralPath (Join-Path $repositoryRoot $relativeRoot) -Recurse -File |
+            Where-Object Extension -In '.ps1', '.psm1' |
+            Where-Object FullName -NotMatch $excludedDirectoryPattern
+    }
+)
+$windowsAutomationReferences = @(
+    $crossPlatformPowerShellFiles |
+        Where-Object {
+            (Get-Content -LiteralPath $_.FullName -Raw) -match
+                '\b(?:Get-WmiObject|Get-CimInstance|Invoke-CimMethod|New-CimSession|Win32_)\b'
+        } |
+        ForEach-Object { [IO.Path]::GetRelativePath($repositoryRoot, $_.FullName).Replace('\', '/') }
+)
+if ($windowsAutomationReferences.Count -gt 0) {
+    throw "Cross-platform PowerShell sources contain Windows automation references: $($windowsAutomationReferences -join ', ')"
+}
+
 $resultsPath = [IO.Path]::GetFullPath($ResultsPath)
 New-Item -ItemType Directory -Path $resultsPath -Force | Out-Null
 try {
@@ -158,6 +229,12 @@ foreach ($extension in $formatExtensions) {
     AnalyzerCounts = $analyzerCounts
     ModuleManifestCount = $manifestFiles.Count
     XmlFileCount = $xmlFiles.Count
+    PlatformAudit = [ordered]@{
+        CrossPlatformCSharpFileCount = $crossPlatformCSharpFiles.Count
+        CrossPlatformPowerShellFileCount = $crossPlatformPowerShellFiles.Count
+        ApprovedNativeInteropFiles = $approvedNativeInteropFiles
+        WindowsAssemblyCount = $windowsAssemblyInfoFiles.Count
+    }
     FormattingCounts = $formatCounts
 } | ConvertTo-Json -Depth 5 |
     Set-Content -LiteralPath (Join-Path $resultsPath 'Pscx.StaticAnalysis.summary.json') -Encoding utf8

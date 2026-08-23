@@ -1,9 +1,9 @@
 ---
 document type: cmdlet
-external help file: Pscx.Win.dll-Help.xml
+external help file: Pscx.dll-Help.xml
 HelpUri: ''
 Locale: en-US
-Module Name: Pscx.Win
+Module Name: Pscx
 ms.date: 08/06/2026
 PlatyPS schema version: 2024-05-01
 title: ConvertTo-Yaml

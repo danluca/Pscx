@@ -19,7 +19,7 @@ duplicates fail CI.
 | `RetainWindowsCore` | Retain in the default Windows payload. Commands may require elevation when their purpose demands it. |
 | `MoveToArchive` | Move to the optional `Pscx.Archive` module. |
 | `MoveToWinAdmin` | Move to the optional `Pscx.WinAdmin` module. |
-| `MoveToCrossPlatformCore` | Platform-neutral command currently placed in a Windows assembly. |
+| `MoveToCrossPlatformCore` | Platform-neutral command approved for relocation from a Windows assembly; the Phase 5.4 move is complete. |
 | `DeprecationCandidate` | Deprecate or remove after applying the documented compatibility process. |
 
 Commands listed under `RemovedCommands.ModernMicrosoftAlternative` are removed
@@ -87,3 +87,29 @@ sections.
 - Every retained command has at least one installed or authoritative-source
   example. Optional `Add-DirectoryLength` is validated from its FileSystem
   submodule source; default-loaded commands are validated at package runtime.
+
+## Phase 5.4 platform-source audit
+
+Every non-generated C# and PowerShell source under `Pscx.Core`, `Pscx`,
+`Pscx.Archive`, `Pscx.Win`, and `Pscx.WinAdmin` was reviewed against its
+project's platform contract.
+
+- `ConvertFrom-Yaml`, `ConvertTo-Yaml`, their type accelerators, and YamlDotNet
+  now belong to the cross-platform `Pscx` assembly and package payload.
+- `Pscx.Win` and `Pscx.WinAdmin` retain assembly-level Windows platform
+  annotations; their remaining sources implement Windows APIs or support
+  Windows-only commands and providers.
+- `Stop-RemoteProcess` moved from the cross-platform Utility script module to
+  `PscxWin`. Its removed `Get-WmiObject` dependency was replaced by the modern
+  CIM cmdlets while preserving its public parameters and `ShouldProcess`
+  behavior.
+- `Set-ForegroundWindow` remains the approved Windows-core exception in the
+  otherwise cross-platform `Pscx` assembly and carries an explicit
+  `SupportedOSPlatform("windows")` annotation.
+- The shared OEM-encoding conversion remains available on Windows, but now
+  rejects non-Windows use before reaching its `kernel32` interop call.
+
+Repository static validation enforces these boundaries by checking the Windows
+assembly annotations, the reviewed native-interop exceptions, their platform
+guards, and the absence of Windows automation APIs from cross-platform
+PowerShell sources.

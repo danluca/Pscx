@@ -69,6 +69,47 @@ Describe 'Packaged PSCX module contract' {
         $windowsAssemblyExists | Should -Be ($BuildScope -eq 'Full')
     }
 
+    It 'ships YAML support from the cross-platform assembly' {
+        Test-Path -LiteralPath (Join-Path $ModulePath 'YamlDotNet.dll') | Should -BeTrue
+        foreach ($name in 'ConvertFrom-Yaml', 'ConvertTo-Yaml') {
+            $command = Get-Command -Name $name -CommandType Cmdlet -ErrorAction Stop
+            $command.ImplementingType.Assembly.GetName().Name | Should -Be 'Pscx'
+        }
+
+        if ($BuildScope -eq 'Full') {
+            $windowsManifest = Import-PowerShellDataFile -LiteralPath (
+                Join-Path $ModulePath 'PscxWin.psd1'
+            )
+            @($windowsManifest.CmdletsToExport) | Should -Not -Contain 'ConvertFrom-Yaml'
+            @($windowsManifest.CmdletsToExport) | Should -Not -Contain 'ConvertTo-Yaml'
+        }
+    }
+
+    It 'keeps Stop-RemoteProcess in the Windows companion module' {
+        $utilityManifest = Import-PowerShellDataFile -LiteralPath (
+            Join-Path $ModulePath 'Modules/Utility/Pscx.Utility.psd1'
+        )
+        @($utilityManifest.FunctionsToExport) | Should -Not -Contain 'Stop-RemoteProcess'
+
+        if ($BuildScope -eq 'Full') {
+            $windowsManifest = Import-PowerShellDataFile -LiteralPath (
+                Join-Path $ModulePath 'PscxWin.psd1'
+            )
+            @($windowsManifest.FunctionsToExport) | Should -Contain 'Stop-RemoteProcess'
+        }
+    }
+
+    It 'does not create a remote session for Stop-RemoteProcess WhatIf' {
+        if ($BuildScope -ne 'Full') {
+            Set-ItResult -Skipped -Because 'Stop-RemoteProcess is supplied by the Windows companion module.'
+            return
+        }
+
+        $unreachableComputer = 'invalid.invalid'
+        { Stop-RemoteProcess -ComputerName $unreachableComputer -Name 'notepad.exe' -WhatIf } |
+            Should -Not -Throw
+    }
+
     It 'resolves every command exported by each loaded PSCX module' {
         $exportedCommands = @($script:module.ExportedCommands.Values)
         $exportedCommands.Count | Should -BeGreaterThan 0
@@ -477,12 +518,7 @@ Describe 'Representative public command behavior' {
         $measurement.unit.Symbol | Should -Be 'km'
     }
 
-    It 'round-trips structured YAML through the packaged Windows commands' {
-        if ($BuildScope -ne 'Full') {
-            Set-ItResult -Skipped -Because 'YAML commands are supplied by the Windows module.'
-            return
-        }
-
+    It 'round-trips structured YAML through the packaged cross-platform commands' {
         $source = "project:`n  name: PSCX`n  active: true"
         $object = $source | ConvertFrom-Yaml
         $yaml = $object | ConvertTo-Yaml

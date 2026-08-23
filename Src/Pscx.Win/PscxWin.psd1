@@ -32,13 +32,12 @@
         'Invoke-Apartment',
         'Disconnect-TerminalSession',
         'Stop-TerminalSession',
-        'Get-TerminalSession',
-        'ConvertFrom-Yaml',
-        'ConvertTo-Yaml'
+        'Get-TerminalSession'
     )
     FunctionsToExport = @(
         'Resolve-HResult',
         'Resolve-WindowsError',
+        'Stop-RemoteProcess',
         'Import-VisualStudioVars'
     )
     FormatsToProcess   = @(

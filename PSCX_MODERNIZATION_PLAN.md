@@ -630,10 +630,14 @@ For each group:
 
 ### 5.4 Move platform-neutral features out of the Windows assembly
 
-- [ ] Move `ConvertFrom-Yaml` and `ConvertTo-Yaml` into the cross-platform core or a small optional data-format package.
+- [x] Move `ConvertFrom-Yaml` and `ConvertTo-Yaml`, their type accelerators, and
+  YamlDotNet into the cross-platform core.
 - [x] Review archive commands for cross-platform placement; they ship in the optional cross-platform `Pscx.Archive` module.
 - [x] Move `Get-ForegroundWindow` out of the cross-platform project and into `Pscx.WinAdmin`; retain `Set-ForegroundWindow` in Windows core.
-- [ ] Audit every source file against its project's platform contract.
+- [x] Audit every source file against its project's platform contract; move
+  `Stop-RemoteProcess` into `PscxWin`, guard the shared OEM-encoding interop,
+  and enforce the reviewed boundaries in static validation. See the
+  [Phase 5.4 platform-source audit](PSCX_COMMAND_DISPOSITION.md#phase-54-platform-source-audit).
 
 ### 5.5 Deprecate and remove low-value duplicates
 
@@ -880,7 +884,7 @@ The following issues are small enough to begin independently:
 | 2. Tests and CI | Complete | 100% |
 | 3. Metadata, docs, releases | Complete | 100% |
 | 4. Explicit public API | Complete | 100% |
-| 5. Feature classification | In progress | 60% |
+| 5. Feature classification | In progress | 80% |
 | 6. Dependency and binary reduction | Not started | 0% |
 | 7. Cohesive improvements | Not started | 0% |
 | 8. PSCX 4.0 release | Not started | 0% |

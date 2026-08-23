@@ -2,10 +2,10 @@ using System;
 using System.Management.Automation;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.TypeResolvers;
-using Pscx.Win.Commands.Yaml;
+using Pscx.Commands.Yaml;
 using Pscx;
 
-namespace Pscx.Win.Fwk.TypeAccelerators
+namespace Pscx.TypeAccelerators
 {
     public struct Yaml
     {

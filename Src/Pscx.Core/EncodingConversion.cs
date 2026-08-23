@@ -23,8 +23,14 @@ namespace Pscx
                 return Encoding.UTF32;
             if (string.Equals(encoding, "default", StringComparison.OrdinalIgnoreCase))
                 return Encoding.Default;
-            if (string.Equals(encoding, "oem", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(encoding, "oem", StringComparison.OrdinalIgnoreCase)) {
+                if (!OperatingSystem.IsWindows()) {
+                    cmdlet.ErrorHandler.ThrowPlatformNotSupported("The 'oem' encoding is supported only on Windows.");
+                    return null;
+                }
+
                 return Encoding.GetEncoding((int)EncodingConversion.NativeMethods.GetOEMCP());
+            }
             string str = string.Join(", ", "unknown", "string", "unicode", "bigendianunicode", "ascii", "utf8", "utf7", "utf32", "default", "oem");
             cmdlet.ErrorHandler.ThrowInvalidFileEncodingArgument(parameterName, encoding, str);
             return (Encoding)null;

@@ -66,9 +66,6 @@
     <PackageReference Include="Microsoft.PowerShell.SDK" Version="$(PowerShellSdkVersion)" />
     <PackageReference Include="System.DirectoryServices" Version="10.0.10" />
     <PackageReference Include="System.Reflection.MetadataLoadContext" Version="10.0.10" />
-    <PackageReference Include="YamlDotNet" Version="18.1.0">
-      <GeneratePathProperty>True</GeneratePathProperty>
-    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
@@ -93,12 +90,5 @@
       <Generator>ResXFileCodeGenerator</Generator>
     </EmbeddedResource>
   </ItemGroup>
-
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-      <!-- <Copy SourceFiles="$(PkgYamlDotNet)/lib/$(TargetFramework)/YamlDotNet.dll" DestinationFolder="$(TargetDir)" /> -->
-      <!-- <Copy SourceFiles="$(PkgYamlDotNet)/lib/$(TargetFramework)/YamlDotNet.xml" DestinationFolder="$(TargetDir)" /> -->
-      <Copy SourceFiles="$(PkgYamlDotNet)/lib/net8.0/YamlDotNet.dll" DestinationFolder="$(TargetDir)" />
-      <Copy SourceFiles="$(PkgYamlDotNet)/lib/net8.0/YamlDotNet.xml" DestinationFolder="$(TargetDir)" />
-  </Target>
 
 </Project>

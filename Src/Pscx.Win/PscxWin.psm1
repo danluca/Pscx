@@ -7,6 +7,95 @@ Set-StrictMode -Version Latest
 
 <#
 .SYNOPSIS
+    Stops a process on a remote Windows machine.
+.DESCRIPTION
+    Stops a process on a remote Windows machine through a DCOM CIM session.
+.PARAMETER ComputerName
+    The name of the remote computer that the process is executing on.
+.PARAMETER Name
+    The process name of the remote process to terminate.
+.PARAMETER Id
+    The process id of the remote process to terminate.
+.PARAMETER Credential
+    Specifies a user account that has permission to perform this action.
+.EXAMPLE
+    Stop-RemoteProcess server1 notepad.exe
+    Stops all processes named notepad.exe on the remote computer server1.
+.EXAMPLE
+    Stop-RemoteProcess server1 3478
+    Stops the process with process id 3478 on the remote computer server1.
+.EXAMPLE
+    3478,4005 | Stop-RemoteProcess server1
+    Stops the processes with process ids 3478 and 4005 on the remote computer server1.
+#>
+function Stop-RemoteProcess {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter(Position = 0, Mandatory = $true)]
+        [string] $ComputerName,
+
+        [Parameter(Position = 1, Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = 'Name')]
+        [string[]] $Name,
+
+        [Parameter(Position = 1, Mandatory = $true, ValueFromPipeline = $true,
+            ValueFromPipelineByPropertyName = $true, ParameterSetName = 'Id')]
+        [int[]] $Id,
+
+        [System.Management.Automation.PSCredential] $Credential
+    )
+
+    process {
+        $sessionParameters = @{
+            ComputerName  = $ComputerName
+            SessionOption = New-CimSessionOption -Protocol Dcom
+        }
+        if ($Credential) {
+            $sessionParameters.Credential = $Credential
+        }
+
+        $cimSession = $null
+        try {
+            $items = if ($PSCmdlet.ParameterSetName -eq 'Name') { $Name } else { $Id }
+            foreach ($item in $items) {
+                $target = if ($PSCmdlet.ParameterSetName -eq 'Name') {
+                    "process $item on computer $ComputerName"
+                }
+                else {
+                    "process id $item on computer $ComputerName"
+                }
+                if (!$PSCmdlet.ShouldProcess($target)) {
+                    continue
+                }
+
+                if (!$cimSession) {
+                    $cimSession = New-CimSession @sessionParameters
+                }
+
+                $filter = if ($PSCmdlet.ParameterSetName -eq 'Name') {
+                    "Name = '$($item.Replace("'", "''"))'"
+                }
+                else {
+                    "ProcessId = $item"
+                }
+                Get-CimInstance -ClassName Win32_Process -Filter $filter -CimSession $cimSession |
+                    ForEach-Object {
+                        $result = Invoke-CimMethod -InputObject $_ -MethodName Terminate
+                        if ($result.ReturnValue -ne 0) {
+                            Write-Error "Failed to stop $target (return value $($result.ReturnValue))."
+                        }
+                    }
+            }
+        }
+        finally {
+            if ($cimSession) {
+                Remove-CimSession -CimSession $cimSession
+            }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
     Resolves the hresult error code to a textual description of the error.
 .DESCRIPTION
     Resolves the hresult error code to a textual description of the error.
@@ -326,20 +415,6 @@ function Import-VisualStudioVars {
     }
 }
 
-
-$acceleratorsType = [psobject].Assembly.GetType('System.Management.Automation.TypeAccelerators')
-
-# If these accelerators have already been defined, don't override (and don't error)
-function AddPscxWinAccelerator($name, $type)
-{
-    if (!$acceleratorsType::Get.ContainsKey($name))
-    {
-        $acceleratorsType::Add($name, $type)
-    }
-}
-
-AddPscxWinAccelerator "yaml" ([Pscx.Win.Fwk.TypeAccelerators.Yaml])
-AddPscxWinAccelerator "yml"  ([Pscx.Win.Fwk.TypeAccelerators.Yaml])
 
 $aliasesToExport = @()
 $pscxAliases = [ordered]@{

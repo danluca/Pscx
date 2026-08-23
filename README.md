@@ -164,9 +164,10 @@ platform-aware payload during import:
 - The PSCX core assembly and the functions under **Cross-platform** below are
   supported on all three operating systems, except for the foreground-window
   commands called out in the catalog.
-- The PSCX Windows companion assembly, commands under **Windows only**, YAML
-  commands and accelerators, gsudo integration, and the optional WMI module
-  are available only on Windows.
+- The PSCX Windows companion assembly, commands under **Windows only**, gsudo
+  integration, and the optional WMI module are available only on Windows.
+- YAML commands and the `yaml`/`yml` type accelerators are part of the
+  cross-platform core.
 - The separately imported `Pscx.Archive` module provides archive creation,
   listing, and safe extraction on all three operating systems.
 - The separately imported `Pscx.WinAdmin` module provides the optional
@@ -208,6 +209,9 @@ operations can also be run when their prerequisites already exist:
 Use `-BuildScope Full` for the complete Windows package or `-BuildScope Core`
 for the cross-platform projects and package. Full builds are intentionally
 Windows-only.
+
+The build requires a stable .NET 10 SDK. `global.json` accepts installed
+10.0.x feature bands and rejects preview or later-major SDKs.
 
 Build output is written beneath the ignored `artifacts` directory. Pass
 `-ArtifactsPath` to use another directory. `Test` runs the cross-platform,
@@ -318,13 +322,13 @@ marked **Windows** require the Windows companion payload. Use
 | `Add-PathVariable` | All | Default | Adds values to an environment variable of type PATH (default is PATH variable) |
 | `Convert-Xml` | All | Default | Converts XML through a XSL |
 | `ConvertFrom-Base64` | All | Default | Converts base64 encoded string to byte array. |
-| `ConvertFrom-Yaml` | Windows | Default | Converts YAML string/file to PowerShell structured objects (leverages YamlDotNet library). |
+| `ConvertFrom-Yaml` | All | Default | Converts YAML string/file to PowerShell structured objects (leverages YamlDotNet library). |
 | `ConvertTo-Base64` | All | Default | Converts byte array to base64 string. |
 | `ConvertTo-MacOs9LineEnding` | All | Default | Converts the line endings in the specified file to Mac OS9 and earlier style line endings "\r". |
 | `ConvertTo-Unit` | All | Default | Converts units into different compatible units - e.g. metric to non-metric, different multiplier, etc. |
 | `ConvertTo-UnixLineEnding` | All | Default | Converts the line endings in the specified file to Unix line endings "\n". |
 | `ConvertTo-WindowsLineEnding` | All | Default | Converts the line endings in the specified file to Windows line endings "\r\n". |
-| `ConvertTo-Yaml` | Windows | Default | Converts YAML document or PowerShell structured objects into YAML file (leverages YamlDotNet library). |
+| `ConvertTo-Yaml` | All | Default | Converts YAML document or PowerShell structured objects into YAML file (leverages YamlDotNet library). |
 | `Disconnect-TerminalSession` | Windows | Default | Disconnects a remote desktop session while preserving its programs for later reconnection |
 | `Edit-File` | All | Default | Edit file with configured editor - VSCode, Notepad++/TextMate, default for OS |
 | `Format-Byte` | All | Default | Format the byte sizes in human readable forms - progressively increasing the unit based on byte size value |
@@ -403,7 +407,7 @@ marked **Windows** require the Windows companion payload. Use
 | `Set-ReadOnly` | All | Default | Sets a file's read only status to true making it read only. |
 | `Set-Writable` | All | Default | Sets a file's read only status to false making it writable. |
 | `Show-Tree` | All | Default | Shows the specified path as a tree. |
-| `Stop-RemoteProcess` | Windows | Default | Stops a process on a remote machine. |
+| `Stop-RemoteProcess` | Windows | Default | Stops a process on a remote Windows machine. |
 | `Test-IsAdminMember` | Windows | Default | The function Test-IsAdminMember checks if the currently logged-in user is a member of the local administrators group, regardless of the elevation level of the current process. |
 | `Test-IsGsudoCacheAvailable` | Windows | Default | Tests whether the gsudo credentials cache is available. |
 | `Test-IsProcessElevated` | Windows | Default | Tests if the user is an administrator *and* the current proces is elevated. |

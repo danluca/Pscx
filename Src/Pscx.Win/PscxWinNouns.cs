@@ -53,8 +53,5 @@ namespace Pscx
         public const string AdoConnection = "AdoConnection";
         public const string AdoDataProvider = "AdoDataProvider";
         public const string AdoCommand = "AdoCommand";
-        
-        // YAML
-        public const string Yaml = "Yaml";
     }
 }

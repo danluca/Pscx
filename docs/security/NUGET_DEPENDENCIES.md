@@ -111,4 +111,4 @@ Resolved packages: **104**.
 | [System.Speech](https://www.nuget.org/packages/System.Speech/10.0.5) | 10.0.5 | Transitive | MIT | Pscx, Pscx.Archive, Pscx.Core, Pscx.InternalTests, Pscx.Win, Pscx.WinAdmin |
 | [System.Web.Services.Description](https://www.nuget.org/packages/System.Web.Services.Description/8.1.2) | 8.1.2 | Transitive | MIT | Pscx, Pscx.Archive, Pscx.Core, Pscx.InternalTests, Pscx.Win, Pscx.WinAdmin |
 | [System.Windows.Extensions](https://www.nuget.org/packages/System.Windows.Extensions/10.0.5) | 10.0.5 | Transitive | MIT | Pscx, Pscx.Archive, Pscx.Core, Pscx.InternalTests, Pscx.Win, Pscx.WinAdmin |
-| [YamlDotNet](https://www.nuget.org/packages/YamlDotNet/18.1.0) | 18.1.0 | Direct or transitive | MIT | Pscx.Win |
+| [YamlDotNet](https://www.nuget.org/packages/YamlDotNet/18.1.0) | 18.1.0 | Direct or transitive | MIT | Pscx, Pscx.InternalTests |

@@ -21,6 +21,7 @@ namespace Pscx
         public const string Script = "Script";
         public const string TypeName = "TypeName";
         public const string Xml = "Xml";
+        public const string Yaml = "Yaml";
         public const string MacOs9LineEnding = "MacOs9LineEnding";
         public const string UnixLineEnding = "UnixLineEnding";
         public const string WindowsLineEnding = "WindowsLineEnding";

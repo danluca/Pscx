@@ -309,6 +309,7 @@ function New-ModuleStage {
     }
 
     Copy-MatchingItem $coreOutput 'NodaTime.*' $moduleRoot
+    Copy-MatchingItem $coreOutput 'YamlDotNet.*' $moduleRoot
     @('FormatData', 'Modules', 'TypeData') | ForEach-Object {
         Copy-RequiredItem (Join-Path $coreOutput $_) $moduleRoot
     }
@@ -318,7 +319,6 @@ function New-ModuleStage {
             Copy-RequiredItem (Join-Path $windowsOutput $_) $moduleRoot
         }
 
-        Copy-MatchingItem $windowsOutput 'YamlDotNet.*' $moduleRoot
         @('FormatData', 'Modules', 'TypeData') | ForEach-Object {
             Copy-RequiredItem (Join-Path $windowsOutput $_) $moduleRoot
         }
