@@ -80,8 +80,8 @@ decisions are recorded below.
 - The approved low-value duplicates and the optional WMI compatibility module
   are removed at the PSCX 4.0 breaking boundary. They do not emit deprecation
   warnings or move into another compatibility package.
-- Phase 5 remains open for the separately tracked `Pscx.Time` extraction in
-  section 5.6 of the modernization plan.
+- Phase 5 is complete. The NodaTime-backed types and six related accelerators
+  ship in the separately imported, cross-platform `Pscx.Time` sibling module.
 
 ## Phase 5.1 audit conclusions
 

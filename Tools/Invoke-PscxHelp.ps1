@@ -10,7 +10,7 @@ param(
     [ValidateSet('Core', 'Full')]
     [string] $BuildScope,
 
-    [ValidateSet('Pscx', 'Pscx.Archive', 'Pscx.WinAdmin')]
+    [ValidateSet('Pscx', 'Pscx.Archive', 'Pscx.Time', 'Pscx.WinAdmin')]
     [string] $PackageName = 'Pscx'
 )
 
@@ -45,6 +45,41 @@ $commandDocsRoot = Join-Path $repositoryRoot 'docs/commands'
 $packageNames = @($PackageName)
 if ($PackageName -eq 'Pscx' -and $BuildScope -eq 'Full') {
     $packageNames += 'Pscx.Win'
+}
+
+if ($PackageName -eq 'Pscx.Time') {
+    $manifestPath = Join-Path $modulePath 'Pscx.Time.psd1'
+    $manifestData = Import-PowerShellDataFile -LiteralPath $manifestPath
+    if (@($manifestData.CmdletsToExport).Count -ne 0 -or
+        @($manifestData.FunctionsToExport).Count -ne 0) {
+        throw 'Pscx.Time is an accelerator-only module and must not export commands.'
+    }
+
+    New-Item -ItemType Directory -Path $outputPath -Force | Out-Null
+    $aboutMarkdownPath = Join-Path $repositoryRoot 'docs/about/about_Pscx.Time.md'
+    $aboutOutputPath = Join-Path $outputPath 'about_Pscx.Time.help.txt'
+    $aboutLines = [Collections.Generic.List[string]]::new()
+    $aboutLines.Add('TOPIC')
+    $aboutLines.Add("    about_Pscx.Time (version $($manifestData.ModuleVersion))")
+    $inCodeBlock = $false
+    foreach ($line in Get-Content -LiteralPath $aboutMarkdownPath) {
+        if ($line -match '^# about_Pscx\.Time\s*$') { continue }
+        if ($line -match '^## (?<heading>.+)$') {
+            $aboutLines.Add('')
+            $aboutLines.Add($Matches.heading.ToUpperInvariant())
+            continue
+        }
+        if ($line -match '^```') {
+            $inCodeBlock = -not $inCodeBlock
+            continue
+        }
+        $plainLine = $line -replace '`([^`]+)`', '$1' -replace '\*\*([^*]+)\*\*', '$1'
+        $indent = if ($inCodeBlock) { '        ' } else { '    ' }
+        $aboutLines.Add("$indent$plainLine".TrimEnd())
+    }
+    $aboutLines | Set-Content -LiteralPath $aboutOutputPath -Encoding utf8
+    Write-Host "Generated accelerator-module help in $outputPath."
+    return
 }
 
 $markdownFiles = @(

@@ -34,8 +34,9 @@ The proposed package family is:
 | `Pscx.WinAdmin` | Optional Windows administration | Generic ADO/OLE DB access, batch environment import, short-path annotation, and foreground-window inspection |
 | `Pscx.Time` | Optional date/time helpers beginning with PSCX 4.0 | NodaTime-backed types and accelerators with a documented supported API |
 
-`Pscx.Time` will be packaged separately so consumers explicitly choose whether
-to install and import its NodaTime-backed API.
+`Pscx.Time` is packaged as a separate sibling module in the unified ZIP so
+consumers explicitly choose whether to install and import its NodaTime-backed
+API.
 
 ## Release strategy
 
@@ -108,9 +109,9 @@ must agree:
 **Tracking:** [#17 Fix and test NodaTime arithmetic defects](https://github.com/danluca/Pscx/issues/17)
 
 - [x] Fix `PlusSeconds()` in:
-  - `Src/Pscx/Time/LocalDateTime.cs`;
-  - `Src/Pscx/Time/OffsetDateTime.cs`;
-  - `Src/Pscx/Time/ZonedDateTime.cs`.
+  - `Src/Pscx.Time/Time/LocalDateTime.cs`;
+  - `Src/Pscx.Time/Time/OffsetDateTime.cs`;
+  - `Src/Pscx.Time/Time/ZonedDateTime.cs`.
 - [x] Fix `PlusMilliseconds()` in the same three classes.
 - [x] Add tests covering positive, zero, negative, boundary, and daylight-saving-time cases where applicable.
 - [x] Review all adjacent date/time forwarding methods for copy/paste errors; no additional unit-forwarding defects were found.
@@ -508,7 +509,7 @@ development line.
 
 ---
 
-## Phase 5: Classify the existing feature set
+## Phase 5: Classify the existing feature set — complete
 
 **Goal:** Decide what belongs in the modern core, what moves to an optional package, and what is deprecated.
 
@@ -675,22 +676,23 @@ For each group:
 
 ### 5.6 Extract the optional time module
 
-- [ ] Package the NodaTime-backed types and accelerators as the separately
+- [x] Package the NodaTime-backed types and accelerators as the separately
   imported `Pscx.Time` module approved in Phase 0.
-- [ ] Remove NodaTime and the `zonedtime`, `offsettime`, and `localtime`
-  accelerators from the default `Pscx` import.
-- [ ] Preserve the corrected arithmetic behavior and managed tests in the new
+- [x] Remove NodaTime and the `isodate`, `zonedtime`, `offsettime`,
+  `localtime`, `tz`, and `tzi` accelerators from the default `Pscx`
+  import.
+- [x] Preserve the corrected arithmetic behavior and managed tests in the new
   module boundary.
-- [ ] Add packaged-module import, export, help, dependency-isolation, and
+- [x] Add packaged-module import, export, help, dependency-isolation, and
   cross-platform tests for `Pscx.Time`.
-- [ ] Document installation, explicit import, migration, and the unified ZIP
+- [x] Document installation, explicit import, migration, and the unified ZIP
   layout for the optional sibling module.
 
 ### Exit criteria
 
 - [x] Every existing public command has a documented disposition.
-- [ ] The core module has a coherent scope.
-- [ ] Optional dependencies are not loaded by the default core import.
+- [x] The core module has a coherent scope.
+- [x] Optional dependencies are not loaded by the default core import.
 
 ---
 
@@ -902,7 +904,7 @@ The following issues are small enough to begin independently:
 | 2. Tests and CI | Complete | 100% |
 | 3. Metadata, docs, releases | Complete | 100% |
 | 4. Explicit public API | Complete | 100% |
-| 5. Feature classification | In progress | 85% |
+| 5. Feature classification | Complete | 100% |
 | 6. Dependency and binary reduction | Not started | 0% |
 | 7. Cohesive improvements | Not started | 0% |
 | 8. PSCX 4.0 release | Not started | 0% |

@@ -79,14 +79,19 @@ the [Imports](Imports/) folder for the applicable license files.
    Get-Module Pscx
    ```
 
-The cross-platform release ZIP includes `Pscx` and `Pscx.Archive` as sibling
-module roots. The Full Windows ZIP also includes `Pscx.WinAdmin`. Install
-each root using a versioned layout (`<module-name>/<version>/...`), then import
+The cross-platform release ZIP includes `Pscx`, `Pscx.Archive`, and
+`Pscx.Time` as sibling module roots. The Full Windows ZIP also includes
+`Pscx.WinAdmin`. Install
+the desired roots using a versioned layout (`<module-name>/<version>/...`), then import
 the optional modules only when needed:
 
 ```powershell
 Import-Module Pscx.Archive
 Get-Command -Module Pscx.Archive
+
+# Optional NodaTime-backed types and accelerators
+Import-Module Pscx.Time
+[localtime]::now()
 
 # Windows only
 Import-Module Pscx.WinAdmin
@@ -95,10 +100,13 @@ Get-Command -Module Pscx.WinAdmin
 
 The optional archive module is managed-only and cross-platform. PSCX 4.0 uses
 SharpCompress 0.50.4 and deliberately does not support encrypted extraction.
+`Pscx.Time` provides the NodaTime-backed `isodate`, `zonedtime`,
+`offsettime`, `localtime`, `tz`, and `tzi` accelerators without adding
+NodaTime to the default module payload.
 `Pscx.WinAdmin` contains nine lower-frequency Windows commands for generic
 ADO/OLE DB access, foreground-window inspection, short-path annotation, and
 retaining environment changes from arbitrary batch files. Importing `Pscx`
-does not load either optional sibling module.
+does not load any optional sibling module.
 
 The release ZIP includes local offline help. PSCX does not configure
 `Update-Help` or publish separate online help packages.
@@ -191,6 +199,9 @@ platform-aware payload during import:
   cross-platform core.
 - The separately imported `Pscx.Archive` module provides archive creation,
   listing, and safe extraction on all three operating systems.
+- The separately imported `Pscx.Time` module provides the optional
+  NodaTime-backed date/time types and accelerators on all three operating
+  systems.
 - The separately imported `Pscx.WinAdmin` module provides the optional
   Windows administration commands described above.
 - Optional submodules are controlled through `ModulesToImport` in
@@ -271,6 +282,8 @@ Required annotations:
 Place a new C# cmdlet in the project matching its package boundary: `Pscx` for
 cross-platform commands, `Pscx.Win` for default Windows commands, and
 `Pscx.WinAdmin` for the separately imported Windows administration surface.
+`Pscx.Time` owns optional NodaTime-backed types but intentionally exports no
+commands.
 `Pscx.Core` is a framework-level library shared by these projects; it contains
 base classes and utilities rather than exportable cmdlets.
 
@@ -282,6 +295,8 @@ Add or update compiled-command help under `docs/commands/Pscx`,
 validates the Markdown against the packaged command metadata, and generates
 offline MAML beneath the package's `en-US` directory. Public script functions
 continue to use their single authoritative comment-based help source.
+`docs/about/about_Pscx.Time.md` is the authoritative source for the optional
+accelerator module's offline about topic.
 
 
 ### Tooling
@@ -460,10 +475,11 @@ marked **Windows** require the Windows companion payload. Use
 
 ## Type accelerators
 
-Importing the default Utility submodule registers the following accelerators
-in the PowerShell session. As with all PowerShell type accelerators, these are
-session-global registrations and currently remain registered after PSCX is
-removed from the session.
+Importing the default Utility submodule registers the entries marked
+**default**; importing an optional module registers its listed entries. Type
+accelerators are session-global. The default registrations currently remain
+after PSCX is removed, while `Pscx.Time` tracks and removes the accelerators
+it owns when that sibling module is removed.
 
 | Accelerator | Backing type or purpose | Platform/default |
 | --- | --- | --- |
@@ -471,12 +487,10 @@ removed from the session.
 | `[json]` | Serialize a value as indented JSON | All; default |
 | `[hex]` | Convert supported scalar, string, array, or object values to hexadecimal | All; default |
 | `[base64]`, `[b64]` | Convert supported values to Base64 | All; default |
-| `[isodate]` | Format and parse ISO-oriented date/time values | All; default |
-| `[zonedtime]` | `Pscx.Time.ZonedDateTime` | All; default |
-| `[offsettime]` | `Pscx.Time.OffsetDateTime` | All; default |
-| `[localtime]` | `Pscx.Time.LocalDateTime` | All; default |
-| `[tz]` | `NodaTime.DateTimeZone` | All; default |
-| `[tzi]` | `System.TimeZoneInfo` | All; default |
-| `[yaml]`, `[yml]` | Serialize a value as YAML | Windows; default Windows companion import |
-| `[wmidatetime]` | Convert WMI date/time values | Windows; optional WMI submodule |
-| `[wmitimespan]` | Convert WMI time-span values | Windows; optional WMI submodule |
+| `[isodate]` | Format and parse ISO-oriented date/time values | All; optional `Pscx.Time` import |
+| `[zonedtime]` | `Pscx.Time.ZonedDateTime` | All; optional `Pscx.Time` import |
+| `[offsettime]` | `Pscx.Time.OffsetDateTime` | All; optional `Pscx.Time` import |
+| `[localtime]` | `Pscx.Time.LocalDateTime` | All; optional `Pscx.Time` import |
+| `[tz]` | `NodaTime.DateTimeZone` | All; optional `Pscx.Time` import |
+| `[tzi]` | `System.TimeZoneInfo` | All; optional `Pscx.Time` import |
+| `[yaml]`, `[yml]` | Serialize a value as YAML | All; default |

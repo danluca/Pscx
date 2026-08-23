@@ -39,6 +39,10 @@
   garbage-collection, help, screen-capture, and WMI compatibility features;
   retained `Get-FileTail` and the link commands as thin wrappers over modern
   built-ins, and retained `Get-PscxHash` for its pipeline hashing behavior.
+* Moved the NodaTime-backed PSCX types and the `isodate`, `zonedtime`,
+  `offsettime`, `localtime`, `tz`, and `tzi` accelerators into the
+  separately imported, cross-platform `Pscx.Time` sibling module; the default
+  `Pscx` payload and import no longer include or load NodaTime.
 
 ## 3.8.0 - August 2026
 

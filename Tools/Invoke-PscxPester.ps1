@@ -6,6 +6,9 @@ param(
     [Parameter(Mandatory)]
     [string] $ArchiveModulePath,
 
+    [Parameter(Mandatory)]
+    [string] $TimeModulePath,
+
     [string] $WinAdminModulePath,
 
     [Parameter(Mandatory)]
@@ -45,6 +48,7 @@ if ((Get-Module Pester).Version -ne [version]$pesterVersion) {
 
 $modulePath = (Resolve-Path -LiteralPath $ModulePath).Path
 $archiveModulePath = (Resolve-Path -LiteralPath $ArchiveModulePath).Path
+$timeModulePath = (Resolve-Path -LiteralPath $TimeModulePath).Path
 $winAdminModulePath = if ($BuildScope -eq 'Full') {
     (Resolve-Path -LiteralPath $WinAdminModulePath).Path
 }
@@ -62,7 +66,7 @@ catch {
 New-Item -ItemType Directory -Path $resultsPath -Force | Out-Null
 $testResultPath = Join-Path $resultsPath 'Pscx.Pester.xml'
 $coveragePath = Join-Path $resultsPath 'Pscx.PowerShell.coverage.xml'
-$coverageModulePaths = @($modulePath, $archiveModulePath)
+$coverageModulePaths = @($modulePath, $archiveModulePath, $timeModulePath)
 if ($winAdminModulePath) {
     $coverageModulePaths += $winAdminModulePath
 }
@@ -84,6 +88,13 @@ $container = @(
     New-PesterContainer `
         -Path (Join-Path $repositoryRoot 'Tests/Pscx.Archive.Package.Tests.ps1') `
         -Data @{ ArchiveModulePath = $archiveModulePath }
+    New-PesterContainer `
+        -Path (Join-Path $repositoryRoot 'Tests/Pscx.Time.Package.Tests.ps1') `
+        -Data @{
+            ModulePath = $modulePath
+            TimeModulePath = $timeModulePath
+            PowerShellPath = $powerShellExecutable
+        }
     if ($BuildScope -eq 'Full') {
         New-PesterContainer `
             -Path (Join-Path $repositoryRoot 'Tests/Pscx.WinAdmin.Package.Tests.ps1') `

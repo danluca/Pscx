@@ -17,6 +17,9 @@ runs static validation, validates the package, and fails if any gate fails.
   README example syntax, representative parameter/pipeline/error behavior, and
   default plus optional-feature imports. Import variants run in fresh child
   processes to prevent session state from leaking between cases.
+- `Pscx.Time.Package.Tests.ps1` owns the accelerator-only sibling-module
+  contract, including default-import dependency isolation, explicit
+  registration/removal, offline help, and package contents.
 - `Test-PscxStatic.ps1` owns repository-wide PSScriptAnalyzer, module-manifest,
   XML/type/format-data, and formatting regression checks.
 

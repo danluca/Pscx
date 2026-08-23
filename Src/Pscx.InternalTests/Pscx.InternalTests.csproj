@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Pscx.Archive\Pscx.Archive.csproj" />
+    <ProjectReference Include="..\Pscx.Time\Pscx.Time.csproj" />
     <ProjectReference Include="..\Pscx\Pscx.csproj" />
     <ProjectReference Include="..\Pscx.Win\Pscx.Win.csproj"
                       Condition="'$(PscxBuildScope)' == 'Full'" />

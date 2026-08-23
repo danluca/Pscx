@@ -10,7 +10,7 @@
     ModuleVersion      = "0.0.0"
     RequiredAssemblies = 'Pscx.dll' # needed for [pscxmodules] type (does not import cmdlets/providers)
     RootModule         = 'Pscx.psm1'
-    NestedModules      = @('Pscx.dll', 'NodaTime.dll')
+    NestedModules      = @('Pscx.dll')
     AliasesToExport    = @(
         'call',
         'cvxml',

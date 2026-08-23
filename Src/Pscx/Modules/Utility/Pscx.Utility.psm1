@@ -1581,12 +1581,6 @@ AddAccelerator "yml"  ([Pscx.TypeAccelerators.Yaml])
 AddAccelerator "hex"  ([Pscx.TypeAccelerators.Hex])
 AddAccelerator "base64"  ([Pscx.TypeAccelerators.Base64])
 AddAccelerator "b64"  ([Pscx.TypeAccelerators.Base64])
-AddAccelerator "isodate"  ([Pscx.TypeAccelerators.IsoDateTime])
-AddAccelerator "zonedtime"  ([Pscx.Time.ZonedDateTime])
-AddAccelerator "offsettime"  ([Pscx.Time.OffsetDateTime])
-AddAccelerator "localtime"  ([Pscx.Time.LocalDateTime])
-AddAccelerator "tz"  ([NodaTime.DateTimeZone])
-AddAccelerator "tzi"  ([System.TimeZoneInfo])
 
 
 Export-ModuleMember -Alias $aliasesToExport -Function @(

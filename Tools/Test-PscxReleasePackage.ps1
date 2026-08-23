@@ -13,7 +13,7 @@ param(
     [Parameter(Mandatory)]
     [version] $ExpectedVersion,
 
-    [ValidateSet('Pscx', 'Pscx.Archive', 'Pscx.WinAdmin')]
+    [ValidateSet('Pscx', 'Pscx.Archive', 'Pscx.Time', 'Pscx.WinAdmin')]
     [string] $ModuleName = 'Pscx',
 
     [string] $PowerShellPath = 'pwsh',
@@ -31,16 +31,16 @@ if ($InstalledModuleRoot) {
     $warnings = @()
     Import-Module $ModuleName -Force -ErrorAction Stop -WarningVariable warnings
     $module = Get-Module $ModuleName -ErrorAction Stop
-    $commands = if ($ModuleName -eq 'Pscx.WinAdmin') {
-        @(
+    $commands = @(
+        if ($ModuleName -eq 'Pscx.WinAdmin') {
             Get-Module $ModuleName -All |
                 ForEach-Object { $_.ExportedCommands.Values } |
                 Sort-Object Name -Unique
-        )
-    }
-    else {
-        @(Get-Command -Module $ModuleName)
-    }
+        }
+        else {
+            Get-Command -Module $ModuleName
+        }
+    )
 
     if (-not $module.Path.StartsWith($InstalledModuleRoot, [StringComparison]::OrdinalIgnoreCase)) {
         throw "PowerShell imported PSCX from an unexpected location: $($module.Path)"
@@ -48,7 +48,7 @@ if ($InstalledModuleRoot) {
     if ($module.Version -ne $ExpectedVersion) {
         throw "Installed PSCX version '$($module.Version)' does not match '$ExpectedVersion'."
     }
-    if ($commands.Count -eq 0) {
+    if ($ModuleName -ne 'Pscx.Time' -and $commands.Count -eq 0) {
         throw 'The installed package exported no commands.'
     }
     if ($ModuleName -eq 'Pscx') {
@@ -70,6 +70,22 @@ if ($InstalledModuleRoot) {
     }
     elseif ($ModuleName -eq 'Pscx.Archive' -and $commands.Count -ne 3) {
         throw "The installed Pscx.Archive package exported $($commands.Count) commands; expected 3."
+    }
+    elseif ($ModuleName -eq 'Pscx.Time') {
+        if ($commands.Count -ne 0) {
+            throw "The installed Pscx.Time package exported $($commands.Count) commands; expected none."
+        }
+        $accelerators = [psobject].Assembly.GetType(
+            'System.Management.Automation.TypeAccelerators'
+        )::Get
+        foreach ($name in 'isodate', 'zonedtime', 'offsettime', 'localtime', 'tz', 'tzi') {
+            if (-not $accelerators.ContainsKey($name)) {
+                throw "The installed Pscx.Time package did not register '$name'."
+            }
+        }
+        if (-not (Get-Help about_Pscx.Time -ErrorAction Stop)) {
+            throw 'The installed package did not expose about_Pscx.Time help.'
+        }
     }
     elseif ($ModuleName -eq 'Pscx.WinAdmin' -and $commands.Count -ne 9) {
         throw "The installed Pscx.WinAdmin package exported $($commands.Count) commands; expected 9."

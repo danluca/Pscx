@@ -51,7 +51,7 @@ Resolved packages: **104**.
 | [Microsoft.WSMan.Management](https://www.nuget.org/packages/Microsoft.WSMan.Management/7.6.4) | 7.6.4 | Transitive | MIT | Pscx, Pscx.Archive, Pscx.Core, Pscx.InternalTests, Pscx.Win, Pscx.WinAdmin |
 | [Microsoft.WSMan.Runtime](https://www.nuget.org/packages/Microsoft.WSMan.Runtime/7.6.4) | 7.6.4 | Transitive | MIT | Pscx, Pscx.Archive, Pscx.Core, Pscx.InternalTests, Pscx.Win, Pscx.WinAdmin |
 | [Newtonsoft.Json](https://www.nuget.org/packages/Newtonsoft.Json/13.0.4) | 13.0.4 | Transitive | MIT | Pscx, Pscx.Archive, Pscx.Core, Pscx.InternalTests, Pscx.Win, Pscx.WinAdmin |
-| [NodaTime](https://www.nuget.org/packages/NodaTime/3.3.3) | 3.3.3 | Direct or transitive | Apache-2.0 | Pscx, Pscx.InternalTests |
+| [NodaTime](https://www.nuget.org/packages/NodaTime/3.3.3) | 3.3.3 | Direct or transitive | Apache-2.0 | Pscx.InternalTests, Pscx.Time |
 | [NUnit](https://www.nuget.org/packages/NUnit/4.6.1) | 4.6.1 | Direct or transitive | MIT | Pscx.InternalTests |
 | [NUnit3TestAdapter](https://www.nuget.org/packages/NUnit3TestAdapter/6.2.0) | 6.2.0 | Direct or transitive | MIT | Pscx.InternalTests |
 | [runtime.android-arm.runtime.native.System.IO.Ports](https://www.nuget.org/packages/runtime.android-arm.runtime.native.System.IO.Ports/10.0.5) | 10.0.5 | Transitive | MIT | Pscx, Pscx.Archive, Pscx.Core, Pscx.InternalTests, Pscx.Win, Pscx.WinAdmin |

@@ -123,7 +123,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.Platforms" Version="7.0.4" />
-    <PackageReference Include="NodaTime" Version="3.3.3" GeneratePathProperty="true" />
     <PackageReference Include="YamlDotNet" Version="18.1.0" GeneratePathProperty="true" />
   </ItemGroup>
   <ItemGroup>
@@ -132,12 +131,6 @@
     </None>
   </ItemGroup>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-      <!--some old(er) nuget packages do not copy their artifacts in output folder using newer project style - workaround based on https://github.com/NuGet/Home/issues/4837-->
-      <!-- <Copy SourceFiles="$(PkgNodatime)/lib/$(TargetFramework)/NodaTime.dll" DestinationFolder="$(TargetDir)" /> -->
-      <!-- <Copy SourceFiles="$(PkgNodatime)/lib/$(TargetFramework)/NodaTime.xml" DestinationFolder="$(TargetDir)" /> -->
-      <!--Current version of NodaTime - 3.3.3 - does not have a net10.0 binary, only net8.0-->
-      <Copy SourceFiles="$(PkgNodatime)/lib/net8.0/NodaTime.dll" DestinationFolder="$(TargetDir)" />
-      <Copy SourceFiles="$(PkgNodatime)/lib/net8.0/NodaTime.xml" DestinationFolder="$(TargetDir)" />
       <!--Current version of YamlDotNet - 18.1.0 - does not have a net10.0 binary, only net8.0-->
       <Copy SourceFiles="$(PkgYamlDotNet)/lib/net8.0/YamlDotNet.dll" DestinationFolder="$(TargetDir)" />
       <Copy SourceFiles="$(PkgYamlDotNet)/lib/net8.0/YamlDotNet.xml" DestinationFolder="$(TargetDir)" />

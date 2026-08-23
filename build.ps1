@@ -57,6 +57,7 @@ $testPolicyFilePath = Join-Path $repositoryRoot 'Tests/TestPolicy.psd1'
 $artifactsRoot = [System.IO.Path]::GetFullPath($ArtifactsPath)
 $moduleRoot = Join-Path $artifactsRoot 'module/Pscx'
 $archiveModuleRoot = Join-Path $artifactsRoot 'module/Pscx.Archive'
+$timeModuleRoot = Join-Path $artifactsRoot 'module/Pscx.Time'
 $winAdminModuleRoot = Join-Path $artifactsRoot 'module/Pscx.WinAdmin'
 $helpOutputPath = Join-Path $artifactsRoot 'help'
 $packageOutputPath = Join-Path $artifactsRoot 'packages'
@@ -206,6 +207,7 @@ function Set-ManifestVersion {
     if ([System.IO.Path]::GetFileName($Path) -in @(
         'Pscx.psd1',
         'Pscx.Archive.psd1',
+        'Pscx.Time.psd1',
         'Pscx.WinAdmin.psd1'
     )) {
         if ($Prerelease) {
@@ -288,6 +290,7 @@ function New-ModuleStage {
     Remove-BuildDirectory (Join-Path $artifactsRoot 'module')
     New-Item -ItemType Directory -Path $moduleRoot -Force | Out-Null
     New-Item -ItemType Directory -Path $archiveModuleRoot -Force | Out-Null
+    New-Item -ItemType Directory -Path $timeModuleRoot -Force | Out-Null
     if ($resolvedBuildScope -eq 'Full') {
         New-Item -ItemType Directory -Path $winAdminModuleRoot -Force | Out-Null
     }
@@ -295,6 +298,7 @@ function New-ModuleStage {
     $coreOutput = Join-Path $repositoryRoot "Src/Pscx/bin/$Configuration/net10.0"
     $windowsOutput = Join-Path $repositoryRoot "Src/Pscx.Win/bin/$Configuration/net10.0"
     $archiveOutput = Join-Path $repositoryRoot "Src/Pscx.Archive/bin/$Configuration/net10.0"
+    $timeOutput = Join-Path $repositoryRoot "Src/Pscx.Time/bin/$Configuration/net10.0"
     $winAdminOutput = Join-Path $repositoryRoot "Src/Pscx.WinAdmin/bin/$Configuration/net10.0-windows"
 
     @(
@@ -308,7 +312,6 @@ function New-ModuleStage {
         Copy-RequiredItem (Join-Path $coreOutput $_) $moduleRoot
     }
 
-    Copy-MatchingItem $coreOutput 'NodaTime.*' $moduleRoot
     Copy-MatchingItem $coreOutput 'YamlDotNet.*' $moduleRoot
     @('FormatData', 'Modules', 'TypeData') | ForEach-Object {
         Copy-RequiredItem (Join-Path $coreOutput $_) $moduleRoot
@@ -346,6 +349,19 @@ function New-ModuleStage {
     }
     Copy-RequiredItem (Join-Path $repositoryRoot 'CHANGELOG.md') (Join-Path $archiveModuleRoot 'CHANGELOG.md')
     Copy-RequiredItem (Join-Path $repositoryRoot 'LICENSE') (Join-Path $archiveModuleRoot 'LICENSE.txt')
+
+    @(
+        'Pscx.Time.dll',
+        'Pscx.Time.psd1',
+        'Pscx.Time.psm1',
+        'NodaTime.dll',
+        'NodaTime.xml',
+        'THIRD-PARTY-NOTICES.md'
+    ) | ForEach-Object {
+        Copy-RequiredItem (Join-Path $timeOutput $_) $timeModuleRoot
+    }
+    Copy-RequiredItem (Join-Path $repositoryRoot 'CHANGELOG.md') (Join-Path $timeModuleRoot 'CHANGELOG.md')
+    Copy-RequiredItem (Join-Path $repositoryRoot 'LICENSE') (Join-Path $timeModuleRoot 'LICENSE.txt')
 
     if ($resolvedBuildScope -eq 'Full') {
         @(
@@ -414,6 +430,25 @@ function Invoke-Help {
         'Pscx.Archive'
     )
     Copy-RequiredItem $archiveCultureOutputPath $archiveModuleRoot
+
+    $timeCultureOutputPath = Join-Path $helpOutputPath 'Pscx.Time/en-US'
+    New-Item -ItemType Directory -Path $timeCultureOutputPath -Force | Out-Null
+    Invoke-NativeCommand $PowerShellPath @(
+        '-NoLogo',
+        '-NoProfile',
+        '-NonInteractive',
+        '-File',
+        (Join-Path $repositoryRoot 'Tools/Invoke-PscxHelp.ps1'),
+        '-ModulePath',
+        $timeModuleRoot,
+        '-OutputPath',
+        $timeCultureOutputPath,
+        '-BuildScope',
+        $resolvedBuildScope,
+        '-PackageName',
+        'Pscx.Time'
+    )
+    Copy-RequiredItem $timeCultureOutputPath $timeModuleRoot
 
     if ($resolvedBuildScope -eq 'Full') {
         $winAdminCultureOutputPath = Join-Path $helpOutputPath 'Pscx.WinAdmin/en-US'
@@ -506,6 +541,8 @@ function Invoke-PesterTest {
         $moduleRoot,
         '-ArchiveModulePath',
         $archiveModuleRoot,
+        '-TimeModulePath',
+        $timeModuleRoot,
         '-WinAdminModulePath',
         $winAdminModuleRoot,
         '-BuildScope',
@@ -601,7 +638,7 @@ function Invoke-Package {
     Remove-BuildDirectory $packageOutputPath
     New-Item -ItemType Directory -Path $packageOutputPath -Force | Out-Null
     $archivePath = Join-Path $packageOutputPath "Pscx-$packageVersion.zip"
-    $packageRoots = @($moduleRoot, $archiveModuleRoot)
+    $packageRoots = @($moduleRoot, $archiveModuleRoot, $timeModuleRoot)
     if ($resolvedBuildScope -eq 'Full') {
         $packageRoots += $winAdminModuleRoot
     }
@@ -616,6 +653,7 @@ function Invoke-Validate {
         'Src/Pscx/Pscx.csproj',
         'Src/Pscx.Core/Pscx.Core.csproj',
         'Src/Pscx.Archive/Pscx.Archive.csproj',
+        'Src/Pscx.Time/Pscx.Time.csproj',
         'Src/Pscx.WinAdmin/Pscx.WinAdmin.csproj',
         'Src/Pscx.InternalTests/Pscx.InternalTests.csproj',
         'Src/Pscx.Win/Pscx.Win.csproj',
@@ -682,6 +720,16 @@ function Invoke-Validate {
         throw "Staged Pscx.Archive prerelease '$($archiveManifest.PrivateData.PSData.Prerelease)' does not match '$manifestPrerelease'."
     }
 
+    $timeManifestPath = Join-Path $timeModuleRoot 'Pscx.Time.psd1'
+    $timeManifest = Test-ModuleManifest -Path $timeManifestPath
+    if ($timeManifest.Version -ne [version]$moduleVersion -or
+        $timeManifest.PowerShellVersion -ne [version]$powerShellMinimumVersion) {
+        throw 'The staged Pscx.Time manifest does not match the centralized version policy.'
+    }
+    if ($manifestPrerelease -and $timeManifest.PrivateData.PSData.Prerelease -ne $manifestPrerelease) {
+        throw "Staged Pscx.Time prerelease '$($timeManifest.PrivateData.PSData.Prerelease)' does not match '$manifestPrerelease'."
+    }
+
     $winAdminManifestPath = Join-Path $winAdminModuleRoot 'Pscx.WinAdmin.psd1'
     if ($resolvedBuildScope -eq 'Full') {
         $winAdminManifest = Import-PowerShellDataFile -LiteralPath $winAdminManifestPath
@@ -730,6 +778,15 @@ function Invoke-Validate {
         throw 'Pscx.Archive.dll does not match the centralized assembly version policy.'
     }
 
+    $timeAssemblyPath = Join-Path $timeModuleRoot 'Pscx.Time.dll'
+    $timeAssemblyVersion = [System.Reflection.AssemblyName]::GetAssemblyName($timeAssemblyPath).Version
+    $timeFileInfo = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($timeAssemblyPath)
+    if ($timeAssemblyVersion.ToString() -ne "$moduleVersion.0" -or
+        $timeFileInfo.FileVersion -ne "$moduleVersion.$BuildNumber" -or
+        $timeFileInfo.ProductVersion -ne $informationalVersion) {
+        throw 'Pscx.Time.dll does not match the centralized assembly version policy.'
+    }
+
     if ($resolvedBuildScope -eq 'Full') {
         $winAdminAssemblyPath = Join-Path $winAdminModuleRoot 'Pscx.WinAdmin.dll'
         $winAdminAssemblyVersion =
@@ -753,6 +810,9 @@ function Invoke-Validate {
     $forbiddenMainPayload = @(
         'Pscx.Archive.dll',
         'Pscx.WinAdmin.dll',
+        'Pscx.Time.dll',
+        'NodaTime.dll',
+        'NodaTime.xml',
         'SharpCompress.dll',
         'SevenZipSharp.dll',
         '7z.dll',
@@ -859,6 +919,7 @@ function Assert-UnsignedPscxBinaries {
         Get-ChildItem -LiteralPath @(
             $moduleRoot,
             $archiveModuleRoot,
+            $timeModuleRoot,
             $winAdminModuleRoot
         ) -Filter 'Pscx*.dll' -File -ErrorAction SilentlyContinue |
             Where-Object {
@@ -873,10 +934,11 @@ function Assert-UnsignedPscxBinaries {
 
 function Invoke-InstalledPackageTest {
     $archivePath = Join-Path $packageOutputPath "Pscx-$packageVersion.zip"
-    Write-Step 'Validate both bundled modules from the release ZIP in clean environments'
+    Write-Step 'Validate bundled modules from the release ZIP in clean environments'
     foreach ($releasePackage in @(
         @{ Path = $archivePath; ModuleName = 'Pscx' },
         @{ Path = $archivePath; ModuleName = 'Pscx.Archive' }
+        @{ Path = $archivePath; ModuleName = 'Pscx.Time' }
         if ($resolvedBuildScope -eq 'Full') {
             @{ Path = $archivePath; ModuleName = 'Pscx.WinAdmin' }
         }
