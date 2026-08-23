@@ -91,7 +91,6 @@ if ($DisableOptionalFeatures) {
             TranscribeSession = $false
             Utility = $false
             Sudo = $false
-            Wmi = $false
         }
     }
 }
@@ -105,7 +104,6 @@ elseif ($EnableAllOptionalFeatures) {
             TranscribeSession = $true
             Utility = $true
             Sudo = $true
-            Wmi = $true
         }
     }
 }

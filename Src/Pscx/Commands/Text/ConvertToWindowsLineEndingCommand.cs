@@ -18,7 +18,6 @@ namespace Pscx.Commands.Text
                          "You can convert a single file to a new file name.  Or you can convert multiple files and " +
                          "specify a destination directory.  By default, this cmdlet will overwrite existing files unless " +
                          "you specify -NoClobber.  If you want to force the overwrite of read only files use the -Force option.  ")]
-    [RelatedLink(typeof(ConvertToMacOs9LineEndingCommand))]
     [RelatedLink(typeof(ConvertToUnixLineEndingCommand))]
     [ProviderConstraint(typeof(FileSystemProvider))]
     public class ConvertToWindowsLineEndingCommand : ConvertToLineEndingBaseCommand

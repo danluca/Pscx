@@ -48,6 +48,5 @@
         TranscribeSession = $false    # Disabled by default for security and privacy reasons.
         Utility           = $true     # really useful
         Sudo              = $true     # elevation
-        Wmi               = $false    # type accelerators only, from PscxWin only on Windows
     }
 }

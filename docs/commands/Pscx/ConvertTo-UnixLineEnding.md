@@ -263,5 +263,4 @@ Accepts a Pscx.Core.IO.PscxPathInfo[] value.
 ## RELATED LINKS
 
 - [Online Version]()
-- [ConvertTo-MacOs9LineEnding]()
 - [ConvertTo-WindowsLineEnding]()

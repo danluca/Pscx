@@ -8,6 +8,143 @@
 # -----------------------------------------------------------------------
 Set-StrictMode -Version Latest
 
+<#
+.SYNOPSIS
+    Returns the last lines of a file and can continue waiting for appended content.
+.DESCRIPTION
+    Provides the familiar PSCX command name while delegating to Get-Content with
+    its modern Tail and Wait parameters.
+.PARAMETER Path
+    Specifies one or more paths. Wildcards are permitted.
+.PARAMETER LiteralPath
+    Specifies one or more paths exactly as written. Wildcards are not expanded.
+.PARAMETER Count
+    Specifies the number of lines returned from the end of each file. The default is 10.
+.PARAMETER Wait
+    Continues waiting for new content after returning the current tail.
+.PARAMETER Encoding
+    Specifies the file encoding accepted by Get-Content.
+.EXAMPLE
+    Get-FileTail -Path ./application.log -Count 20
+.EXAMPLE
+    Get-FileTail -Path ./application.log -Wait
+#>
+function Get-FileTail {
+    [CmdletBinding(DefaultParameterSetName = 'Path')]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true,
+            ValueFromPipelineByPropertyName = $true, ParameterSetName = 'Path')]
+        [SupportsWildcards()]
+        [string[]] $Path,
+
+        [Parameter(Mandatory = $true, ValueFromPipelineByPropertyName = $true,
+            ParameterSetName = 'LiteralPath')]
+        [Alias('PSPath')]
+        [string[]] $LiteralPath,
+
+        [Parameter()]
+        [Alias('Tail')]
+        [ValidateRange(1, [int]::MaxValue)]
+        [int] $Count = 10,
+
+        [Parameter()]
+        [Alias('Follow')]
+        [switch] $Wait,
+
+        [Parameter()]
+        [string] $Encoding
+    )
+
+    process {
+        $getContentParameters = @{
+            Tail = $Count
+            Wait = $Wait
+        }
+        if ($PSCmdlet.ParameterSetName -eq 'LiteralPath') {
+            $getContentParameters.LiteralPath = $LiteralPath
+        }
+        else {
+            $getContentParameters.Path = $Path
+        }
+        if ($PSBoundParameters.ContainsKey('Encoding')) {
+            $getContentParameters.Encoding = $Encoding
+        }
+
+        Get-Content @getContentParameters
+    }
+}
+
+<#
+.SYNOPSIS
+    Creates a filesystem hard link.
+.DESCRIPTION
+    Provides the familiar PSCX command name while delegating to New-Item with
+    ItemType HardLink.
+.PARAMETER LiteralPath
+    Specifies the path of the link to create.
+.PARAMETER TargetPath
+    Specifies the existing file that the new link references.
+.EXAMPLE
+    New-Hardlink -LiteralPath ./copy.txt -TargetPath ./original.txt
+#>
+function New-Hardlink {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    [OutputType([System.IO.FileInfo])]
+    param(
+        [Parameter(Mandatory = $true, Position = 0, ValueFromPipelineByPropertyName = $true)]
+        [Alias('Path')]
+        [ValidateNotNullOrEmpty()]
+        [string] $LiteralPath,
+
+        [Parameter(Mandatory = $true, Position = 1, ValueFromPipelineByPropertyName = $true)]
+        [Alias('Target', 'PSPath')]
+        [ValidateNotNullOrEmpty()]
+        [string] $TargetPath
+    )
+
+    process {
+        if ($PSCmdlet.ShouldProcess($LiteralPath, "Create hard link to '$TargetPath'")) {
+            New-Item -ItemType HardLink -Path $LiteralPath -Target $TargetPath -Confirm:$false
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+    Creates a filesystem symbolic link.
+.DESCRIPTION
+    Provides the familiar PSCX command name while delegating to New-Item with
+    ItemType SymbolicLink.
+.PARAMETER LiteralPath
+    Specifies the path of the link to create.
+.PARAMETER TargetPath
+    Specifies the file or directory that the new link references.
+.EXAMPLE
+    New-Symlink -LiteralPath ./current -TargetPath ./releases/latest
+#>
+function New-Symlink {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    [OutputType([System.IO.FileSystemInfo])]
+    param(
+        [Parameter(Mandatory = $true, Position = 0, ValueFromPipelineByPropertyName = $true)]
+        [Alias('Path')]
+        [ValidateNotNullOrEmpty()]
+        [string] $LiteralPath,
+
+        [Parameter(Mandatory = $true, Position = 1, ValueFromPipelineByPropertyName = $true)]
+        [Alias('Target', 'PSPath')]
+        [ValidateNotNullOrEmpty()]
+        [string] $TargetPath
+    )
+
+    process {
+        if ($PSCmdlet.ShouldProcess($LiteralPath, "Create symbolic link to '$TargetPath'")) {
+            New-Item -ItemType SymbolicLink -Path $LiteralPath -Target $TargetPath -Confirm:$false
+        }
+    }
+}
+
 # -----------------------------------------------------------------------
 # Displays help usage
 # -----------------------------------------------------------------------
@@ -235,10 +372,8 @@ if ($Pscx:Preferences.ShowModuleLoadDetails)
 $aliasesToExport = @()
 $pscxAliases = [ordered]@{
     cvxml = 'Pscx\Convert-Xml'
-    fhex  = 'Pscx\Format-Hex'
     fxml  = 'Pscx\Format-Xml'
     gtn   = 'Pscx\Get-TypeName'
-    lorem = 'Pscx\Get-LoremIpsum'
     skip  = 'Pscx\Skip-Object'
     tail  = 'Pscx\Get-FileTail'
     touch = 'Pscx\Set-FileTime'

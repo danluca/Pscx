@@ -22,19 +22,16 @@
         'Get-MountPoint',
         'New-Shortcut',
         'Set-VolumeLabel',
-        'New-Hardlink',
         'Get-OpticalDriveInfo',
         'Get-ReparsePoint',
         'Set-Privilege',
-        'New-Symlink',
-        'New-Junction',
-        'Get-PscxUptime',
         'Invoke-Apartment',
         'Disconnect-TerminalSession',
         'Stop-TerminalSession',
         'Get-TerminalSession'
     )
     FunctionsToExport = @(
+        'New-Junction',
         'Resolve-HResult',
         'Resolve-WindowsError',
         'Stop-RemoteProcess',
@@ -45,8 +42,7 @@
         'FormatData\Pscx.TerminalServices.Format.ps1xml'
     )
     TypesToProcess     = @(
-        'TypeData\Pscx.TerminalServices.Type.ps1xml',
-        'TypeData\Pscx.Wmi.Type.ps1xml'
+        'TypeData\Pscx.TerminalServices.Type.ps1xml'
     )
 
     # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
@@ -55,7 +51,7 @@
         PSData = @{
 
             # Tags applied to this module. These help with module discovery in online galleries.
-            Tags = @('Utilities','Windows','PSCX','ActiveDirectory','WMI')
+            Tags = @('Utilities','Windows','PSCX','ActiveDirectory')
 
             # A URL to the license for this module.
             LicenseUri = 'https://github.com/danluca/Pscx/blob/master/LICENSE'

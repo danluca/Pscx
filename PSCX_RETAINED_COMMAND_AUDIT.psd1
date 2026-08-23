@@ -49,6 +49,16 @@
             Differentiation = 'Adds directory sizes and exposes drive and executable-version metadata as objects.'
         }
         @{
+            Name = 'Filesystem compatibility conveniences'
+            Commands = @('Get-FileTail', 'New-Hardlink', 'New-Symlink')
+            Differentiation = 'Preserves memorable PSCX names as thin cross-platform wrappers over Get-Content and New-Item.'
+        }
+        @{
+            Name = 'Pipeline hashing'
+            Commands = @('Get-PscxHash')
+            Differentiation = 'Hashes file paths, strings, and pipeline byte arrays, including aggregated byte-stream input that Get-FileHash does not accept.'
+        }
+        @{
             Name = 'PowerShell metadata and invocation'
             Commands = @('AddAccelerator', 'AddRegex', 'Get-Parameter', 'Get-TypeName', 'Get-ViewDefinition', 'Invoke-Method', 'RemoveAccelerator')
             Differentiation = 'Surfaces PowerShell metadata and controlled reflection while retaining established accelerator and regex-library conveniences.'
@@ -90,7 +100,7 @@
         }
         @{
             Name = 'Windows storage integration'
-            Commands = @('Get-MountPoint', 'Get-OpticalDriveInfo', 'Get-ReparsePoint', 'Get-ShortPath', 'New-Shortcut', 'Remove-MountPoint', 'Remove-ReparsePoint', 'Set-VolumeLabel')
+            Commands = @('Get-MountPoint', 'Get-OpticalDriveInfo', 'Get-ReparsePoint', 'Get-ShortPath', 'New-Junction', 'New-Shortcut', 'Remove-MountPoint', 'Remove-ReparsePoint', 'Set-VolumeLabel')
             Differentiation = 'Exposes Windows mount, reparse-point, optical-media, short-path, shortcut, and volume-label APIs through PowerShell objects.'
         }
         @{
@@ -136,11 +146,13 @@
         'Get-EnvironmentBlock' = 'Pscx.EnvironmentBlock.EnvironmentFrame.'
         'Get-ExecutionTime' = 'Pscx.Commands.Modules.Utility.ExecutionTimeInfo.'
         'Get-FileVersionInfo' = 'System.Diagnostics.FileVersionInfo.'
+        'Get-FileTail' = 'System.String for each line returned by Get-Content.'
         'Get-MountPoint' = 'Pscx.Win.Fwk.IO.Ntfs.LinkReparsePointInfo.'
         'Get-OpticalDriveInfo' = 'Pscx.Win.Commands.IO.ImageMastering.OpticalDriveInfo.'
         'Get-Parameter' = 'System.Management.Automation.ParameterMetadataEx.'
         'Get-PathVariable' = 'System.String for each ordered path entry.'
         'Get-PEHeader' = 'Pscx.Reflection.PEHeader.'
+        'Get-PscxHash' = 'Pscx.IO.HashInfo.'
         'Get-Privilege' = 'Pscx.Win.Interop.Security.Privileges.TokenPrivilegeCollection.'
         'Get-ReparsePoint' = 'Pscx.Win.Fwk.IO.Ntfs.ReparsePointInfo, or System.Byte[] with Raw.'
         'Get-RunningObject' = 'System.Management.Automation.PSObject wrapping each COM object.'
@@ -153,7 +165,10 @@
         'Invoke-Apartment' = 'Objects emitted by the supplied script block.'
         'Invoke-Gsudo' = 'Deserialized objects emitted by the elevated script block.'
         'Invoke-Method' = 'The invoked method return value, whose type depends on the method.'
+        'New-Hardlink' = 'System.IO.FileInfo for the created hard link.'
+        'New-Junction' = 'System.IO.DirectoryInfo for the created Windows directory junction.'
         'New-Shortcut' = 'System.IO.FileInfo for the created shortcut.'
+        'New-Symlink' = 'System.IO.FileSystemInfo for the created symbolic link.'
         'Pop-EnvironmentBlock' = 'No success output.'
         'PscxLess' = 'No output in ConsoleHost; otherwise passes input objects through.'
         'Push-EnvironmentBlock' = 'No success output.'

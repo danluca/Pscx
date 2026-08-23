@@ -35,6 +35,10 @@
 * Removed PSCX's AD/DHCP, SQL Server-specific, and VHD commands in favor of the
   maintained Microsoft ActiveDirectory, DhcpServer, SqlServer, and Hyper-V
   modules, with replacement and installation guidance in the README.
+* Removed low-value line-ending, sample-text, hex-formatting, string, uptime,
+  garbage-collection, help, screen-capture, and WMI compatibility features;
+  retained `Get-FileTail` and the link commands as thin wrappers over modern
+  built-ins, and retained `Get-PscxHash` for its pipeline hashing behavior.
 
 ## 3.8.0 - August 2026
 

@@ -19,9 +19,9 @@ namespace Pscx.Win.Commands.IO.Ntfs {
     [ProviderConstraint(typeof(FileSystemProvider))]
     [Cmdlet(VerbsCommon.Remove, PscxWinNouns.ReparsePoint, SupportsShouldProcess = true, DefaultParameterSetName = ParameterSetPath),
      Description("Removes NTFS reparse junctions and symbolic links.")]
-    [RelatedLink(typeof(NewHardLinkCommand)), RelatedLink(typeof(NewJunctionCommand)),
+    [RelatedLink("New-Hardlink"), RelatedLink("New-Junction"),
      RelatedLink(typeof(GetMountPointCommand)), RelatedLink(typeof(RemoveMountPointCommand)),
-     RelatedLink(typeof(GetReparsePointCommand)), RelatedLink(typeof(NewSymlinkCommand))]
+     RelatedLink(typeof(GetReparsePointCommand)), RelatedLink("New-Symlink")]
     public partial class RemoveReparsePointCommand : PscxPathCommandBase {
         protected override Boolean OnValidatePscxPath(String parameterName, IPscxPathSettings settings) {
             settings.ShouldExist = true;

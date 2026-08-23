@@ -17,12 +17,12 @@ namespace Pscx.Win.Commands.IO.Ntfs {
     [Cmdlet(VerbsCommon.Get, PscxWinNouns.ReparsePoint, DefaultParameterSetName = ParameterSetPath),
      Description("Gets NTFS reparse point data.")]
     [OutputType(typeof(ReparsePointInfo), typeof(byte[]))]
-    [RelatedLink(typeof(NewHardLinkCommand)), 
-     RelatedLink(typeof(NewJunctionCommand)),
+    [RelatedLink("New-Hardlink"),
+     RelatedLink("New-Junction"),
      RelatedLink(typeof(GetMountPointCommand)), 
      RelatedLink(typeof(RemoveMountPointCommand)),
      RelatedLink(typeof(RemoveReparsePointCommand)), 
-     RelatedLink(typeof(NewSymlinkCommand))]
+     RelatedLink("New-Symlink")]
     [ProviderConstraint(typeof(FileSystemProvider))]
     public sealed class GetReparsePointCommand : PscxPathCommandBase
     {

@@ -79,7 +79,7 @@ foreach ($childManifest in $childManifestFiles) {
     $isDefault = [bool]$defaultPreferences.ModulesToImport[$feature]
     foreach ($name in Get-ManifestExports -Path $childManifest.FullName) {
         $availabilityByName[$name] = if ($isDefault) { 'Default' } else { "Optional ($feature)" }
-        if ($feature -in 'DirectoryServices', 'Sudo', 'Wmi') {
+        if ($feature -in 'DirectoryServices', 'Sudo') {
             $windowsCommandNames.Add($name) | Out-Null
         }
     }

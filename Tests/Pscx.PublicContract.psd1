@@ -10,12 +10,9 @@
             'e',
             'ehp',
             'ep',
-            'fhex',
             'fxml',
             'gpar',
             'gtn',
-            'igc',
-            'lorem',
             'ql',
             'qs',
             'rver',
@@ -46,8 +43,7 @@
         )
         Full = @(
             @{ Name = 'DirectoryServices'; ModuleName = 'Pscx.DirectoryServices' },
-            @{ Name = 'Sudo'; ModuleName = 'Pscx.Sudo' },
-            @{ Name = 'Wmi'; ModuleName = 'Pscx.Wmi' }
+            @{ Name = 'Sudo'; ModuleName = 'Pscx.Sudo' }
         )
     }
 }

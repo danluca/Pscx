@@ -343,7 +343,7 @@ Describe 'Packaged PSCX help and examples' {
                     if (
                         [string]::IsNullOrWhiteSpace([string]$help.Synopsis) -or
                         $help.Synopsis -like '*proper help content*' -or
-                        ($exampleCount -eq 0 -and $_.Name -ne 'PscxHelp')
+                        $exampleCount -eq 0
                     ) {
                         $_.Name
                     }
@@ -530,12 +530,7 @@ Describe 'Representative public command behavior' {
         $roundTrip.project.active | Should -Be 'true'
     }
 
-    It 'creates a Windows hard link in an isolated temporary directory' {
-        if ($BuildScope -ne 'Full') {
-            Set-ItResult -Skipped -Because 'NTFS link commands are supplied by the Windows module.'
-            return
-        }
-
+    It 'creates a hard link in an isolated temporary directory' {
         $target = Join-Path $script:temporaryRoot 'target.txt'
         $link = Join-Path $script:temporaryRoot 'target-link.txt'
         Set-Content -LiteralPath $target -Value 'linked content'
@@ -543,6 +538,32 @@ Describe 'Representative public command behavior' {
         New-Hardlink -LiteralPath $link -Target $target | Out-Null
 
         Get-Content -LiteralPath $link -Raw | Should -Be (Get-Content -LiteralPath $target -Raw)
+    }
+
+    It 'returns the requested file tail through the compatibility wrapper' {
+        $path = Join-Path $script:temporaryRoot 'tail.txt'
+        Set-Content -LiteralPath $path -Value @('one', 'two', 'three', 'four')
+
+        @(Get-FileTail -LiteralPath $path -Count 2) | Should -Be @('three', 'four')
+    }
+
+    It 'honors WhatIf for the link compatibility wrappers' {
+        $target = Join-Path $script:temporaryRoot 'whatif-target.txt'
+        Set-Content -LiteralPath $target -Value 'linked content'
+
+        foreach ($commandName in 'New-Hardlink', 'New-Symlink') {
+            $link = Join-Path $script:temporaryRoot "$commandName.txt"
+            & $commandName -LiteralPath $link -TargetPath $target -WhatIf
+            Test-Path -LiteralPath $link | Should -BeFalse
+        }
+
+        if ($BuildScope -eq 'Full') {
+            $junctionTarget = Join-Path $script:temporaryRoot 'junction-target'
+            $junction = Join-Path $script:temporaryRoot 'junction'
+            New-Item -ItemType Directory -Path $junctionTarget | Out-Null
+            New-Junction -LiteralPath $junction -TargetPath $junctionTarget -WhatIf
+            Test-Path -LiteralPath $junction | Should -BeFalse
+        }
     }
 
     It 'supports wildcard Path input and emits Boolean results' {

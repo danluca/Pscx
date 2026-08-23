@@ -641,32 +641,50 @@ For each group:
 
 ### 5.5 Deprecate and remove low-value duplicates
 
-| Command/feature | Proposed action | Replacement or reason |
+| Command/feature | Resolution | Replacement or reason |
 | --- | --- | --- |
-| `ConvertTo-MacOs9LineEnding` | Remove | Obsolete line-ending format |
-| `Get-LoremIpsum` | Remove or move to examples | Outside the core CLI productivity scope |
-| `Get-FileTail` | Deprecate | `Get-Content -Tail -Wait` |
-| `Get-PscxHash` | Deprecate unless byte-array streaming is distinctive | `Get-FileHash` |
-| `Format-Hex` | Remove or rename with proven differentiation | Built-in `Format-Hex`; current name collides |
-| `Join-PscxString` | Deprecate unless behavior is distinctive | Built-in `Join-String` |
-| `Split-PscxString` | Review for removal | Native string splitting and `-split` |
-| `Get-PscxUptime` | Deprecate | Built-in `Get-Uptime` |
-| `New-Hardlink` | Deprecate | `New-Item -ItemType HardLink` |
-| `New-Symlink` | Deprecate | `New-Item -ItemType SymbolicLink` |
-| `New-Junction` | Deprecate | `New-Item -ItemType Junction` |
-| `Invoke-GC` | Remove | Manual garbage collection is rarely appropriate |
-| `PscxHelp` | Make optional or remove | Modern help and pager behavior |
-| `PscxLess` | Retain in the default Windows core; review its API and integration | The bundled pager is considered a valuable Windows CLI utility |
-| Screen CSS/HTML helpers | Review for removal | Narrow and unrelated surface |
-| WMI accelerator module | Review for removal | WMI-era compatibility surface needs a current use case |
+| `ConvertTo-MacOs9LineEnding` | Removed in 4.0 | Obsolete line-ending format |
+| `Get-LoremIpsum` | Removed in 4.0 | Outside the core CLI productivity scope |
+| `Get-FileTail` | Retained as a thin function | Delegates to `Get-Content -Tail` and optional `-Wait` |
+| `Get-PscxHash` | Retained | Its string and aggregated byte-array pipeline hashing remains distinctive from `Get-FileHash` |
+| `Format-Hex` | Removed in 4.0 | Use the built-in `Format-Hex`; the PSCX name collided |
+| `Join-PscxString` | Removed in 4.0 | Use the built-in `Join-String` |
+| `Split-PscxString` | Removed in 4.0 | Use native string splitting or `-split` |
+| `Get-PscxUptime` | Removed in 4.0 | Use the built-in `Get-Uptime` |
+| `New-Hardlink` | Retained as a thin function | Delegates to `New-Item -ItemType HardLink` on all supported platforms |
+| `New-Symlink` | Retained as a thin function | Delegates to `New-Item -ItemType SymbolicLink` on all supported platforms |
+| `New-Junction` | Retained as a thin Windows function | Delegates to `New-Item -ItemType Junction` |
+| `Invoke-GC` | Removed in 4.0 | Manual garbage collection is rarely appropriate |
+| `PscxHelp` | Removed in 4.0 | Use PowerShell's built-in `Get-Help` and `help`; retain `PscxLess` for explicit paging |
+| `PscxLess` | Retained in the default Windows core | The bundled pager remains a valuable Windows CLI utility |
+| Screen CSS/HTML helpers | Removed in 4.0 | Narrow, host-specific, and unrelated surface |
+| WMI accelerator module | Removed in 4.0 | Use modern CIM commands and native `DateTime`/`TimeSpan` values |
 
 ### Deprecation mechanics
 
-- [ ] Emit one actionable warning per session, not one warning per pipeline item.
-- [ ] Add replacement examples to help.
-- [ ] Publish a removal version and date.
-- [ ] Provide a compatibility module for users who cannot migrate immediately.
-- [ ] Measure feedback during 4.0 previews before final removal.
+- [x] Do not emit deprecation warnings from the retained convenience wrappers;
+  they are maintained PSCX APIs backed by modern built-ins.
+- [x] Document replacements for commands removed at the 4.0 breaking boundary.
+- [x] Publish 4.0.0 as the removal version; its release date remains controlled
+  by the maintainer's release decision.
+- [x] Do not ship a compatibility module for the low-value duplicates; the
+  retained file-tail and link wrappers cover the convenience use cases chosen
+  by the maintainer.
+- [x] Record the decisions in the roadmap and migration guidance rather than
+  delaying the already-approved 4.0 removals for a second preview cycle.
+
+### 5.6 Extract the optional time module
+
+- [ ] Package the NodaTime-backed types and accelerators as the separately
+  imported `Pscx.Time` module approved in Phase 0.
+- [ ] Remove NodaTime and the `zonedtime`, `offsettime`, and `localtime`
+  accelerators from the default `Pscx` import.
+- [ ] Preserve the corrected arithmetic behavior and managed tests in the new
+  module boundary.
+- [ ] Add packaged-module import, export, help, dependency-isolation, and
+  cross-platform tests for `Pscx.Time`.
+- [ ] Document installation, explicit import, migration, and the unified ZIP
+  layout for the optional sibling module.
 
 ### Exit criteria
 
@@ -884,7 +902,7 @@ The following issues are small enough to begin independently:
 | 2. Tests and CI | Complete | 100% |
 | 3. Metadata, docs, releases | Complete | 100% |
 | 4. Explicit public API | Complete | 100% |
-| 5. Feature classification | In progress | 80% |
+| 5. Feature classification | In progress | 85% |
 | 6. Dependency and binary reduction | Not started | 0% |
 | 7. Cohesive improvements | Not started | 0% |
 | 8. PSCX 4.0 release | Not started | 0% |

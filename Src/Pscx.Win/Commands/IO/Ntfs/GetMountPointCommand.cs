@@ -21,9 +21,9 @@ namespace Pscx.Win.Commands.IO.Ntfs {
     [Cmdlet(VerbsCommon.Get, PscxWinNouns.MountPoint),
      Description("Returns all mount points defined for a specific root path.")]
     [OutputType(typeof(LinkReparsePointInfo))]
-    [RelatedLink(typeof(NewHardLinkCommand)), RelatedLink(typeof(NewJunctionCommand)),
+    [RelatedLink("New-Hardlink"), RelatedLink("New-Junction"),
      RelatedLink(typeof(RemoveMountPointCommand)), RelatedLink(typeof(GetReparsePointCommand)), 
-     RelatedLink(typeof(RemoveReparsePointCommand)), RelatedLink(typeof(NewSymlinkCommand))]
+     RelatedLink(typeof(RemoveReparsePointCommand)), RelatedLink("New-Symlink")]
     public class GetMountPointCommand : PscxCmdlet
     {
         [AllowNull]

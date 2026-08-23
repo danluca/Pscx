@@ -7,6 +7,41 @@ Set-StrictMode -Version Latest
 
 <#
 .SYNOPSIS
+    Creates a Windows directory junction.
+.DESCRIPTION
+    Provides the familiar PSCX command name while delegating to New-Item with
+    ItemType Junction.
+.PARAMETER LiteralPath
+    Specifies the path of the junction to create.
+.PARAMETER TargetPath
+    Specifies the existing directory that the junction references.
+.EXAMPLE
+    New-Junction -LiteralPath C:\Work\Current -TargetPath D:\Releases\Current
+#>
+function New-Junction {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    [OutputType([System.IO.DirectoryInfo])]
+    param(
+        [Parameter(Mandatory = $true, Position = 0, ValueFromPipelineByPropertyName = $true)]
+        [Alias('Path')]
+        [ValidateNotNullOrEmpty()]
+        [string] $LiteralPath,
+
+        [Parameter(Mandatory = $true, Position = 1, ValueFromPipelineByPropertyName = $true)]
+        [Alias('Target', 'PSPath')]
+        [ValidateNotNullOrEmpty()]
+        [string] $TargetPath
+    )
+
+    process {
+        if ($PSCmdlet.ShouldProcess($LiteralPath, "Create directory junction to '$TargetPath'")) {
+            New-Item -ItemType Junction -Path $LiteralPath -Target $TargetPath -Confirm:$false
+        }
+    }
+}
+
+<#
+.SYNOPSIS
     Stops a process on a remote Windows machine.
 .DESCRIPTION
     Stops a process on a remote Windows machine through a DCOM CIM session.

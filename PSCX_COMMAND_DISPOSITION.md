@@ -20,11 +20,12 @@ duplicates fail CI.
 | `MoveToArchive` | Move to the optional `Pscx.Archive` module. |
 | `MoveToWinAdmin` | Move to the optional `Pscx.WinAdmin` module. |
 | `MoveToCrossPlatformCore` | Platform-neutral command approved for relocation from a Windows assembly; the Phase 5.4 move is complete. |
-| `DeprecationCandidate` | Deprecate or remove after applying the documented compatibility process. |
+| `DeprecationCandidate` | Commands still awaiting a final compatibility decision; none remain after Phase 5.5. |
 
-Commands listed under `RemovedCommands.ModernMicrosoftAlternative` are removed
-from PSCX 4.0 in favor of maintained Microsoft modules. The README maps each
-removed command group to its replacement and installation method.
+Commands under `RemovedCommands` leave PSCX 4.0 because a maintained Microsoft
+alternative exists, the command is a low-value duplicate, or the retired WMI
+feature no longer has a current use case. The README maps removed commands and
+features to replacements.
 
 The former `Review` commands are retained in their platform-appropriate core:
 22 are in `RetainCore`, while Windows-only `Invoke-Apartment` is in
@@ -33,7 +34,7 @@ The former `Review` commands are retained in their platform-appropriate core:
 The completed per-command value, output, naming, common-parameter, path, and
 help audit is maintained in
 [`PSCX_RETAINED_COMMAND_AUDIT.psd1`](PSCX_RETAINED_COMMAND_AUDIT.psd1). Packaged
-tests require it to cover all 70 retained commands exactly once and enforce its
+tests require it to cover all 75 retained commands exactly once and enforce its
 runtime metadata decisions.
 
 ## Phase 5.1 retained-core review
@@ -64,10 +65,23 @@ runtime metadata decisions.
 
 The archive commands now ship in the optional, cross-platform `Pscx.Archive`
 module using the managed SharpCompress backend. The nine WinAdmin commands
-ship in the separately imported `Pscx.WinAdmin` sibling module. Other
-relocation and deprecation buckets remain approved destinations whose
-implementation and compatibility work is tracked in the corresponding Phase 5
-sections.
+ship in the separately imported `Pscx.WinAdmin` sibling module. Phase 5.4
+completed the remaining platform-neutral relocations, and the Phase 5.5
+decisions are recorded below.
+
+## Phase 5.5 simplification conclusions
+
+- `Get-FileTail`, `New-Hardlink`, `New-Symlink`, and Windows-only
+  `New-Junction` remain maintained convenience functions backed by
+  `Get-Content` and `New-Item`.
+- `Get-PscxHash` remains because its string and aggregated byte-array pipeline
+  hashing is distinct from `Get-FileHash`; `PscxLess` remains as the explicit
+  Windows pager integration.
+- The approved low-value duplicates and the optional WMI compatibility module
+  are removed at the PSCX 4.0 breaking boundary. They do not emit deprecation
+  warnings or move into another compatibility package.
+- Phase 5 remains open for the separately tracked `Pscx.Time` extraction in
+  section 5.6 of the modernization plan.
 
 ## Phase 5.1 audit conclusions
 

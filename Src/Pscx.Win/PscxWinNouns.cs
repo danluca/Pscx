@@ -20,13 +20,10 @@ namespace Pscx
         public const string Archive = "PscxArchive";
 
         // NTFS
-        public const string Junction = "Junction";
-        public const string Hardlink = "Hardlink";
         public const string MountPoint = "MountPoint";
         public const string ReparsePoint = "ReparsePoint";
         public const string Shortcut = "Shortcut";
         public const string ShortPath = "ShortPath";
-        public const string Symlink = "Symlink";
         public const string OpticalDriveInfo = "OpticalDriveInfo";
         public const string VolumeLabel = "VolumeLabel";
 
@@ -35,7 +32,6 @@ namespace Pscx
         public const string Object = "Object";
         public const string Script = "Script";
         public const string TerminalSession = "TerminalSession";
-        public const string Uptime = "PscxUptime";
 
         // DirectoryServices
         public const string ADObject = "PscxADObject";  

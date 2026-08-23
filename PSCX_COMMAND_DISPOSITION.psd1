@@ -15,6 +15,21 @@
             'Invoke-SqlCommand'
             'Mount-PscxVHD'
         )
+        LowValueDuplicate = @(
+            'ConvertTo-MacOs9LineEnding'
+            'Format-Hex'
+            'Get-LoremIpsum'
+            'Get-PscxUptime'
+            'Get-ScreenCss'
+            'Get-ScreenHtml'
+            'Invoke-GC'
+            'Join-PscxString'
+            'PscxHelp'
+            'Split-PscxString'
+        )
+        RetiredFeature = @(
+            'Pscx.Wmi'
+        )
     }
 
     Categories = @{
@@ -38,12 +53,16 @@
             'Get-EnvironmentBlock'
             'Get-ExecutionTime'
             'Get-FileVersionInfo'
+            'Get-FileTail'
             'Get-Parameter'
             'Get-PathVariable'
             'Get-PEHeader'
+            'Get-PscxHash'
             'Get-TypeName'
             'Get-ViewDefinition'
             'Invoke-Method'
+            'New-Hardlink'
+            'New-Symlink'
             'Pop-EnvironmentBlock'
             'Push-EnvironmentBlock'
             'QuoteList'
@@ -80,6 +99,7 @@
             'Get-TerminalSession'
             'Import-VisualStudioVars'
             'Invoke-Apartment'
+            'New-Junction'
             'New-Shortcut'
             'Remove-MountPoint'
             'Remove-ReparsePoint'
@@ -117,23 +137,7 @@
             'ConvertTo-Yaml'
         )
 
-        DeprecationCandidate = @(
-            'ConvertTo-MacOs9LineEnding'
-            'Format-Hex'
-            'Get-FileTail'
-            'Get-LoremIpsum'
-            'Get-PscxHash'
-            'Get-PscxUptime'
-            'Get-ScreenCss'
-            'Get-ScreenHtml'
-            'Invoke-GC'
-            'Join-PscxString'
-            'New-Hardlink'
-            'New-Junction'
-            'New-Symlink'
-            'PscxHelp'
-            'Split-PscxString'
-        )
+        DeprecationCandidate = @()
 
     }
 }

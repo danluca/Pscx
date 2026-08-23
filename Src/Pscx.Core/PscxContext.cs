@@ -65,7 +65,6 @@ namespace Pscx.Core {
                 { "Net", true},
                 { "TranscribeSession", false},
                 { "Utility", true},
-                { "Wmi", false},  //from PscxWin submodule
                 { "Sudo", (OperatingSystem.IsWindows())}
             };
             this.Preferences["ModulesToImport"] = modulesToImport;

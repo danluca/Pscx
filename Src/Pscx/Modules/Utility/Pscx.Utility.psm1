@@ -77,135 +77,6 @@ filter New-HashObject {
 
 <#
 .SYNOPSIS
-    Displays PowerShell help using PSCX pager behavior.
-.DESCRIPTION
-    Forwards to Get-Help and displays detailed help through the configured PSCX
-    paging behavior.
-.FORWARDHELPTARGETNAME Get-Help
-.FORWARDHELPCATEGORY Cmdlet
-#>
-function PscxHelp
-{
-    [CmdletBinding(DefaultParameterSetName='AllUsersView', HelpUri='https://go.microsoft.com/fwlink/?LinkID=113316')]
-    param(
-        [Parameter(Position=0, ValueFromPipelineByPropertyName=$true)]
-        [string]
-        ${Name},
-
-        [string]
-        ${Path},
-
-        [ValidateSet('Alias','Cmdlet','Provider','General','FAQ','Glossary','HelpFile','ScriptCommand','Function','Filter','ExternalScript','All','DefaultHelp','DscResource','Class','Configuration')]
-        [string[]]
-        ${Category},
-
-        [Parameter(ParameterSetName='DetailedView', Mandatory=$true)]
-        [switch]
-        ${Detailed},
-
-        [Parameter(ParameterSetName='AllUsersView')]
-        [switch]
-        ${Full},
-
-        [Parameter(ParameterSetName='Examples', Mandatory=$true)]
-        [switch]
-        ${Examples},
-
-        [Parameter(ParameterSetName='Parameters', Mandatory=$true)]
-        [string[]]
-        ${Parameter},
-
-        [string[]]
-        ${Component},
-
-        [string[]]
-        ${Functionality},
-
-        [string[]]
-        ${Role},
-
-        [Parameter(ParameterSetName='Online', Mandatory=$true)]
-        [switch]
-        ${Online},
-
-        [Parameter(ParameterSetName='ShowWindow', Mandatory=$true)]
-        [switch]
-        ${ShowWindow}
-     )
-
-    # Display the full help topic by default but only for the AllUsersView parameter set.
-    if (($psCmdlet.ParameterSetName -eq 'AllUsersView') -and !$Full) {
-        $PSBoundParameters['Full'] = $true
-    }
-
-    # Nano needs to use Unicode, but Windows and Linux need the default
-    $OutputEncoding = [System.Console]::OutputEncoding
-
-    $help = Get-Help @PSBoundParameters
-
-    # If a list of help is returned or AliasHelpInfo (because it is small), don't pipe to more
-    $psTypeNames = ($help | Select-Object -First 1).PSTypeNames
-    if ($psTypeNames -Contains 'HelpInfoShort' -Or $psTypeNames -Contains 'AliasHelpInfo') {
-        $help
-    }
-    elseif ($null -ne $help) {
-        # Preference goes to using 'less', if not available then use 'more' if on Windows, otherwise do not use pager
-        $pagerCommand = Get-Command less -Type Application -ErrorAction Ignore
-        $pagerArgs = $null
-        if (!$pagerCommand -and $IsWindows) {
-            $pagerCommand = Get-Command more -Type Application -ErrorAction Ignore
-        }
-
-        # Respect PAGER environment variable which allows user to specify a custom pager.
-        # Ignore a pure whitespace PAGER value as that would cause the tokenizer to return 0 tokens.
-        if (![string]::IsNullOrWhitespace($env:PAGER)) {
-            $pagerCommand = Get-Command $env:PAGER -ErrorAction Ignore
-            if (!$pagerCommand) {
-                # PAGER value is not a valid command, check if PAGER command and arguments have been specified.
-                # Tokenize the specified $env:PAGER value. Ignore tokenizing errors since any errors may be valid
-                # argument syntax for the paging utility.
-                $errs = $null
-                $tokens = [System.Management.Automation.PSParser]::Tokenize($env:PAGER, [ref]$errs)
-
-                $customPagerCommand = $tokens[0].Content
-                $pagerCommand = Get-Command $customPagerCommand -ErrorAction Ignore
-                if ($pagerCommand) {
-                    # This approach will preserve all the pagers args.
-                    $pagerArgs = if ($tokens.Count -gt 1) {$env:PAGER.Substring($tokens[1].Start)} else {$null}
-                } else {
-                    # Custom pager command is invalid, issue a warning.
-                    Write-Warning "Custom-paging utility command not found. Ignoring command specified in `$env:PAGER: $env:PAGER"
-                }
-            }
-        }
-
-        if ($null -eq $pagerCommand) {
-            $help
-        } elseif ($pagerCommand.CommandType -eq [System.Management.Automation.CommandTypes]::Application) {
-            if ($pagerCommand.Name -match '^less') {
-                # if using less - add the LESS environment variable for custom arguments - see https://man7.org/linux/man-pages/man1/less.1.html#ENVIRONMENT_VARIABLES
-                $env:LESS = "-FRsPPage %db?B of %D:.\. h for help, q to quit\."
-            }
-            # If the pager is an application, format the output width before sending to the app.
-            #$consoleWidth = [System.Math]::Max([System.Console]::WindowWidth, 20)
-            #$help | Out-String -Stream -Width ($consoleWidth - 1)
-
-            if ($pagerArgs) {
-                # Supply pager arguments to an application without any PowerShell parsing of the arguments.
-                # Leave environment variable to help user debug arguments supplied in $env:PAGER.
-                $env:PAGER_ARGS = $pagerArgs
-            }
-
-            $help | & $pagerCommand.Name
-        } else {
-            # The pager command is a PowerShell function, script or alias, so pipe directly into it.
-            $help | & $pagerCommand $pagerArgs
-        }
-    }
-}
-
-<#
-.SYNOPSIS
     PscxLess provides better paging of output from cmdlets.
 .DESCRIPTION
     PscxLess provides better paging of output from cmdlets.
@@ -224,16 +95,14 @@ function PscxHelp
 .PARAMETER Path
     The path to the file to view.  Wildcards are accepted.
 .EXAMPLE
-    C:\PS> man about_profiles -full
-    This sends the help output of the about_profiles topic to the help function which pages the output.
-    Man is an alias for the "help" function. PSCX overrides the help function to page help using either
-    the built-in PowerShell "more" function or the PSCX "less" function depending on the value of the
-    PageHelpUsingLess preference variable.
+    C:\PS> Get-Help about_profiles -Full | PscxLess
+    Sends full help for about_profiles to the PSCX pager explicitly. PSCX does
+    not replace PowerShell's built-in help function.
 .EXAMPLE
     C:\PS> PscxLess *.txt
     Opens each text file in less.exe in succession.  Pressing ':n' moves to the next file.
 .NOTES
-    This function is just a passthru in all other hosts except for the PowerShell.exe console host.
+    This function is a pass-through outside ConsoleHost.
 .LINK
     http://en.wikipedia.org/wiki/Less_(Unix)
 #>
@@ -450,21 +319,6 @@ function QuoteList { $args }
     Aliases:  qs
 #>
 function QuoteString { "$args" }
-
-<#
-.SYNOPSIS
-    Invokes the .NET garbage collector to clean up garbage objects.
-.DESCRIPTION
-    Invokes the .NET garbage collector to clean up garbage objects. Invoking
-    a garbage collection can be useful when .NET objects haven't been disposed
-    and is causing a file system handle to not be released.
-.EXAMPLE
-    C:\PS> Invoke-GC
-    Invokes a garbage collection to free up resources and memory.
-#>
-function Invoke-GC {
-    [System.GC]::Collect()
-}
 
 <#
 .SYNOPSIS
@@ -700,140 +554,6 @@ function Get-ViewDefinition {
     }
 }
 
-
-<#
-.SYNOPSIS
-    Generate CSS header for HTML "screen shot" of the host buffer.
-.DESCRIPTION
-    Generate CSS header for HTML "screen shot" of the host buffer.
-.EXAMPLE
-    C:\PS> $css = Get-ScreenCss
-    Gets the color info of the host's screen into CSS form.
-.NOTES
-    Author: Jachym Kouba
-#>
-function Get-ScreenCss
-{
-    param()
-
-    Process
-    {
-        '<style>'
-        [Enum]::GetValues([ConsoleColor]) | ForEach-Object {
-            "  .F$_ { color: $_; }"
-            "  .B$_ { background-color: $_; }"
-        }
-        '</style>'
-    }
-}
-
-<#
-.SYNOPSIS
-    Functions to generate HTML "screen shot" of the host buffer.
-.DESCRIPTION
-    Functions to generate HTML "screen shot" of the host buffer.
-.PARAMETER Count
-    The number of lines of the host buffer to create a screen shot from.
-.EXAMPLE
-    C:\PS> Get-ScreenHtml > screen.html
-    Generates an HTML representation of the host's screen buffer and saves it to file.
-.EXAMPLE
-    C:\PS> Get-ScreenHtml 25 > screen.html
-    Generates an HTML representation of the first 25 lines of the host's screen buffer and saves it to file.
-.NOTES
-    Author: Jachym Kouba
-#>
-function Get-ScreenHtml
-{
-    param($Count = $Host.UI.RawUI.WindowSize.Height)
-
-    Begin
-    {
-        # Required by HttpUtility
-        Add-Type -Assembly System.Web
-
-        $raw = $Host.UI.RawUI
-        $buffsz = $raw.BufferSize
-
-        function BuildHtml($out, $buff)
-        {
-            function OpenElement($out, $fore, $back)
-            {
-                & {
-                    $out.Append('<span class="F').Append($fore)
-                    $out.Append(' B').Append($back).Append('">')
-                } | out-null
-            }
-
-            function CloseElement($out) {
-                $out.Append('</span>') | out-null
-            }
-
-            $height = $buff.GetUpperBound(0)
-            $width  = $buff.GetUpperBound(1)
-
-            $prev = $null
-            $whitespaceCount = 0
-
-            $out.Append("<pre class=`"B$($Host.UI.RawUI.BackgroundColor)`">") | out-null
-
-            for ($y = 0; $y -lt $height; $y++)
-            {
-                for ($x = 0; $x -lt $width; $x++)
-                {
-                    $current = $buff[$y, $x]
-
-                    if ($current.Character -eq ' ')
-                    {
-                        $whitespaceCount++
-                        write-debug "whitespaceCount: $whitespaceCount"
-                    }
-                    else
-                    {
-                        if ($whitespaceCount)
-                        {
-                            write-debug "appended $whitespaceCount spaces, whitespaceCount: 0"
-                            $out.Append((new-object string ' ', $whitespaceCount)) | out-null
-                            $whitespaceCount = 0
-                        }
-
-                        if ((-not $prev) -or
-                            ($prev.ForegroundColor -ne $current.ForegroundColor) -or
-                            ($prev.BackgroundColor -ne $current.BackgroundColor))
-                        {
-                            if ($prev) { CloseElement $out }
-
-                            OpenElement $out $current.ForegroundColor $current.BackgroundColor
-                        }
-
-                        $char = [System.Web.HttpUtility]::HtmlEncode($current.Character)
-                        $out.Append($char) | out-null
-                        $prev =    $current
-                    }
-                }
-
-                $out.Append("`n") | out-null
-                $whitespaceCount = 0
-            }
-
-            if($prev) { CloseElement $out }
-
-            $out.Append('</pre>') | out-null
-        }
-    }
-
-    Process
-    {
-        $cursor = $raw.CursorPosition
-
-        $rect = new-object Management.Automation.Host.Rectangle 0, ($cursor.Y - $Count), $buffsz.Width, $cursor.Y
-        $buff = $raw.GetBufferContents($rect)
-
-        $out = new-object Text.StringBuilder
-        BuildHtml $out $buff
-        $out.ToString()
-    }
-}
 
 <#
 .SYNOPSIS
@@ -1767,7 +1487,6 @@ $pscxAliases = [ordered]@{
     ehp  = 'Edit-HostProfile'
     ep   = 'Edit-Profile'
     gpar = 'Get-Parameter'
-    igc  = 'Invoke-GC'
     call = 'Invoke-Method'
     ql   = 'QuoteList'
     qs   = 'QuoteString'
@@ -1873,17 +1592,13 @@ AddAccelerator "tzi"  ([System.TimeZoneInfo])
 Export-ModuleMember -Alias $aliasesToExport -Function @(
     'AddAccelerator',
     'RemoveAccelerator',
-    'PscxHelp',
     'PscxLess',
     'Edit-Profile',
     'Edit-HostProfile',
     'Resolve-ErrorRecord',
     'QuoteList',
     'QuoteString',
-    'Invoke-GC',
     'Get-ViewDefinition',
-    'Get-ScreenCss',
-    'Get-ScreenHtml',
     'Invoke-Method',
     'Set-Writable',
     'Set-FileAttributes',
