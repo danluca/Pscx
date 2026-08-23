@@ -802,14 +802,14 @@ For each group:
 
 ### Preview checklist
 
-- [ ] Replace the flaky per-file/rule-batch parallel PSScriptAnalyzer subprocess
+- [x] Replace the flaky per-file/rule-batch parallel PSScriptAnalyzer subprocess
   pattern with deterministic, bounded static-analysis orchestration.
-- [ ] Preserve complete diagnostics for analyzer infrastructure failures,
+- [x] Preserve complete diagnostics for analyzer infrastructure failures,
   including the file, rule batch, exit code, standard output, and standard
   error; distinguish those failures from actual analyzer findings, and ensure
   that any narrowly scoped transient retry still reports the initial failure
   and never retries or hides a genuine finding.
-- [ ] Add regression coverage for the static-analysis runner so a child-process
+- [x] Add regression coverage for the static-analysis runner so a child-process
   failure cannot lose its diagnostic context on Windows, Linux, or macOS.
 - [ ] Generate a portable HTML test dashboard from the existing managed-test
   TRX, Pester NUnit XML, coverage, and static-validation JSON outputs. Present

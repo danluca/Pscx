@@ -77,6 +77,8 @@ $coverageFiles = @(
 
 $container = @(
     New-PesterContainer `
+        -Path (Join-Path $repositoryRoot 'Tests/Pscx.StaticAnalysisRunner.Tests.ps1')
+    New-PesterContainer `
         -Path (Join-Path $repositoryRoot 'Tests/Pscx.Package.Tests.ps1') `
         -Data @{
             ModulePath = $modulePath

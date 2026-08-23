@@ -40,7 +40,11 @@ $allFiles = @(
     Get-ChildItem -LiteralPath $repositoryRoot -Recurse -File |
         Where-Object FullName -NotMatch $excludedDirectoryPattern
 )
-$powerShellFiles = @($allFiles | Where-Object Extension -In '.ps1', '.psm1', '.psd1')
+$powerShellFiles = @(
+    $allFiles |
+        Where-Object Extension -In '.ps1', '.psm1', '.psd1' |
+        Sort-Object FullName
+)
 
 # Enforce the platform ownership established by the Phase 5.4 source audit.
 $windowsAssemblyInfoFiles = @(
@@ -114,6 +118,8 @@ if ($windowsAutomationReferences.Count -gt 0) {
 
 $resultsPath = [IO.Path]::GetFullPath($ResultsPath)
 New-Item -ItemType Directory -Path $resultsPath -Force | Out-Null
+$infrastructureResultPath = Join-Path $resultsPath 'Pscx.StaticAnalysis.infrastructure.json'
+Remove-Item -LiteralPath $infrastructureResultPath -Force -ErrorAction SilentlyContinue
 try {
     $powerShellExecutable = Get-Command -Name $PowerShellPath -CommandType Application -ErrorAction Stop |
         Select-Object -First 1 -ExpandProperty Source
@@ -122,6 +128,8 @@ catch {
     throw "Could not resolve the PowerShell executable '$PowerShellPath'."
 }
 $analyzerFileScript = Join-Path $PSScriptRoot 'Invoke-PscxAnalyzerFile.ps1'
+$analyzerRunnerPath = Join-Path $PSScriptRoot 'PscxAnalyzerRunner.psm1'
+Import-Module $analyzerRunnerPath -Force -ErrorAction Stop
 $ruleNames = @(
     Get-ScriptAnalyzerRule |
         Where-Object RuleName -NE 'PSUseToExportFieldsInManifest' |
@@ -132,28 +140,52 @@ $ruleBatches = @(
     $ruleNames[0..($ruleMidpoint - 1)] -join ','
     $ruleNames[$ruleMidpoint..($ruleNames.Count - 1)] -join ','
 )
-$analysisWork = @(
-    foreach ($file in $powerShellFiles) {
-        foreach ($ruleBatch in $ruleBatches) {
-            [pscustomobject]@{ Path = $file.FullName; Rules = $ruleBatch }
+$analyzerWorkItemCount = $powerShellFiles.Count * $ruleBatches.Count
+$diagnosticList = [Collections.Generic.List[object]]::new()
+$infrastructureFailures = [Collections.Generic.List[object]]::new()
+$analyzerAttemptCount = 0
+foreach ($file in $powerShellFiles) {
+    foreach ($ruleBatch in $ruleBatches) {
+        $workItem = Invoke-PscxAnalyzerWorkItem `
+            -PowerShellExecutable $powerShellExecutable `
+            -AnalyzerScript $analyzerFileScript `
+            -AnalyzerManifest $analyzerManifest `
+            -Path $file.FullName `
+            -IncludeRule $ruleBatch
+        $analyzerAttemptCount += $workItem.AttemptCount
+        foreach ($failure in $workItem.InfrastructureFailures) {
+            $infrastructureFailures.Add($failure)
+        }
+
+        if (-not $workItem.Succeeded) {
+            [ordered]@{
+                Status = 'Failed'
+                Orchestration = [ordered]@{
+                    Mode = 'SequentialChildProcess'
+                    WorkItemCount = $analyzerWorkItemCount
+                    AttemptCount = $analyzerAttemptCount
+                    MaximumAttemptsPerWorkItem = 2
+                    RuleBatchCount = $ruleBatches.Count
+                }
+                InfrastructureFailures = @($infrastructureFailures)
+            } | ConvertTo-Json -Depth 8 |
+                Set-Content -LiteralPath $infrastructureResultPath -Encoding utf8
+            throw (Format-PscxAnalyzerInfrastructureFailure -Failure $workItem.InfrastructureFailures)
+        }
+
+        if ($workItem.InfrastructureFailures.Count -gt 0) {
+            Write-Warning (Format-PscxAnalyzerInfrastructureFailure `
+                    -Failure $workItem.InfrastructureFailures `
+                    -Heading 'Transient PSScriptAnalyzer infrastructure failure recovered on retry')
+        }
+        foreach ($diagnostic in $workItem.Diagnostics) {
+            if ($null -ne $diagnostic) {
+                $diagnosticList.Add($diagnostic)
+            }
         }
     }
-)
-$serializedDiagnostics = @(
-    $analysisWork | ForEach-Object -Parallel {
-        & $using:powerShellExecutable -NoLogo -NoProfile -NonInteractive -File `
-            $using:analyzerFileScript -AnalyzerManifest $using:analyzerManifest `
-            -Path $_.Path -IncludeRule $_.Rules
-        if ($LASTEXITCODE -ne 0) {
-            throw "PSScriptAnalyzer failed for $($_.Path) with exit code $LASTEXITCODE."
-        }
-    } -ThrottleLimit 4
-)
-$diagnostics = @(
-    foreach ($serialized in $serializedDiagnostics) {
-        $serialized | ConvertFrom-Json
-    }
-)
+}
+$diagnostics = @($diagnosticList)
 $errors = @($diagnostics | Where-Object Severity -EQ Error)
 if ($errors.Count -gt 0) {
     $errors | Format-Table RuleName, ScriptPath, Line, Message -AutoSize | Out-String | Write-Output
@@ -227,6 +259,14 @@ foreach ($extension in $formatExtensions) {
     PSScriptAnalyzerVersion = $analyzerVersion
     PowerShellFileCount = $powerShellFiles.Count
     AnalyzerCounts = $analyzerCounts
+    AnalyzerOrchestration = [ordered]@{
+        Mode = 'SequentialChildProcess'
+        WorkItemCount = $analyzerWorkItemCount
+        AttemptCount = $analyzerAttemptCount
+        MaximumAttemptsPerWorkItem = 2
+        RuleBatchCount = $ruleBatches.Count
+        InfrastructureFailures = @($infrastructureFailures)
+    }
     ModuleManifestCount = $manifestFiles.Count
     XmlFileCount = $xmlFiles.Count
     PlatformAudit = [ordered]@{
@@ -236,7 +276,7 @@ foreach ($extension in $formatExtensions) {
         WindowsAssemblyCount = $windowsAssemblyInfoFiles.Count
     }
     FormattingCounts = $formatCounts
-} | ConvertTo-Json -Depth 5 |
+} | ConvertTo-Json -Depth 8 |
     Set-Content -LiteralPath (Join-Path $resultsPath 'Pscx.StaticAnalysis.summary.json') -Encoding utf8
 
 # SIG # Begin signature block
