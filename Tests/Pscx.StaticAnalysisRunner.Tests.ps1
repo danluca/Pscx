@@ -1,7 +1,11 @@
+param(
+    [string] $PowerShellPath = 'pwsh'
+)
+
 BeforeAll {
     $repositoryRoot = Split-Path -Parent $PSScriptRoot
     Import-Module (Join-Path $repositoryRoot 'Tools/PscxAnalyzerRunner.psm1') -Force
-    $powerShellExecutable = (Get-Process -Id $PID).Path
+    $powerShellExecutable = $PowerShellPath
     $fakeWorker = Join-Path $TestDrive 'FakeAnalyzerWorker.ps1'
     Set-Content -LiteralPath $fakeWorker -Encoding utf8 -Value @'
 [CmdletBinding()]
