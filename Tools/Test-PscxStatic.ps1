@@ -140,19 +140,23 @@ $ruleBatches = @(
     $ruleNames[0..($ruleMidpoint - 1)] -join ','
     $ruleNames[$ruleMidpoint..($ruleNames.Count - 1)] -join ','
 )
-$analyzerWorkItemCount = $powerShellFiles.Count * $ruleBatches.Count
+$initialAnalyzerWorkItemCount = $powerShellFiles.Count * $ruleBatches.Count
+$analyzerWorkItemCount = 0
 $diagnosticList = [Collections.Generic.List[object]]::new()
 $infrastructureFailures = [Collections.Generic.List[object]]::new()
 $analyzerAttemptCount = 0
+$analyzerSubdivisionCount = 0
 foreach ($file in $powerShellFiles) {
     foreach ($ruleBatch in $ruleBatches) {
-        $workItem = Invoke-PscxAnalyzerWorkItem `
+        $workItem = Invoke-PscxAnalyzerRuleBatch `
             -PowerShellExecutable $powerShellExecutable `
             -AnalyzerScript $analyzerFileScript `
             -AnalyzerManifest $analyzerManifest `
             -Path $file.FullName `
-            -IncludeRule $ruleBatch
+            -RuleName @($ruleBatch -split ',')
         $analyzerAttemptCount += $workItem.AttemptCount
+        $analyzerWorkItemCount += $workItem.WorkItemCount
+        $analyzerSubdivisionCount += $workItem.SubdivisionCount
         foreach ($failure in $workItem.InfrastructureFailures) {
             $infrastructureFailures.Add($failure)
         }
@@ -162,10 +166,12 @@ foreach ($file in $powerShellFiles) {
                 Status = 'Failed'
                 Orchestration = [ordered]@{
                     Mode = 'SequentialChildProcess'
+                    InitialWorkItemCount = $initialAnalyzerWorkItemCount
                     WorkItemCount = $analyzerWorkItemCount
                     AttemptCount = $analyzerAttemptCount
                     MaximumAttemptsPerWorkItem = 2
                     RuleBatchCount = $ruleBatches.Count
+                    BatchSubdivisionCount = $analyzerSubdivisionCount
                 }
                 InfrastructureFailures = @($infrastructureFailures)
             } | ConvertTo-Json -Depth 8 |
@@ -176,7 +182,7 @@ foreach ($file in $powerShellFiles) {
         if ($workItem.InfrastructureFailures.Count -gt 0) {
             Write-Warning (Format-PscxAnalyzerInfrastructureFailure `
                     -Failure $workItem.InfrastructureFailures `
-                    -Heading 'Transient PSScriptAnalyzer infrastructure failure recovered on retry')
+                    -Heading 'PSScriptAnalyzer infrastructure failure recovered by retry or rule-batch subdivision')
         }
         foreach ($diagnostic in $workItem.Diagnostics) {
             if ($null -ne $diagnostic) {
@@ -261,10 +267,12 @@ foreach ($extension in $formatExtensions) {
     AnalyzerCounts = $analyzerCounts
     AnalyzerOrchestration = [ordered]@{
         Mode = 'SequentialChildProcess'
+        InitialWorkItemCount = $initialAnalyzerWorkItemCount
         WorkItemCount = $analyzerWorkItemCount
         AttemptCount = $analyzerAttemptCount
         MaximumAttemptsPerWorkItem = 2
         RuleBatchCount = $ruleBatches.Count
+        BatchSubdivisionCount = $analyzerSubdivisionCount
         InfrastructureFailures = @($infrastructureFailures)
     }
     ModuleManifestCount = $manifestFiles.Count
@@ -282,8 +290,8 @@ foreach ($extension in $formatExtensions) {
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAJpmObuXolrqFb
-# zMJZctAvrjevTUE3wB9L4hI0C8tvUqCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAFHYGFOHQmsiqz
+# ZJpWXZ0KKizIzhnYPIzCjRmfqxIGnaCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -462,34 +470,34 @@ foreach ($extension in $formatExtensions) {
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgLWMsTJ11GUr7PICT1G0X
-# bKlABOL8U1r+6TZqhftd3VAwDQYJKoZIhvcNAQEBBQAEggIAqiATxEXtnmbmJaup
-# 0Sv6tddEfr4qEhew07kxwQ0KzHaZusTHrZbEqxGnryhCSeXaqzaWzM8OU1Vq69LR
-# raCo1IVWDFk7FFtVsZcLP/EBy5QSBjZ6NQpqQ1uCMj2MJpC46HEoea15WuISRGYK
-# 1MqAS2ooCzya1oEUZx2TLQlDE9VOtLtPdqYWw/tLfE8TlVigZqttwe+iGVU8WzKU
-# 8DE6JJgRNC5v63cI0Ndgk3a0i5EL1FybuNi/J0b4bgt4Ncd/OcO+LU0Dsg3yX6QO
-# e9Jx5Y5l/3A+bXPg8h4DvgddzqmbIS/PV935C1NGeFTmyYy17jeQx/wrPE0MQ5ok
-# ipiTnsoBne5kEp9oRUjjjk2c0FhbFQvzk0P+hdsLjb5nnKe7YUn+U5E1J8bGL8Uq
-# gfJSdKTAuAo9+PI+SkUHvW/tP+J+GM2lCAnTpjl9gnuYZFX3azib8EunpYEpSSwq
-# vjQCcfPvH44PE/myOOwcz1ViRrzK8FnDLGQMJiX09K2P38MkZsTTacz8RlULqk37
-# KPDF1LRJ7UtCOLCr5nFoBHgzx4YpGJNaEWy8p32b3/i03sB8bqHNy2TrC+d0u4Se
-# uthFOXJfWrG/NwHVoXsZ5QmMFg7MetnKRxtMjJBUQUeGqmXlDiUkmYjgMT2TplQt
-# XCkjYGUiVOFxxqowu0aYQD/2d4qhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgJL17Z43+/2734WSb7tlE
+# /B8zwSxH9jXNFSbH0oz8yQUwDQYJKoZIhvcNAQEBBQAEggIAsCm/LVwWcV+9lwUc
+# VJ0zTVarc+VR0i/RIxvPD+LEfpcpF21R/a4p7OJfl1JKqhT5MZDcCsddvoP3Dz70
+# pHyQwWKpdtOGMISmZ5U7b/Z0MOZJpQGtU9A6SB1G3PrL9743EftRzn0l7CkVQ+y7
+# AeGIB5kTQDJX9fIDw+Br80dBTJUlw0qJQ/9x/0VfrS0qY8Rawk20D9ItZwjvzcI0
+# jjAnIGQv3L99ykPSBrMteunqVhMDg/aBOYGGU5qq9guvZBF67LEV9DGGFkL327dk
+# CvxSqu2XPAE5WgbSq8ly9WWH1r01M9S4oxThYs8Wf4c9IVitnFADWkRnSfaysH+O
+# CV4CVcsq2XRkAl+dNBtHe1pLeUz+oors3R2Gtw8A1yonY8/z9o077alFAGxj5EXG
+# con9jBxjatMGPm1iLSdUz6isS0kzPfz2jHeKND9wVH0P68ZtIvoAGMT6hRgpdrQ4
+# 2do5hTWabRM6SHT3/K+vdZhNxx0peERGqIYxA72cBTeFAZrRL0oZ0OMWQAAVF5Kw
+# +a28rD9qjcQEndaE4lyTMPKSyLTH6gpNI4bo3QPO5KQ+ZQEBqa0HA2qdjuBC6NZt
+# S7Sver8CpM9+NaF6U1uSFSub0LjgKUhAPzDJoFYKoYoWgwTliFDtKnIUrCJfiNMD
+# 0rdqcZ0SFnnMIdkc26UQwRVE4WehggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODA4MDUwNTM4WjAvBgkqhkiG9w0BCQQxIgQgm0uWGVH3uTBN3pht8SVB5IlrtRON
-# khZvLqfVL8RYFmkwDQYJKoZIhvcNAQEBBQAEggIAUZ7hAGoF4ViS2KrOC16JXQnb
-# U2vWKQuDvcY7cL2GXe8VFWcRGDAC15owCn9nLW0/kh4p8SlJxX+ko1+HMWCscXWn
-# oNYMqayeuoW35/cytsoXQt/8kj98vU/W2gJv26w6Ox5InRoSXZuy6SJeHVZNqDpy
-# T9BfLFR/kgNTglcNVgJXNAiyw/h1uJB0K5WZJS1WmZWfae3c0U5OLEzCnMxIhUM4
-# /J1sE4P2M14mADnbrpP1nG3T72Z68Q2f3UuNEy5QrJ9jXyFVPscRwD6tGJIns/01
-# DVdEiVFRyfScKEh7cH+L7PksHcol9F4PieRxKtbocgwnnHyiJ/VbrtLWHomYlUVI
-# zB7K38lqAHR95dN5XZfQIb5ibwL1ECx1agtuEKKcl18zCjjwsJ/gjTiZTbcCAL77
-# q8FjrU7KWShel5NsrDw7srcvmZ1tCtNPin+Qp6PBJjYXxrHYAsEXOvEmjQ5k7oVf
-# hboAtKdpdXJp5iYNwRYFuJQcainyc4wJlfC7hlfjZgit5evnkYsHqOe9tVspg5PG
-# +B7ggoMhEGRGu+fXnbdZAzdvFDo/HfLMKnvteVu6E/ZGPukLHI+xYTliBnvtO68y
-# kQUODxOIhmNcKRoJPsoIZq+J5gEWC4Mr++c+f5XYYGmWyx7Hoci4GCjRzBrKpdMo
-# jwV+MFDQPxBbbodkhi0=
+# ODI0MDIxMzIxWjAvBgkqhkiG9w0BCQQxIgQgXzv8tGNqcGoFaMeLU8fmZ4Z4LDQ0
+# Ku5ILhcHhAUMchcwDQYJKoZIhvcNAQEBBQAEggIAHAPXsymqbfrE8zUbI2Qqqig+
+# XEKD2poOvrgfqEXJUtyeOFXC0TQAMuQDqAoXoImQ5pXlfcr91fLo7MUG+AI79xgU
+# tAtGwarhp7pEKPRuRnvE5Ws2KXhymubjcPPUZ8nWzAEJ9p2MywVWzVZCWJkZdpCh
+# xskRbiy82OS8kaScY2a1g0Qow+mBoKv74xMH1Am50kY18sU5N82C4r4cQp1jxCtm
+# i7C8fouk6jRM8Es81NLj4w/jrcfIOrH2xARpz/WDuChVR1/CYXK9yg9RgEalbIf7
+# p2i7O3qg4x7PYbz0fToDNfg5A4VaVSTdG386OFEv24ZqF7U5rMtfiz/nf+b21azX
+# 6otXDzxOdYeFSOp1dwgbsOG7f1iiH+U5T+9ApZjqzWMXQVg/iZC6EwYuE96xzowI
+# lUtTwMXCBZMgrauwBOUJ766/GXs0shF7u2CBXsvYpCOD6lmsPudRE0Q8iP0Nmp5D
+# FXbW0jfKcDTJ34sFAcLLo1uu3TbsaIho8F0Qz/7iijJCtKWsguE+4jZVMQFy6EM2
+# xj86HIkPiL5UqyYpMSlm/IR/3bSrmi1/qZdPWfbru4hFzNPWTvuvU1pUXuz+RQqr
+# SlqrGuavhUyw5+Qlyp4z8e7s4LwKi3rPfwhyfe6/mEnxxWol8eIARwye4GdayHm5
+# BO8p62Im6Ac/e+xqcJo=
 # SIG # End signature block

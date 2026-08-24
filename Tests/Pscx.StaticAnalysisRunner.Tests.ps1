@@ -43,6 +43,32 @@ switch ([IO.Path]::GetFileName($Path)) {
             Message = 'genuine analyzer finding'
         } | ConvertTo-Json -Compress
     }
+    'batch-sensitive.ps1' {
+        if ($IncludeRule -match ',') {
+            [Console]::Error.WriteLine('combined rule batch failed')
+            exit 29
+        }
+        [ordered]@{
+            Severity = 'Information'
+            RuleName = $IncludeRule
+            ScriptPath = $Path
+            Line = 11
+            Message = "finding from $IncludeRule"
+        } | ConvertTo-Json -Compress
+    }
+    'single-rule-failure.ps1' {
+        if (($IncludeRule -split ',') -contains 'RuleBroken') {
+            [Console]::Error.WriteLine('individual rule failed')
+            exit 31
+        }
+        [ordered]@{
+            Severity = 'Information'
+            RuleName = $IncludeRule
+            ScriptPath = $Path
+            Line = 13
+            Message = "finding from $IncludeRule"
+        } | ConvertTo-Json -Compress
+    }
 }
 '@
 }
@@ -98,5 +124,39 @@ Describe 'PSScriptAnalyzer child-process orchestration' {
         $result.Diagnostics.Count | Should -Be 1
         $result.Diagnostics[0].RuleName | Should -Be 'FakeRule'
         $result.Diagnostics[0].Message | Should -Be 'genuine analyzer finding'
+    }
+
+    It 'subdivides a repeatedly failing batch and preserves findings from every rule' {
+        $result = Invoke-PscxAnalyzerRuleBatch `
+            -PowerShellExecutable $powerShellExecutable `
+            -AnalyzerScript $fakeWorker `
+            -AnalyzerManifest (Join-Path $TestDrive 'unused.psd1') `
+            -Path (Join-Path $TestDrive 'batch-sensitive.ps1') `
+            -RuleName RuleOne, RuleTwo
+
+        $result.Succeeded | Should -BeTrue
+        $result.AttemptCount | Should -Be 4
+        $result.WorkItemCount | Should -Be 3
+        $result.SubdivisionCount | Should -Be 1
+        $result.InfrastructureFailures.Count | Should -Be 2
+        $result.Diagnostics.RuleName | Should -Be @('RuleOne', 'RuleTwo')
+    }
+
+    It 'fails with exact context when subdivision isolates a broken rule' {
+        $result = Invoke-PscxAnalyzerRuleBatch `
+            -PowerShellExecutable $powerShellExecutable `
+            -AnalyzerScript $fakeWorker `
+            -AnalyzerManifest (Join-Path $TestDrive 'unused.psd1') `
+            -Path (Join-Path $TestDrive 'single-rule-failure.ps1') `
+            -RuleName RuleGood, RuleBroken
+
+        $result.Succeeded | Should -BeFalse
+        $result.AttemptCount | Should -Be 5
+        $result.WorkItemCount | Should -Be 3
+        $result.SubdivisionCount | Should -Be 1
+        $result.Diagnostics.RuleName | Should -Be 'RuleGood'
+        $result.InfrastructureFailures.Count | Should -Be 4
+        $result.InfrastructureFailures[-1].RuleBatch | Should -Be 'RuleBroken'
+        $result.InfrastructureFailures[-1].StandardError | Should -Match 'individual rule failed'
     }
 }

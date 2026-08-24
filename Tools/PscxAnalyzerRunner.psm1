@@ -150,6 +150,109 @@ function Invoke-PscxAnalyzerWorkItem {
     }
 }
 
+function Invoke-PscxAnalyzerRuleBatch {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string] $PowerShellExecutable,
+
+        [Parameter(Mandatory)]
+        [string] $AnalyzerScript,
+
+        [Parameter(Mandatory)]
+        [string] $AnalyzerManifest,
+
+        [Parameter(Mandatory)]
+        [string] $Path,
+
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [string[]] $RuleName,
+
+        [ValidateRange(1, 2)]
+        [int] $MaximumAttempts = 2
+    )
+
+    $rules = @($RuleName | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    if ($rules.Count -eq 0) {
+        throw 'At least one analyzer rule is required.'
+    }
+
+    $ruleBatch = $rules -join ','
+    $workItem = Invoke-PscxAnalyzerWorkItem `
+        -PowerShellExecutable $PowerShellExecutable `
+        -AnalyzerScript $AnalyzerScript `
+        -AnalyzerManifest $AnalyzerManifest `
+        -Path $Path `
+        -IncludeRule $ruleBatch `
+        -MaximumAttempts $MaximumAttempts
+
+    if ($workItem.Succeeded -or $rules.Count -eq 1) {
+        return [pscustomobject]@{
+            Succeeded = $workItem.Succeeded
+            Path = $Path
+            RuleBatch = $ruleBatch
+            AttemptCount = $workItem.AttemptCount
+            WorkItemCount = 1
+            SubdivisionCount = 0
+            Diagnostics = @($workItem.Diagnostics)
+            InfrastructureFailures = @($workItem.InfrastructureFailures)
+        }
+    }
+
+    $midpoint = [math]::Ceiling($rules.Count / 2)
+    $leftRules = @($rules[0..($midpoint - 1)])
+    $rightRules = @($rules[$midpoint..($rules.Count - 1)])
+    $leftResult = Invoke-PscxAnalyzerRuleBatch `
+        -PowerShellExecutable $PowerShellExecutable `
+        -AnalyzerScript $AnalyzerScript `
+        -AnalyzerManifest $AnalyzerManifest `
+        -Path $Path `
+        -RuleName $leftRules `
+        -MaximumAttempts $MaximumAttempts
+
+    $attemptCount = $workItem.AttemptCount + $leftResult.AttemptCount
+    $workItemCount = 1 + $leftResult.WorkItemCount
+    $subdivisionCount = 1 + $leftResult.SubdivisionCount
+    $diagnostics = @($leftResult.Diagnostics)
+    $infrastructureFailures = @(
+        $workItem.InfrastructureFailures
+        $leftResult.InfrastructureFailures
+    )
+
+    if (-not $leftResult.Succeeded) {
+        return [pscustomobject]@{
+            Succeeded = $false
+            Path = $Path
+            RuleBatch = $ruleBatch
+            AttemptCount = $attemptCount
+            WorkItemCount = $workItemCount
+            SubdivisionCount = $subdivisionCount
+            Diagnostics = $diagnostics
+            InfrastructureFailures = $infrastructureFailures
+        }
+    }
+
+    $rightResult = Invoke-PscxAnalyzerRuleBatch `
+        -PowerShellExecutable $PowerShellExecutable `
+        -AnalyzerScript $AnalyzerScript `
+        -AnalyzerManifest $AnalyzerManifest `
+        -Path $Path `
+        -RuleName $rightRules `
+        -MaximumAttempts $MaximumAttempts
+
+    [pscustomobject]@{
+        Succeeded = $rightResult.Succeeded
+        Path = $Path
+        RuleBatch = $ruleBatch
+        AttemptCount = $attemptCount + $rightResult.AttemptCount
+        WorkItemCount = $workItemCount + $rightResult.WorkItemCount
+        SubdivisionCount = $subdivisionCount + $rightResult.SubdivisionCount
+        Diagnostics = @($diagnostics; $rightResult.Diagnostics)
+        InfrastructureFailures = @($infrastructureFailures; $rightResult.InfrastructureFailures)
+    }
+}
+
 function Format-PscxAnalyzerInfrastructureFailure {
     [CmdletBinding()]
     param(
@@ -193,4 +296,5 @@ $standardError
 
 Export-ModuleMember -Function `
     Invoke-PscxAnalyzerWorkItem, `
+    Invoke-PscxAnalyzerRuleBatch, `
     Format-PscxAnalyzerInfrastructureFailure
