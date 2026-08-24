@@ -43,6 +43,10 @@
   `offsettime`, `localtime`, `tz`, and `tzi` accelerators into the
   separately imported, cross-platform `Pscx.Time` sibling module; the default
   `Pscx` payload and import no longer include or load NodaTime.
+* Modernized PATH-variable management with ordered duplicate removal,
+  normalization and existence validation, platform-native case comparison
+  with an explicit Unix `-CaseInsensitive` override, Windows persistent
+  scopes, `ShouldProcess`, and structured `-PassThru` change results.
 
 ## 3.8.0 - August 2026
 

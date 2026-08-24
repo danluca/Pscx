@@ -729,13 +729,14 @@ For each group:
 
 ### 7.1 PATH management improvements
 
-- [ ] Add normalization and duplicate removal.
-- [ ] Add existence validation with an option to retain unavailable paths.
-- [ ] Support process, user, and machine scope where the OS permits it.
-- [ ] Preserve platform-specific path comparison behavior.
-- [ ] Provide `-PassThru` for commands that mutate PATH-like variables.
-- [ ] Add dry-run/`-WhatIf` support for persistent changes.
-- [ ] Provide structured output describing added, removed, retained, invalid, and duplicate entries.
+- [x] Add normalization and duplicate removal.
+- [x] Add existence validation with an option to retain unavailable paths.
+- [x] Support process, user, and machine scope where the OS permits it.
+- [x] Preserve platform-specific path comparison behavior, with an explicit
+  `-CaseInsensitive` override for Unix systems.
+- [x] Provide `-PassThru` for commands that mutate PATH-like variables.
+- [x] Add dry-run/`-WhatIf` support for persistent changes.
+- [x] Provide structured output describing added, removed, retained, invalid, and duplicate entries.
 
 ### 7.2 File text diagnostics
 
@@ -905,8 +906,8 @@ The following issues are small enough to begin independently:
 | 3. Metadata, docs, releases | Complete | 100% |
 | 4. Explicit public API | Complete | 100% |
 | 5. Feature classification | Complete | 100% |
-| 6. Dependency and binary reduction | Not started | 0% |
-| 7. Cohesive improvements | Not started | 0% |
+| 6. Dependency and binary reduction | Complete | 100% |
+| 7. Cohesive improvements | In progress | 20% |
 | 8. PSCX 4.0 release | Not started | 0% |
 
 Update this table when a phase changes state. Detailed completion should remain in the checklists so the summary does not become a second source of truth.

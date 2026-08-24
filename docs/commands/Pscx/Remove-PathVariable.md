@@ -4,7 +4,7 @@ external help file: Pscx.dll-Help.xml
 HelpUri: ''
 Locale: en-US
 Module Name: Pscx
-ms.date: 08/10/2026
+ms.date: 08/23/2026
 PlatyPS schema version: 2024-05-01
 title: Remove-PathVariable
 ---
@@ -20,33 +20,39 @@ Removes one or more entries from a path-oriented environment variable.
 ### __AllParameterSets
 
 ```
-Remove-PathVariable [-Value] <string[]> [-Name <string>]
- [-Target <EnvironmentVariableTarget>] [-WhatIf] [-Confirm] [<CommonParameters>]
+Remove-PathVariable [-Value] <string[]> [-Name <string>] [-PassThru]
+ [-Target <EnvironmentVariableTarget>] [-CaseInsensitive] [-Normalize] [-Validate]
+ [-RetainUnavailable] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
 ## ALIASES
 
 None
 
+
 ## DESCRIPTION
 
 `Remove-PathVariable` removes matching entries from the named path-oriented
 environment variable. The default variable is `PATH`, and the default target
-scope is the current process. Values are compared without regard to case after
-environment-variable references and surrounding whitespace are normalized.
+scope is the current process. Comparisons are case-insensitive on Windows and
+case-sensitive on Linux and macOS unless `-CaseInsensitive` is specified.
+
+Every mutation removes duplicates while preserving first-occurrence order.
+Use `-Normalize` and `-Validate` for explicit cleanup in the same operation.
 
 Use `-Target User` or `-Target Machine` to modify a persistent environment
-variable where the operating system and current permissions allow it.
+variable on Windows where current permissions allow it. Linux and macOS
+support the `Process` target only.
 
 ## EXAMPLES
 
 ### Example 1 - Preview removal from PATH
 
 ```powershell
-Remove-PathVariable -Value "$HOME/.old-tool/bin" -WhatIf
+Remove-PathVariable -Value "$HOME/.old-tool/bin" -PassThru -WhatIf
 ```
 
-Shows the proposed change without modifying the current process's `PATH`.
+Returns the proposed change without modifying the current process's `PATH`.
 
 ### Example 2 - Remove entries from another path variable
 
@@ -58,6 +64,51 @@ Removes the specified entries from the process-scoped `LIB` environment
 variable when they are present.
 
 ## PARAMETERS
+
+### -CaseInsensitive
+
+Uses case-insensitive entry comparison. Windows path comparison is already
+case-insensitive. On Linux and macOS, comparison is case-sensitive unless this
+switch is specified.
+
+```yaml
+Type: System.Management.Automation.SwitchParameter
+DefaultValue: ''
+SupportsWildcards: false
+Aliases: []
+ParameterSets:
+- Name: (All)
+  Position: Named
+  IsRequired: false
+  ValueFromPipeline: false
+  ValueFromPipelineByPropertyName: false
+  ValueFromRemainingArguments: false
+DontShow: false
+AcceptedValues: []
+HelpMessage: ''
+```
+
+### -Confirm
+
+Prompts you for confirmation before running the cmdlet.
+
+```yaml
+Type: System.Management.Automation.SwitchParameter
+DefaultValue: False
+SupportsWildcards: false
+Aliases:
+- cf
+ParameterSets:
+- Name: (All)
+  Position: Named
+  IsRequired: false
+  ValueFromPipeline: false
+  ValueFromPipelineByPropertyName: false
+  ValueFromRemainingArguments: false
+DontShow: false
+AcceptedValues: []
+HelpMessage: ''
+```
 
 ### -Name
 
@@ -81,14 +132,106 @@ AcceptedValues: []
 HelpMessage: ''
 ```
 
+### -Normalize
+
+Expands environment-variable references, removes surrounding whitespace and
+quotes, resolves entries to canonical absolute paths, and removes trailing
+directory separators except for filesystem roots.
+
+```yaml
+Type: System.Management.Automation.SwitchParameter
+DefaultValue: ''
+SupportsWildcards: false
+Aliases: []
+ParameterSets:
+- Name: (All)
+  Position: Named
+  IsRequired: false
+  ValueFromPipeline: false
+  ValueFromPipelineByPropertyName: false
+  ValueFromRemainingArguments: false
+DontShow: false
+AcceptedValues: []
+HelpMessage: ''
+```
+
+### -PassThru
+
+Returns a `PathVariableChange` object describing the proposed and applied
+change, including added, removed, retained, invalid, and duplicate entries.
+
+```yaml
+Type: System.Management.Automation.SwitchParameter
+DefaultValue: ''
+SupportsWildcards: false
+Aliases: []
+ParameterSets:
+- Name: (All)
+  Position: Named
+  IsRequired: false
+  ValueFromPipeline: false
+  ValueFromPipelineByPropertyName: false
+  ValueFromRemainingArguments: false
+DontShow: false
+AcceptedValues: []
+HelpMessage: ''
+```
+
+### -RetainUnavailable
+
+Retains entries that do not resolve to an existing file or directory.
+Specifying this switch also enables validation.
+
+```yaml
+Type: System.Management.Automation.SwitchParameter
+DefaultValue: ''
+SupportsWildcards: false
+Aliases: []
+ParameterSets:
+- Name: (All)
+  Position: Named
+  IsRequired: false
+  ValueFromPipeline: false
+  ValueFromPipelineByPropertyName: false
+  ValueFromRemainingArguments: false
+DontShow: false
+AcceptedValues: []
+HelpMessage: ''
+```
+
 ### -Target
 
 Specifies the environment-variable scope to modify: `Process`, `User`, or
-`Machine`. The default is `Process`.
+`Machine`. The default is `Process`. Only `Process` is supported on Linux and
+macOS. Persistent `User` and `Machine` targets are supported on Windows and
+may require additional permissions.
 
 ```yaml
 Type: System.EnvironmentVariableTarget
 DefaultValue: Process
+SupportsWildcards: false
+Aliases: []
+ParameterSets:
+- Name: (All)
+  Position: Named
+  IsRequired: false
+  ValueFromPipeline: false
+  ValueFromPipelineByPropertyName: false
+  ValueFromRemainingArguments: false
+DontShow: false
+AcceptedValues: []
+HelpMessage: ''
+```
+
+### -Validate
+
+Checks whether each entry resolves to an existing file or directory and omits
+unavailable entries. Use `-RetainUnavailable` to validate and report them
+without removing them.
+
+```yaml
+Type: System.Management.Automation.SwitchParameter
+DefaultValue: ''
 SupportsWildcards: false
 Aliases: []
 ParameterSets:
@@ -126,34 +269,14 @@ HelpMessage: ''
 
 ### -WhatIf
 
-Shows what would happen if the command runs. The command is not run.
+Runs the command in a mode that only reports what would happen without performing the actions.
 
 ```yaml
 Type: System.Management.Automation.SwitchParameter
 DefaultValue: False
 SupportsWildcards: false
-Aliases: [wi]
-ParameterSets:
-- Name: (All)
-  Position: Named
-  IsRequired: false
-  ValueFromPipeline: false
-  ValueFromPipelineByPropertyName: false
-  ValueFromRemainingArguments: false
-DontShow: false
-AcceptedValues: []
-HelpMessage: ''
-```
-
-### -Confirm
-
-Prompts for confirmation before running the command.
-
-```yaml
-Type: System.Management.Automation.SwitchParameter
-DefaultValue: False
-SupportsWildcards: false
-Aliases: [cf]
+Aliases:
+- wi
 ParameterSets:
 - Name: (All)
   Position: Named
@@ -185,14 +308,18 @@ You can pipe arrays of path entries to this cmdlet.
 
 ## OUTPUTS
 
-### None
+### Pscx.Commands.EnvironmentBlock.PathVariableChange
 
-This cmdlet returns no output.
+A structured change description when `-PassThru` is specified. Otherwise the
+cmdlet returns no output.
 
 ## NOTES
 
 Existing versions of the variable are left unchanged when none of the supplied
 values match.
+
+`-WhatIf -PassThru` returns the proposed `After` value with `Applied` set to
+`False`.
 
 ## RELATED LINKS
 

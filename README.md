@@ -165,6 +165,31 @@ See Microsoft's installation guidance for
 [the SqlServer module](https://learn.microsoft.com/en-us/powershell/sql-server/download-sql-server-ps-module),
 and [Hyper-V management tools](https://learn.microsoft.com/en-us/windows-server/virtualization/hyper-v/get-started/install-hyper-v).
 
+### PATH management
+
+`Get-PathVariable`, `Add-PathVariable`, `Set-PathVariable`, and
+`Remove-PathVariable` manage `PATH` and other path-oriented environment
+variables without treating the value as an opaque string. Mutations preserve
+entry order and remove duplicates. Use `-Normalize` for canonical absolute
+paths and `-Validate` to remove entries that do not currently resolve to a file
+or directory; add `-RetainUnavailable` when disconnected or optional paths
+must remain.
+
+Path comparison follows the operating system: case-insensitive on Windows and
+case-sensitive on Linux and macOS. Specify `-CaseInsensitive` to opt into
+case-insensitive comparison on Unix systems. Process-scoped variables work on
+all supported platforms; persistent `User` and `Machine` targets are Windows
+only.
+
+Mutation commands support `-WhatIf` and `-PassThru`. The returned
+`PathVariableChange` object describes the before and after values and the
+added, removed, retained, invalid, and duplicate entries:
+
+```powershell
+$change = Add-PathVariable -Value "$HOME/.local/bin" -Normalize -PassThru -WhatIf
+$change | Select-Object Name, Target, Changed, Applied, Added, Invalid, Duplicate
+```
+
 ### Alias collision policy
 
 PSCX creates its convenience aliases when their names do not already resolve

@@ -1,4 +1,4 @@
-﻿//---------------------------------------------------------------------
+//---------------------------------------------------------------------
 // Author: Keith Hill
 //
 // Description: Implementation of the Get-PathVariable cmdlet.
@@ -9,6 +9,7 @@ using System;
 using System.ComponentModel;
 using System.IO;
 using System.Management.Automation;
+using Pscx.EnvironmentBlock;
 
 namespace Pscx.Commands.EnvironmentBlock
 {
@@ -30,21 +31,32 @@ namespace Pscx.Commands.EnvironmentBlock
         [Parameter]
         public SwitchParameter StripQuotes { get; set; }
 
+        [Parameter]
+        public SwitchParameter Unique { get; set; }
+
         protected override void EndProcessing()
         {
             try
             {
-                string value = Environment.GetEnvironmentVariable(this.Name, this.Target);
+                string value = Environment.GetEnvironmentVariable(Name, Target);
                 if (value == null)
                 {
-                    string msg = String.Format("The specified environment variable '{0}' was not found in target scope: {1}", this.Name, this.Target.ToString());
-                    WriteError(new ErrorRecord(new ArgumentException(msg), "GetPathVariableError", ErrorCategory.ObjectNotFound, this.Name));
+                    string msg = String.Format("The specified environment variable '{0}' was not found in target scope: {1}", Name, Target.ToString());
+                    WriteError(new ErrorRecord(new ArgumentException(msg), "GetPathVariableError", ErrorCategory.ObjectNotFound, Name));
                     return;
                 }
 
-                StringSplitOptions options = this.RemoveEmptyPaths ? StringSplitOptions.RemoveEmptyEntries : StringSplitOptions.None;
+                bool processEntries = Unique || Normalize || Validate || RetainUnavailable || CaseInsensitive;
+                if (processEntries)
+                {
+                    PathVariable variable = CreatePathVariable(StripQuotes);
+                    WriteObject(variable.GetValues(), true);
+                    return;
+                }
+
+                StringSplitOptions options = RemoveEmptyPaths ? StringSplitOptions.RemoveEmptyEntries : StringSplitOptions.None;
                 string[] paths = value.Split(Path.PathSeparator, options);
-                if (this.StripQuotes)
+                if (StripQuotes)
                 {
                     for (int i = 0; i < paths.Length; i++)
                     {
@@ -60,7 +72,7 @@ namespace Pscx.Commands.EnvironmentBlock
             }
             catch (Exception ex)
             {
-                ThrowTerminatingError(new ErrorRecord(ex, "GetPathVariableError", ErrorCategory.NotSpecified, this.Name));
+                ThrowTerminatingError(new ErrorRecord(ex, "GetPathVariableError", ErrorCategory.NotSpecified, Name));
             }
         }
     }

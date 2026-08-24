@@ -4,7 +4,7 @@ external help file: Pscx.dll-Help.xml
 HelpUri: ''
 Locale: en-US
 Module Name: Pscx
-ms.date: 08/06/2026
+ms.date: 08/23/2026
 PlatyPS schema version: 2024-05-01
 title: Get-PathVariable
 ---
@@ -20,19 +20,26 @@ PSCX Cmdlet: Gets the specified path-oriented environment variable.
 ### __AllParameterSets
 
 ```
-Get-PathVariable [[-Name] <string>] [-RemoveEmptyPaths] [-StripQuotes]
- [-Target <EnvironmentVariableTarget>] [<CommonParameters>]
+Get-PathVariable [[-Name] <string>] [-RemoveEmptyPaths] [-StripQuotes] [-Unique]
+ [-Target <EnvironmentVariableTarget>] [-CaseInsensitive] [-Normalize] [-Validate]
+ [-RetainUnavailable] [<CommonParameters>]
 ```
 
 ## ALIASES
 
 None
 
+
 ## DESCRIPTION
 
-Gets the specified path-oriented environment variable and outputs an array of strings.
- One string for each path.
- The environment variable string is split a semi-colon and you can option specify that empty paths be removed and unnecessary quotes be removed from each path.
+Gets a path-oriented environment variable as one string per entry. With no
+cleanup switches, the command preserves empty entries and duplicates for
+compatibility.
+
+Use `-Unique`, `-Normalize`, or `-Validate` to process entries. Processed
+output is deduplicated without changing the environment variable. Comparisons
+are case-insensitive on Windows and case-sensitive on Linux and macOS unless
+`-CaseInsensitive` is specified.
 
 ## EXAMPLES
 
@@ -44,23 +51,47 @@ Get-PathVariable Path
 
 Gets the Path environment variable from the Process scope as an array of strings.
 
-### Example 2 - Use Get-PathVariable
+### Example 2 - Preview normalized, unique entries
 
 ```powershell
-Get-PathVariable Path -Target User
+Get-PathVariable -Name PATH -Normalize -Unique
 ```
 
-Gets the Path environment variable as it is configured in the User scope.
+Returns canonical absolute entries with duplicates removed without modifying
+`PATH`.
 
-### Example 3 - Use Get-PathVariable
+### Example 3 - Retain unavailable entries while validating
 
 ```powershell
-Get-PathVariable Path -RemoveEmptyPaths -StripQuotes -Target Machine | Set-PathVariable Path -Target Machine
+Get-PathVariable -Name PATH -Validate -RetainUnavailable
 ```
 
-Gets the Machine scope Path environment variable while removing unnecessary quotes and empty paths and then sets it to the updated value. This enviornment variable will be persisted across PowerShell sessions.
+Checks whether entries exist but retains unavailable entries in the output.
 
 ## PARAMETERS
+
+### -CaseInsensitive
+
+Uses case-insensitive entry comparison. Windows path comparison is already
+case-insensitive. On Linux and macOS, comparison is case-sensitive unless this
+switch is specified. This switch enables processed, duplicate-free output.
+
+```yaml
+Type: System.Management.Automation.SwitchParameter
+DefaultValue: ''
+SupportsWildcards: false
+Aliases: []
+ParameterSets:
+- Name: (All)
+  Position: Named
+  IsRequired: false
+  ValueFromPipeline: false
+  ValueFromPipelineByPropertyName: false
+  ValueFromRemainingArguments: false
+DontShow: false
+AcceptedValues: []
+HelpMessage: ''
+```
 
 ### -Name
 
@@ -84,9 +115,56 @@ AcceptedValues: []
 HelpMessage: ''
 ```
 
+### -Normalize
+
+Expands environment-variable references, removes surrounding whitespace and
+quotes, resolves entries to canonical absolute paths, and removes trailing
+directory separators except for filesystem roots. Normalized output is also
+deduplicated.
+
+```yaml
+Type: System.Management.Automation.SwitchParameter
+DefaultValue: ''
+SupportsWildcards: false
+Aliases: []
+ParameterSets:
+- Name: (All)
+  Position: Named
+  IsRequired: false
+  ValueFromPipeline: false
+  ValueFromPipelineByPropertyName: false
+  ValueFromRemainingArguments: false
+DontShow: false
+AcceptedValues: []
+HelpMessage: ''
+```
+
 ### -RemoveEmptyPaths
 
 Empty paths, as represented by back-to-back semi-colons will be removed from the output.
+
+```yaml
+Type: System.Management.Automation.SwitchParameter
+DefaultValue: ''
+SupportsWildcards: false
+Aliases: []
+ParameterSets:
+- Name: (All)
+  Position: Named
+  IsRequired: false
+  ValueFromPipeline: false
+  ValueFromPipelineByPropertyName: false
+  ValueFromRemainingArguments: false
+DontShow: false
+AcceptedValues: []
+HelpMessage: ''
+```
+
+### -RetainUnavailable
+
+Retains entries that do not resolve to an existing file or directory.
+Specifying this switch also enables validation. This is useful for paths on
+temporarily disconnected drives or filesystems.
 
 ```yaml
 Type: System.Management.Automation.SwitchParameter
@@ -130,10 +208,56 @@ HelpMessage: ''
 
 ### -Target
 
-Specifies which target scope to get: Process (default), User or Machine.
+Specifies which target scope to get: `Process` (default), `User`, or `Machine`.
+Only `Process` is supported on Linux and macOS. Persistent `User` and `Machine`
+targets are supported on Windows.
 
 ```yaml
 Type: System.EnvironmentVariableTarget
+DefaultValue: ''
+SupportsWildcards: false
+Aliases: []
+ParameterSets:
+- Name: (All)
+  Position: Named
+  IsRequired: false
+  ValueFromPipeline: false
+  ValueFromPipelineByPropertyName: false
+  ValueFromRemainingArguments: false
+DontShow: false
+AcceptedValues: []
+HelpMessage: ''
+```
+
+### -Unique
+
+Removes duplicate entries while preserving their first-occurrence order.
+
+```yaml
+Type: System.Management.Automation.SwitchParameter
+DefaultValue: ''
+SupportsWildcards: false
+Aliases: []
+ParameterSets:
+- Name: (All)
+  Position: Named
+  IsRequired: false
+  ValueFromPipeline: false
+  ValueFromPipelineByPropertyName: false
+  ValueFromRemainingArguments: false
+DontShow: false
+AcceptedValues: []
+HelpMessage: ''
+```
+
+### -Validate
+
+Checks whether each entry resolves to an existing file or directory and omits
+unavailable entries. Use `-RetainUnavailable` to report the same cleaned output
+without omitting unavailable entries.
+
+```yaml
+Type: System.Management.Automation.SwitchParameter
 DefaultValue: ''
 SupportsWildcards: false
 Aliases: []
@@ -160,10 +284,14 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 
 ## OUTPUTS
 
+### System.String
+
+One string for each selected path-variable entry.
+
 ## NOTES
 
-
-
+`Get-PathVariable` never modifies the environment variable. To apply cleaned
+output, pipe it to `Set-PathVariable` explicitly.
 
 ## RELATED LINKS
 

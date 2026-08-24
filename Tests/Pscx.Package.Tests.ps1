@@ -293,7 +293,7 @@ Describe 'Phase 5 command disposition inventory' {
 }
 
 Describe 'Path-variable mutation' {
-    It 'exports Remove-PathVariable and honors WhatIf' {
+    It 'returns a structured removal preview without changing the environment' {
         $name = 'PSCX_TEST_PATH_{0}' -f [guid]::NewGuid().ToString('N')
         $values = @(
             (Join-Path $script:temporaryRoot 'first'),
@@ -302,15 +302,122 @@ Describe 'Path-variable mutation' {
         $initialValue = $values -join [IO.Path]::PathSeparator
         try {
             [Environment]::SetEnvironmentVariable($name, $initialValue)
-            Remove-PathVariable -Name $name -Value $values[0] -WhatIf
+            $preview = Remove-PathVariable -Name $name -Value $values[0] -PassThru -WhatIf
             [Environment]::GetEnvironmentVariable($name) | Should -Be $initialValue
+            $preview.GetType().FullName |
+                Should -Be 'Pscx.Commands.EnvironmentBlock.PathVariableChange'
+            $preview.Operation | Should -Be 'Remove'
+            $preview.Changed | Should -BeTrue
+            $preview.Applied | Should -BeFalse
+            $preview.Removed | Should -Be @($values[0])
+            $preview.Retained | Should -Be @($values[1])
+            $preview.After | Should -Be @($values[1])
 
-            Remove-PathVariable -Name $name -Value $values[0] -Confirm:$false
+            $change = Remove-PathVariable -Name $name -Value $values[0] `
+                -PassThru -Confirm:$false
             [Environment]::GetEnvironmentVariable($name) | Should -Be $values[1]
+            $change.Applied | Should -BeTrue
         }
         finally {
             [Environment]::SetEnvironmentVariable($name, $null)
         }
+    }
+
+    It 'accumulates pipeline input and reports added values' {
+        $name = 'PSCX_TEST_PATH_{0}' -f [guid]::NewGuid().ToString('N')
+        $values = @(
+            (Join-Path $script:temporaryRoot 'pipeline-first'),
+            (Join-Path $script:temporaryRoot 'pipeline-second')
+        )
+        try {
+            $change = $values | Add-PathVariable -Name $name -PassThru -Confirm:$false
+
+            $change.Added | Should -Be $values
+            $change.After | Should -Be $values
+            [Environment]::GetEnvironmentVariable($name) |
+                Should -Be ($values -join [IO.Path]::PathSeparator)
+        }
+        finally {
+            [Environment]::SetEnvironmentVariable($name, $null)
+        }
+    }
+
+    It 'normalizes, validates, and optionally retains unavailable entries' {
+        $name = 'PSCX_TEST_PATH_{0}' -f [guid]::NewGuid().ToString('N')
+        $available = Join-Path $script:temporaryRoot 'available-path'
+        $unavailable = Join-Path $script:temporaryRoot 'unavailable-path'
+        New-Item -ItemType Directory -Path $available | Out-Null
+        try {
+            $filtered = Set-PathVariable -Name $name -Value $available, $unavailable `
+                -Normalize -Validate -PassThru -Confirm:$false
+
+            $filtered.After | Should -Be @([IO.Path]::GetFullPath($available))
+            $filtered.Invalid | Should -Be @([IO.Path]::GetFullPath($unavailable))
+
+            $retained = Set-PathVariable -Name $name -Value $available, $unavailable `
+                -Normalize -Validate -RetainUnavailable -PassThru -Confirm:$false
+            $retained.After | Should -Be @(
+                [IO.Path]::GetFullPath($available)
+                [IO.Path]::GetFullPath($unavailable)
+            )
+            $retained.Invalid | Should -Be @([IO.Path]::GetFullPath($unavailable))
+        }
+        finally {
+            [Environment]::SetEnvironmentVariable($name, $null)
+        }
+    }
+
+    It 'uses native case comparison by default and supports an explicit insensitive comparison' {
+        $name = 'PSCX_TEST_PATH_{0}' -f [guid]::NewGuid().ToString('N')
+        $values = @('CasePath', 'casepath')
+        try {
+            $native = Set-PathVariable -Name $name -Value $values -PassThru -Confirm:$false
+            $expectedCount = if ($IsWindows) { 1 } else { 2 }
+            $native.After | Should -HaveCount $expectedCount
+
+            $insensitive = Set-PathVariable -Name $name -Value $values `
+                -CaseInsensitive -PassThru -Confirm:$false
+            $insensitive.After | Should -Be @('CasePath')
+            $insensitive.Duplicate | Should -Contain 'casepath'
+        }
+        finally {
+            [Environment]::SetEnvironmentVariable($name, $null)
+        }
+    }
+
+    It 'supports cleaned read-only PATH output without changing the variable' {
+        $name = 'PSCX_TEST_PATH_{0}' -f [guid]::NewGuid().ToString('N')
+        $values = @('CasePath', 'casepath', 'CasePath')
+        $initialValue = $values -join [IO.Path]::PathSeparator
+        try {
+            [Environment]::SetEnvironmentVariable($name, $initialValue)
+            $native = @(Get-PathVariable -Name $name -Unique)
+            $expectedCount = if ($IsWindows) { 1 } else { 2 }
+            $native | Should -HaveCount $expectedCount
+            @(Get-PathVariable -Name $name -Unique -CaseInsensitive) |
+                Should -Be @('CasePath')
+            [Environment]::GetEnvironmentVariable($name) | Should -Be $initialValue
+        }
+        finally {
+            [Environment]::SetEnvironmentVariable($name, $null)
+        }
+    }
+
+    It 'rejects persistent target scopes explicitly on non-Windows platforms' {
+        if ($IsWindows) {
+            Set-ItResult -Skipped -Because 'User and Machine environment targets are supported on Windows.'
+            return
+        }
+
+        $caught = $null
+        try {
+            Get-PathVariable -Name PATH -Target User -ErrorAction Stop
+        }
+        catch {
+            $caught = $_
+        }
+        $caught | Should -Not -BeNullOrEmpty
+        $caught.FullyQualifiedErrorId | Should -Match '^PathVariableTargetNotSupported'
     }
 }
 
