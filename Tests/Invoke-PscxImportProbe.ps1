@@ -130,11 +130,21 @@ if ($BuildScope -eq 'Full') {
 }
 $commandsBeforeImport = @()
 if ($CollisionAliasName -or $DisableOptionalFeatures) {
-    $commandsBeforeImport = @(
-        Get-Command -Name $documentedAliases -ErrorAction SilentlyContinue |
-            ForEach-Object Name |
-            Sort-Object -Unique
-    )
+    # Describe the clean child session without auto-importing an installed PSCX
+    # version before the packaged module is loaded. Restore normal auto-loading
+    # before import so optional modules can resolve built-in commands.
+    $previousModuleAutoLoadingPreference = $PSModuleAutoLoadingPreference
+    try {
+        $PSModuleAutoLoadingPreference = 'None'
+        $commandsBeforeImport = @(
+            Get-Command -Name $documentedAliases -ErrorAction SilentlyContinue |
+                ForEach-Object Name |
+                Sort-Object -Unique
+        )
+    }
+    finally {
+        $PSModuleAutoLoadingPreference = $previousModuleAutoLoadingPreference
+    }
 }
 try {
     if ($null -eq $preferences) {

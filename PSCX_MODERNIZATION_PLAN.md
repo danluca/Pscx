@@ -740,11 +740,18 @@ For each group:
 
 ### 7.2 File text diagnostics
 
-- [ ] Add encoding and BOM detection.
-- [ ] Add line-ending detection, including mixed-line-ending reporting.
-- [ ] Consider one consolidated line-ending command instead of separate Windows, Unix, and legacy Mac commands.
-- [ ] Preserve final-newline behavior explicitly.
-- [ ] Support check-only operation for CI use.
+- [x] Add encoding and BOM detection through structured `Get-TextFileInfo` output.
+- [x] Add line-ending detection, including mixed-line-ending reporting and per-style counts.
+- [x] Evaluate consolidating the line-ending commands; retain the explicit
+  `ConvertTo-UnixLineEnding` and `ConvertTo-WindowsLineEnding` names because
+  they communicate intent clearly, while sharing one implementation and not
+  adding a legacy Mac-specific command.
+- [x] Preserve encoding, BOM, and final-newline state by default, with explicit
+  `-FinalNewline Preserve|Add|Remove` control.
+- [x] Support non-mutating `-Check` operation with structured
+  `NeedsConversion` output for CI use.
+- [x] Cover byte-level conversion behavior in managed tests and the shipped
+  command contract in packaged-module Pester tests.
 
 ### 7.3 Installation diagnostics
 

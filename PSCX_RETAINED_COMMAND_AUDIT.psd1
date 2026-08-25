@@ -34,9 +34,9 @@
             Differentiation = 'Adds pipeline aggregation, file IO, chunking, encoding choices, and whitespace-tolerant decoding around Base64 conversion.'
         }
         @{
-            Name = 'Line-ending conversion'
-            Commands = @('ConvertTo-UnixLineEnding', 'ConvertTo-WindowsLineEnding')
-            Differentiation = 'Performs in-place, wildcard-aware line-ending conversion with ShouldProcess support.'
+            Name = 'Text-file diagnostics and line-ending conversion'
+            Commands = @('ConvertTo-UnixLineEnding', 'ConvertTo-WindowsLineEnding', 'Get-TextFileInfo')
+            Differentiation = 'Reports encoding, BOM, and line-ending metadata and provides wildcard-aware conversion with ShouldProcess and check-only support.'
         }
         @{
             Name = 'Editors and file times'
@@ -134,8 +134,8 @@
         'ConvertFrom-Base64' = 'System.Byte[] unless writing directly to a file.'
         'ConvertTo-Base64' = 'System.String unless writing directly to a file.'
         'ConvertTo-Unit' = 'Pscx.SimpleUnits.Measurement.'
-        'ConvertTo-UnixLineEnding' = 'No success output.'
-        'ConvertTo-WindowsLineEnding' = 'No success output.'
+        'ConvertTo-UnixLineEnding' = 'Pscx.Commands.Text.LineEndingCheckResult with Check; otherwise no success output.'
+        'ConvertTo-WindowsLineEnding' = 'Pscx.Commands.Text.LineEndingCheckResult with Check; otherwise no success output.'
         'Disconnect-TerminalSession' = 'No success output; the session remains active for later reconnection.'
         'Edit-File' = 'System.IO.FileInfo only with PassThru.'
         'Edit-HostProfile' = 'No success output from the wrapper.'
@@ -147,6 +147,7 @@
         'Get-ExecutionTime' = 'Pscx.Commands.Modules.Utility.ExecutionTimeInfo.'
         'Get-FileVersionInfo' = 'System.Diagnostics.FileVersionInfo.'
         'Get-FileTail' = 'System.String for each line returned by Get-Content.'
+        'Get-TextFileInfo' = 'Pscx.Commands.Text.TextFileInfo.'
         'Get-MountPoint' = 'Pscx.Win.Fwk.IO.Ntfs.LinkReparsePointInfo.'
         'Get-OpticalDriveInfo' = 'Pscx.Win.Commands.IO.ImageMastering.OpticalDriveInfo.'
         'Get-Parameter' = 'System.Management.Automation.ParameterMetadataEx.'
@@ -207,8 +208,6 @@
         'Add-PathVariable' = 'Intentional silent mutator.'
         'AddAccelerator' = 'Intentional silent session mutator.'
         'AddRegex' = 'Intentional silent session mutator.'
-        'ConvertTo-UnixLineEnding' = 'Intentional in-place mutator.'
-        'ConvertTo-WindowsLineEnding' = 'Intentional in-place mutator.'
         'Disconnect-TerminalSession' = 'Intentional silent session mutator that preserves the disconnected session.'
         'Edit-HostProfile' = 'Intentional editor-launch wrapper with no success object.'
         'Edit-Profile' = 'Intentional editor-launch wrapper with no success object.'

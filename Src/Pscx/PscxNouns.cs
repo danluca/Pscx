@@ -14,6 +14,7 @@ namespace Pscx
         public const string Base64 = "Base64";
         public const string File = "File";
         public const string FileVersionInfo = "FileVersionInfo";
+        public const string TextFileInfo = "TextFileInfo";
         public const string Hash = "PscxHash";
         public const string Object = "Object";
         public const string Script = "Script";

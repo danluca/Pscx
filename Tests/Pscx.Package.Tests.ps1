@@ -722,6 +722,73 @@ Describe 'Representative public command behavior' {
         $missing = Join-Path $script:temporaryRoot 'missing-stop.xml'
         { Test-Xml -LiteralPath $missing -ErrorAction Stop } | Should -Throw
     }
+
+    It 'reports structured encoding and mixed line-ending information' {
+        $path = Join-Path $script:temporaryRoot 'mixed-line-endings.txt'
+        [IO.File]::WriteAllBytes(
+            $path,
+            [Text.Encoding]::ASCII.GetBytes("one`r`ntwo`nthree`rfour`n"))
+
+        $info = Get-TextFileInfo -LiteralPath $path
+
+        $info.GetType().FullName | Should -Be 'Pscx.Commands.Text.TextFileInfo'
+        $info.Encoding.ToString() | Should -Be 'Ascii'
+        $info.Bom.ToString() | Should -Be 'None'
+        $info.HasBom | Should -BeFalse
+        $info.IsValidText | Should -BeTrue
+        $info.LineEnding.ToString() | Should -Be 'Mixed'
+        $info.HasMixedLineEndings | Should -BeTrue
+        $info.CrLfCount | Should -Be 1
+        $info.LfCount | Should -Be 2
+        $info.CrCount | Should -Be 1
+        $info.HasFinalNewline | Should -BeTrue
+
+        $pipelineInfo = Get-Item -LiteralPath $path | Get-TextFileInfo
+        $pipelineInfo.Path | Should -Be (Get-Item -LiteralPath $path).FullName
+    }
+
+    It 'checks line-ending conversion without writing a file' {
+        $path = Join-Path $script:temporaryRoot 'check-line-endings.txt'
+        $original = [Text.Encoding]::ASCII.GetBytes("one`ntwo")
+        [IO.File]::WriteAllBytes($path, $original)
+
+        $result = ConvertTo-WindowsLineEnding -LiteralPath $path -Check
+
+        $result.GetType().FullName | Should -Be 'Pscx.Commands.Text.LineEndingCheckResult'
+        $result.NeedsConversion | Should -BeTrue
+        $result.TargetLineEnding.ToString() | Should -Be 'CrLf'
+        $result.FinalNewline.ToString() | Should -Be 'Preserve'
+        [IO.File]::ReadAllBytes($path) | Should -Be $original
+    }
+
+    It 'preserves a BOM-less encoding and final-newline state by default' {
+        $source = Join-Path $script:temporaryRoot 'source-line-endings.txt'
+        $destination = Join-Path $script:temporaryRoot 'converted-line-endings.txt'
+        [IO.File]::WriteAllBytes($source, [Text.Encoding]::ASCII.GetBytes("one`ntwo"))
+
+        ConvertTo-WindowsLineEnding -LiteralPath $source -Destination $destination
+
+        [IO.File]::ReadAllBytes($destination) |
+            Should -Be ([Text.Encoding]::ASCII.GetBytes("one`r`ntwo"))
+        $info = Get-TextFileInfo -LiteralPath $destination
+        $info.Bom.ToString() | Should -Be 'None'
+        $info.HasFinalNewline | Should -BeFalse
+        $info.LineEnding.ToString() | Should -Be 'CrLf'
+    }
+
+    It 'supports explicit final-newline control and WhatIf' {
+        $source = Join-Path $script:temporaryRoot 'final-newline-source.txt'
+        $added = Join-Path $script:temporaryRoot 'final-newline-added.txt'
+        $notWritten = Join-Path $script:temporaryRoot 'final-newline-whatif.txt'
+        [IO.File]::WriteAllBytes($source, [Text.Encoding]::ASCII.GetBytes('one'))
+
+        ConvertTo-UnixLineEnding -LiteralPath $source -Destination $added -FinalNewline Add
+        [IO.File]::ReadAllBytes($added) |
+            Should -Be ([Text.Encoding]::ASCII.GetBytes("one`n"))
+
+        ConvertTo-UnixLineEnding -LiteralPath $source -Destination $notWritten -WhatIf
+        Test-Path -LiteralPath $notWritten | Should -BeFalse
+    }
 }
 
 Describe 'Optional feature imports' {

@@ -54,6 +54,7 @@
             'Get-ExecutionTime'
             'Get-FileVersionInfo'
             'Get-FileTail'
+            'Get-TextFileInfo'
             'Get-Parameter'
             'Get-PathVariable'
             'Get-PEHeader'
