@@ -258,6 +258,29 @@ ConvertTo-UnixLineEnding -Path ./src/*.cs -Check |
     Where-Object NeedsConversion
 ```
 
+### Installation diagnostics
+
+Run `Test-PscxInstallation` after installation or when PSCX behavior differs
+between machines. It reports structured checks for the PSCX, PowerShell, and
+.NET versions; operating system and architecture; loaded and available
+optional modules; configured editor and pager; archive and native backends;
+and manifest, export, and installed-help integrity.
+
+The command displays a concise table by default, while every row remains a
+`Pscx.InstallationDiagnostic` object with `Category`, `Name`, `Status`,
+`Value`, `Expected`, `Message`, and `Details` properties. Optional components
+that are simply not installed or loaded are informational rather than errors:
+
+```powershell
+Test-PscxInstallation
+
+# Focus on actionable results.
+Test-PscxInstallation | Where-Object Status -In Warning, Fail
+```
+
+The diagnostic is read-only: it does not import optional modules, launch
+tools, access the network, or change the current session.
+
 ## Maintainers
 
 @danluca and other maintainers of this GitHub repository.
@@ -452,7 +475,7 @@ marked **Windows** require the Windows companion payload. Use
 | `Test-UserGroupMembership` | Windows | Default | Check group membership for the requested user identity |
 | `Test-Xml` | All | Default | Tests for well formedness and optionally validates against XML Schema. |
 
-### Functions (32)
+### Functions (33)
 
 | Command | Platform | Availability | Description |
 | --- | --- | --- | --- |
@@ -488,6 +511,7 @@ marked **Windows** require the Windows companion payload. Use
 | `Test-IsAdminMember` | Windows | Default | The function Test-IsAdminMember checks if the currently logged-in user is a member of the local administrators group, regardless of the elevation level of the current process. |
 | `Test-IsGsudoCacheAvailable` | Windows | Default | Tests whether the gsudo credentials cache is available. |
 | `Test-IsProcessElevated` | Windows | Default | Tests if the user is an administrator *and* the current proces is elevated. |
+| `Test-PscxInstallation` | All | Default | Tests the health of the current PSCX installation. |
 
 ### Aliases (20)
 

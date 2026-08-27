@@ -789,6 +789,87 @@ Describe 'Representative public command behavior' {
         ConvertTo-UnixLineEnding -LiteralPath $source -Destination $notWritten -WhatIf
         Test-Path -LiteralPath $notWritten | Should -BeFalse
     }
+
+    It 'reports structured installation diagnostics without changing module state' {
+        $loadedModulesBefore = @(
+            Get-Module -All | ForEach-Object { "$($_.Name)|$($_.Path)" } |
+                Sort-Object -Unique
+        )
+        $pagerBefore = $env:PAGER
+        $editorBefore = $Pscx:Preferences.TextEditor
+
+        $diagnostics = @(Test-PscxInstallation)
+
+        $diagnostics | Should -Not -BeNullOrEmpty
+        $diagnostics | ForEach-Object {
+            $_.PSTypeNames | Should -Contain 'Pscx.InstallationDiagnostic'
+            $_.Category | Should -BeIn Environment, Modules, Tools, Package
+            $_.Status | Should -BeIn Pass, Warning, Fail, Info, NotApplicable
+            $_.Name | Should -Not -BeNullOrEmpty
+            $_.Message | Should -Not -BeNullOrEmpty
+            $_.Details | Should -BeOfType ([hashtable])
+        }
+
+        $expectedNames = @(
+            'PSCX version'
+            'PowerShell runtime'
+            '.NET runtime'
+            'Platform'
+            'Loaded optional modules'
+            'Pscx.Archive'
+            'Pscx.Time'
+            'Pscx.WinAdmin'
+            'Text editor'
+            'Pager'
+            'Archive backend'
+            'Native dependency: less'
+            'Native dependency: gsudo'
+            'Module manifest'
+            'Command exports'
+            'Command help'
+        )
+        $diagnostics.Name | Should -Be $expectedNames
+        ($diagnostics | Where-Object Name -EQ 'PSCX version').Value |
+            Should -BeLike '4.0.0-preview.*'
+        $diagnostics | Where-Object Name -In 'Module manifest', 'Command exports', 'Command help' |
+            ForEach-Object { $_.Status | Should -Be 'Pass' }
+
+        $loadedModulesAfter = @(
+            Get-Module -All | ForEach-Object { "$($_.Name)|$($_.Path)" } |
+                Sort-Object -Unique
+        )
+        $loadedModulesAfter | Should -Be $loadedModulesBefore
+        $env:PAGER | Should -Be $pagerBefore
+        $Pscx:Preferences.TextEditor | Should -Be $editorBefore
+
+        $format = Get-FormatData -TypeName Pscx.InstallationDiagnostic
+        $format.FormatViewDefinition.Name | Should -Contain 'PscxInstallationDiagnostic'
+    }
+
+    It 'warns when configured editor and pager applications cannot be resolved' {
+        $editorBefore = $Pscx:Preferences.TextEditor
+        $pagerBefore = $env:PAGER
+        try {
+            $Pscx:Preferences.TextEditor = 'pscx-editor-that-does-not-exist'
+            $env:PAGER = 'pscx-pager-that-does-not-exist'
+
+            $diagnostics = @(Test-PscxInstallation)
+
+            ($diagnostics | Where-Object Name -EQ 'Text editor').Status |
+                Should -Be 'Warning'
+            ($diagnostics | Where-Object Name -EQ 'Pager').Status |
+                Should -Be 'Warning'
+        }
+        finally {
+            $Pscx:Preferences.TextEditor = $editorBefore
+            if ($null -eq $pagerBefore) {
+                Remove-Item Env:PAGER -ErrorAction SilentlyContinue
+            }
+            else {
+                $env:PAGER = $pagerBefore
+            }
+        }
+    }
 }
 
 Describe 'Optional feature imports' {

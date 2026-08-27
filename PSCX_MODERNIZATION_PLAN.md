@@ -755,8 +755,10 @@ For each group:
 
 ### 7.3 Installation diagnostics
 
-- [ ] Add `Test-PscxInstallation` or equivalent.
-- [ ] Report:
+- [x] Add `Test-PscxInstallation` as an observational, cross-platform command
+  that does not import modules, execute tools, access the network, or mutate
+  the session.
+- [x] Report:
   - PSCX version;
   - PowerShell and .NET versions;
   - operating system and architecture;
@@ -765,7 +767,14 @@ For each group:
   - archive backend availability;
   - missing or incompatible native dependencies;
   - manifest/help/export validation status.
-- [ ] Return structured diagnostic objects and provide a concise default view.
+- [x] Return one `Pscx.InstallationDiagnostic` object per check, with category,
+  name, status, actual and expected values, message, and details, plus a concise
+  default table view.
+- [x] Treat unavailable or unloaded optional packages as informational,
+  unresolved user-facing tools as warnings, and broken loaded/package
+  contracts as failures.
+- [x] Cover the shipped command, output shape, default view, session
+  non-mutation, and degraded editor/pager resolution in packaged Pester tests.
 
 ### 7.4 Command discovery and documentation
 
@@ -914,7 +923,7 @@ The following issues are small enough to begin independently:
 | 4. Explicit public API | Complete | 100% |
 | 5. Feature classification | Complete | 100% |
 | 6. Dependency and binary reduction | Complete | 100% |
-| 7. Cohesive improvements | In progress | 20% |
+| 7. Cohesive improvements | In progress | 60% |
 | 8. PSCX 4.0 release | Not started | 0% |
 
 Update this table when a phase changes state. Detailed completion should remain in the checklists so the summary does not become a second source of truth.

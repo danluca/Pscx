@@ -94,6 +94,11 @@
             Differentiation = 'Wraps the modern PowerShell parser for path and pipeline input with Boolean and structured diagnostic modes.'
         }
         @{
+            Name = 'Installation diagnostics'
+            Commands = @('Test-PscxInstallation')
+            Differentiation = 'Reports runtime, optional-module, tool, dependency, manifest, export, and help health without changing the session.'
+        }
+        @{
             Name = 'Windows elevation and paging'
             Commands = @('gsudo', 'Invoke-Gsudo', 'PscxLess', 'Test-IsAdminMember', 'Test-IsGsudoCacheAvailable', 'Test-IsProcessElevated')
             Differentiation = 'Bundles established Windows elevation and paging utilities with PowerShell-aware wrappers and status checks.'
@@ -199,6 +204,7 @@
         'Test-IsAdminMember' = 'System.Boolean.'
         'Test-IsGsudoCacheAvailable' = 'System.Boolean.'
         'Test-IsProcessElevated' = 'System.Boolean.'
+        'Test-PscxInstallation' = 'System.Management.Automation.PSCustomObject with the Pscx.InstallationDiagnostic type name.'
         'Test-Script' = 'System.Boolean by default, or Pscx.Commands.ScriptTestResult with PassThru.'
         'Test-UserGroupMembership' = 'System.Boolean.'
         'Test-Xml' = 'System.Boolean.'

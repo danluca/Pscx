@@ -145,6 +145,460 @@ function New-Symlink {
     }
 }
 
+<#
+.SYNOPSIS
+    Tests the health of the current PSCX installation.
+.DESCRIPTION
+    Reports structured diagnostics for the loaded PSCX version, the PowerShell
+    and .NET runtimes, operating system and architecture, optional modules, editor
+    and pager resolution, the archive backend, native tools, the module
+    manifest, exported commands, and installed help.
+
+    The command is observational. It does not import optional modules, execute
+    native tools, access the network, or modify the session.
+.EXAMPLE
+    Test-PscxInstallation
+
+    Displays a concise table containing all installation diagnostics.
+.EXAMPLE
+    Test-PscxInstallation | Where-Object Status -In Warning, Fail
+
+    Returns only diagnostics that may require attention.
+.OUTPUTS
+    System.Management.Automation.PSCustomObject. Each object has the
+    Pscx.InstallationDiagnostic type name.
+#>
+function Test-PscxInstallation {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param()
+
+    $diagnostics = [Collections.Generic.List[object]]::new()
+
+    function Add-PscxInstallationDiagnostic {
+        param(
+            [Parameter(Mandatory)]
+            [ValidateSet('Environment', 'Modules', 'Tools', 'Package')]
+            [string] $Category,
+
+            [Parameter(Mandatory)]
+            [string] $Name,
+
+            [Parameter(Mandatory)]
+            [ValidateSet('Pass', 'Warning', 'Fail', 'Info', 'NotApplicable')]
+            [string] $Status,
+
+            [AllowNull()]
+            [object] $Value,
+
+            [AllowNull()]
+            [object] $Expected,
+
+            [Parameter(Mandatory)]
+            [string] $Message,
+
+            [hashtable] $Details = @{}
+        )
+
+        $diagnostic = [pscustomobject]@{
+            Category = $Category
+            Name = $Name
+            Status = $Status
+            Value = $Value
+            Expected = $Expected
+            Message = $Message
+            Details = $Details
+        }
+        $diagnostic.PSObject.TypeNames.Insert(0, 'Pscx.InstallationDiagnostic')
+        [void] $diagnostics.Add($diagnostic)
+    }
+
+    function Resolve-PscxApplication {
+        param([AllowNull()][object] $ConfiguredValue)
+
+        if ($null -eq $ConfiguredValue) {
+            return $null
+        }
+
+        $candidate = if ($ConfiguredValue -is [IO.FileInfo]) {
+            $ConfiguredValue.FullName
+        }
+        else {
+            $ConfiguredValue.ToString()
+        }
+        if ([string]::IsNullOrWhiteSpace($candidate)) {
+            return $null
+        }
+        if (Test-Path -LiteralPath $candidate -PathType Leaf) {
+            return (Resolve-Path -LiteralPath $candidate).Path
+        }
+
+        $application = Get-Command -Name $candidate -CommandType Application `
+            -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($null -ne $application) {
+            return $application.Source
+        }
+        return $null
+    }
+
+    function Find-PscxOptionalModuleManifest {
+        param(
+            [Parameter(Mandatory)]
+            [string] $Name,
+
+            [Parameter(Mandatory)]
+            [version] $Version
+        )
+
+        $loadedModule = Get-Module -Name $Name -All | Select-Object -First 1
+        if ($null -ne $loadedModule -and -not [string]::IsNullOrWhiteSpace($loadedModule.Path)) {
+            return $loadedModule.Path
+        }
+
+        $moduleRoot = $PSScriptRoot
+        $packageRoot = Split-Path $moduleRoot -Parent
+        $candidates = @(
+            (Join-Path $packageRoot "$Name\$Name.psd1")
+            (Join-Path $packageRoot "$Name\$Version\$Name.psd1")
+        )
+
+        $moduleDirectoryName = Split-Path $moduleRoot -Leaf
+        $moduleDirectoryVersion = $null
+        if ([version]::TryParse($moduleDirectoryName, [ref] $moduleDirectoryVersion)) {
+            $modulesRoot = Split-Path (Split-Path $moduleRoot -Parent) -Parent
+            $candidates += Join-Path $modulesRoot "$Name\$Version\$Name.psd1"
+        }
+
+        foreach ($candidate in $candidates) {
+            if (Test-Path -LiteralPath $candidate -PathType Leaf) {
+                return (Resolve-Path -LiteralPath $candidate).Path
+            }
+        }
+
+        $availableModule = Get-Module -Name $Name -ListAvailable |
+            Sort-Object Version -Descending | Select-Object -First 1
+        if ($null -ne $availableModule -and -not [string]::IsNullOrWhiteSpace($availableModule.Path)) {
+            return $availableModule.Path
+        }
+        return $null
+    }
+
+    $module = $ExecutionContext.SessionState.Module
+    $manifestPath = Join-Path $PSScriptRoot 'Pscx.psd1'
+    $manifestData = $null
+    try {
+        $manifestData = Import-PowerShellDataFile -LiteralPath $manifestPath
+    }
+    catch {
+        # The dedicated manifest check below reports the actionable failure.
+    }
+
+    $prereleaseLabel = $module.PrivateData.PSData.Prerelease
+    $pscxVersion = if ([string]::IsNullOrWhiteSpace($prereleaseLabel)) {
+        $module.Version.ToString()
+    }
+    else {
+        "$($module.Version)-$prereleaseLabel"
+    }
+    Add-PscxInstallationDiagnostic -Category Environment -Name 'PSCX version' `
+        -Status Pass -Value $pscxVersion -Expected $pscxVersion `
+        -Message "PSCX $pscxVersion is loaded from $PSScriptRoot." `
+        -Details @{
+            ModulePath = $module.Path
+            ModuleBase = $module.ModuleBase
+            ModuleVersion = $module.Version
+            Prerelease = $prereleaseLabel
+        }
+
+    $requiredPowerShellVersion = if ($null -ne $manifestData) {
+        [version] $manifestData.PowerShellVersion
+    }
+    else {
+        [version] '0.0'
+    }
+    $powerShellStatus = if ($PSVersionTable.PSVersion -lt $requiredPowerShellVersion) {
+        'Fail'
+    }
+    elseif ($PSVersionTable.PSVersion.Major -ne $requiredPowerShellVersion.Major -or
+        $PSVersionTable.PSVersion.Minor -ne $requiredPowerShellVersion.Minor) {
+        'Warning'
+    }
+    else {
+        'Pass'
+    }
+    $supportedPowerShellLine = '{0}.{1}.x (minimum {2})' -f
+        $requiredPowerShellVersion.Major,
+        $requiredPowerShellVersion.Minor,
+        $requiredPowerShellVersion
+    Add-PscxInstallationDiagnostic -Category Environment -Name 'PowerShell runtime' `
+        -Status $powerShellStatus -Value $PSVersionTable.PSVersion `
+        -Expected $supportedPowerShellLine `
+        -Message "PowerShell $($PSVersionTable.PSVersion) is running; PSCX supports $supportedPowerShellLine." `
+        -Details @{ Edition = $PSVersionTable.PSEdition }
+
+    $targetFramework = [Pscx.Core.PscxContext].Assembly.GetCustomAttributesData() |
+        Where-Object AttributeType -EQ ([Runtime.Versioning.TargetFrameworkAttribute]) |
+        ForEach-Object { $_.ConstructorArguments[0].Value } |
+        Select-Object -First 1
+    Add-PscxInstallationDiagnostic -Category Environment -Name '.NET runtime' `
+        -Status Pass -Value ([Environment]::Version) -Expected $targetFramework `
+        -Message ".NET $([Environment]::Version) is running; the PSCX assembly targets $targetFramework." `
+        -Details @{}
+
+    $runtimeInformation = [Runtime.InteropServices.RuntimeInformation]
+    $platformValue = [pscustomobject]@{
+        OperatingSystem = $runtimeInformation::OSDescription
+        OSArchitecture = $runtimeInformation::OSArchitecture
+        ProcessArchitecture = $runtimeInformation::ProcessArchitecture
+    }
+    Add-PscxInstallationDiagnostic -Category Environment -Name 'Platform' `
+        -Status Info -Value $platformValue -Expected 'Windows, Linux, or macOS' `
+        -Message "$($runtimeInformation::OSDescription); OS $($runtimeInformation::OSArchitecture), process $($runtimeInformation::ProcessArchitecture)." `
+        -Details @{ FrameworkDescription = $runtimeInformation::FrameworkDescription }
+
+    $knownOptionalModules = @(
+        'Pscx.CD',
+        'Pscx.DirectoryServices',
+        'Pscx.FileSystem',
+        'Pscx.Net',
+        'Pscx.TranscribeSession',
+        'Pscx.Utility',
+        'Pscx.Sudo',
+        'Pscx.Archive',
+        'Pscx.Time',
+        'Pscx.WinAdmin'
+    )
+    $loadedOptionalModules = @(
+        Get-Module -Name $knownOptionalModules -All |
+            Sort-Object Name, Version |
+            ForEach-Object {
+                [pscustomobject]@{
+                    Name = $_.Name
+                    Version = $_.Version
+                    Path = $_.Path
+                }
+            }
+    )
+    $loadedModuleNames = @($loadedOptionalModules | ForEach-Object Name)
+    $loadedModuleMessage = if ($loadedModuleNames.Count -gt 0) {
+        "Loaded optional modules: $($loadedModuleNames -join ', ')."
+    }
+    else {
+        'No optional PSCX modules are loaded.'
+    }
+    Add-PscxInstallationDiagnostic -Category Modules -Name 'Loaded optional modules' `
+        -Status Info -Value $loadedOptionalModules -Expected 'Load only the features needed by this session' `
+        -Message $loadedModuleMessage -Details @{ Count = $loadedOptionalModules.Count }
+
+    $optionalPackageNames = @('Pscx.Archive', 'Pscx.Time', 'Pscx.WinAdmin')
+    $optionalModuleManifests = @{}
+    foreach ($optionalPackageName in $optionalPackageNames) {
+        $isPlatformApplicable = $optionalPackageName -ne 'Pscx.WinAdmin' -or $IsWindows
+        $optionalManifest = if ($isPlatformApplicable) {
+            Find-PscxOptionalModuleManifest -Name $optionalPackageName -Version $module.Version
+        }
+        else {
+            $null
+        }
+        $optionalModuleManifests[$optionalPackageName] = $optionalManifest
+        $loadedOptionalModule = Get-Module -Name $optionalPackageName -All |
+            Select-Object -First 1
+        if (-not $isPlatformApplicable) {
+            $optionalStatus = 'NotApplicable'
+            $optionalMessage = "$optionalPackageName is Windows-only and is not applicable on this platform."
+        }
+        elseif ($null -ne $loadedOptionalModule) {
+            $optionalStatus = 'Pass'
+            $optionalMessage = "$optionalPackageName $($loadedOptionalModule.Version) is loaded."
+        }
+        elseif ($null -ne $optionalManifest) {
+            $optionalStatus = 'Info'
+            $optionalMessage = "$optionalPackageName is available but not loaded."
+        }
+        else {
+            $optionalStatus = 'Info'
+            $optionalMessage = "$optionalPackageName is not installed with this PSCX installation."
+        }
+        Add-PscxInstallationDiagnostic -Category Modules -Name $optionalPackageName `
+            -Status $optionalStatus -Value $optionalManifest -Expected 'Optional' `
+            -Message $optionalMessage -Details @{ Loaded = $null -ne $loadedOptionalModule }
+    }
+
+    $configuredEditor = $Pscx:Preferences['TextEditor']
+    $resolvedEditor = Resolve-PscxApplication -ConfiguredValue $configuredEditor
+    $editorStatus = if ($null -ne $resolvedEditor) { 'Pass' } else { 'Warning' }
+    $editorMessage = if ($null -ne $resolvedEditor) {
+        "Configured editor '$configuredEditor' resolves to '$resolvedEditor'."
+    }
+    else {
+        "Configured editor '$configuredEditor' could not be resolved. Edit-File may fail to launch an editor."
+    }
+    Add-PscxInstallationDiagnostic -Category Tools -Name 'Text editor' `
+        -Status $editorStatus -Value $resolvedEditor -Expected $configuredEditor `
+        -Message $editorMessage -Details @{ Configured = $configuredEditor }
+
+    $configuredPager = if (-not [string]::IsNullOrWhiteSpace($env:PAGER)) {
+        $env:PAGER
+    }
+    elseif ($Pscx:Preferences['PageHelpUsingLess']) {
+        'less'
+    }
+    elseif ($IsWindows) {
+        'more.com'
+    }
+    else {
+        'more'
+    }
+    $resolvedPager = Resolve-PscxApplication -ConfiguredValue $configuredPager
+    $pagerStatus = if ($null -ne $resolvedPager) { 'Pass' } else { 'Warning' }
+    $pagerMessage = if ($null -ne $resolvedPager) {
+        "Configured pager '$configuredPager' resolves to '$resolvedPager'."
+    }
+    else {
+        "Configured pager '$configuredPager' could not be resolved as an application. Shell pager integration may not be usable."
+    }
+    Add-PscxInstallationDiagnostic -Category Tools -Name 'Pager' `
+        -Status $pagerStatus -Value $resolvedPager -Expected $configuredPager `
+        -Message $pagerMessage -Details @{ Configured = $configuredPager }
+
+    $archiveManifest = $optionalModuleManifests['Pscx.Archive']
+    if ($null -eq $archiveManifest) {
+        Add-PscxInstallationDiagnostic -Category Package -Name 'Archive backend' `
+            -Status NotApplicable -Value $null -Expected 'SharpCompress.dll when Pscx.Archive is installed' `
+            -Message 'Pscx.Archive is not installed, so no archive backend is required.' `
+            -Details @{}
+    }
+    else {
+        $archiveRoot = Split-Path $archiveManifest -Parent
+        $archiveBackendPath = Join-Path $archiveRoot 'SharpCompress.dll'
+        $archiveLoaded = $null -ne (Get-Module -Name Pscx.Archive -All |
+            Select-Object -First 1)
+        try {
+            $archiveAssemblyName = [Reflection.AssemblyName]::GetAssemblyName($archiveBackendPath)
+            Add-PscxInstallationDiagnostic -Category Package -Name 'Archive backend' `
+                -Status Pass -Value $archiveBackendPath -Expected 'Readable SharpCompress assembly' `
+                -Message "SharpCompress $($archiveAssemblyName.Version) is available to Pscx.Archive." `
+                -Details @{ Version = $archiveAssemblyName.Version; LoadedModule = $archiveLoaded }
+        }
+        catch {
+            $archiveStatus = if ($archiveLoaded) { 'Fail' } else { 'Warning' }
+            Add-PscxInstallationDiagnostic -Category Package -Name 'Archive backend' `
+                -Status $archiveStatus -Value $archiveBackendPath -Expected 'Readable SharpCompress assembly' `
+                -Message "Pscx.Archive is present, but its SharpCompress backend is missing or invalid: $($_.Exception.Message)" `
+                -Details @{ LoadedModule = $archiveLoaded; Error = $_.Exception.Message }
+        }
+    }
+
+    $nativeDependencies = @(
+        [pscustomobject]@{
+            Name = 'less'
+            Applicable = $null -ne (Get-Command -Name PscxLess -ErrorAction SilentlyContinue)
+            Expected = 'Pager used by PscxLess in ConsoleHost'
+        }
+        [pscustomobject]@{
+            Name = 'gsudo'
+            Applicable = $IsWindows -and $null -ne (Get-Module -Name Pscx.Sudo)
+            Expected = 'Windows elevation utility used by the Sudo submodule'
+        }
+    )
+    foreach ($dependency in $nativeDependencies) {
+        if (-not $dependency.Applicable) {
+            Add-PscxInstallationDiagnostic -Category Tools -Name "Native dependency: $($dependency.Name)" `
+                -Status NotApplicable -Value $null -Expected $dependency.Expected `
+                -Message "$($dependency.Name) is not required by the features loaded in this session." `
+                -Details @{}
+            continue
+        }
+
+        $resolvedDependency = Resolve-PscxApplication -ConfiguredValue $dependency.Name
+        $dependencyStatus = if ($null -ne $resolvedDependency) { 'Pass' } else { 'Warning' }
+        $dependencyMessage = if ($null -ne $resolvedDependency) {
+            "$($dependency.Name) resolves to '$resolvedDependency'."
+        }
+        else {
+            "$($dependency.Name) is required by a loaded feature but could not be resolved."
+        }
+        Add-PscxInstallationDiagnostic -Category Tools -Name "Native dependency: $($dependency.Name)" `
+            -Status $dependencyStatus -Value $resolvedDependency -Expected $dependency.Expected `
+            -Message $dependencyMessage -Details @{ ProcessArchitecture = $runtimeInformation::ProcessArchitecture }
+    }
+
+    try {
+        $validatedManifest = Test-ModuleManifest -Path $manifestPath -ErrorAction Stop `
+            -WarningAction SilentlyContinue
+        Add-PscxInstallationDiagnostic -Category Package -Name 'Module manifest' `
+            -Status Pass -Value $manifestPath -Expected 'Valid Pscx.psd1' `
+            -Message "The PSCX module manifest is valid for version $($validatedManifest.Version)." `
+            -Details @{ Guid = $validatedManifest.Guid }
+    }
+    catch {
+        Add-PscxInstallationDiagnostic -Category Package -Name 'Module manifest' `
+            -Status Fail -Value $manifestPath -Expected 'Valid Pscx.psd1' `
+            -Message "The PSCX module manifest is invalid: $($_.Exception.Message)" `
+            -Details @{ Error = $_.Exception.Message }
+    }
+
+    $runtimeCommands = @($module.ExportedCommands.Keys | Sort-Object -Unique)
+    $declaredCommands = if ($null -ne $manifestData) {
+        @($manifestData.FunctionsToExport) + @($manifestData.CmdletsToExport) +
+            @($manifestData.AliasesToExport)
+    }
+    else {
+        @()
+    }
+    $undeclaredCommands = @(
+        $runtimeCommands | Where-Object { $_ -notin $declaredCommands }
+    )
+    $exportStatus = if ($null -ne $manifestData -and $undeclaredCommands.Count -eq 0) {
+        'Pass'
+    }
+    else {
+        'Fail'
+    }
+    $exportMessage = if ($exportStatus -eq 'Pass') {
+        "All $($runtimeCommands.Count) runtime exports are declared by the manifest."
+    }
+    else {
+        "Export validation found $($undeclaredCommands.Count) undeclared runtime command(s)."
+    }
+    Add-PscxInstallationDiagnostic -Category Package -Name 'Command exports' `
+        -Status $exportStatus -Value $runtimeCommands.Count -Expected 'Every runtime export is declared' `
+        -Message $exportMessage `
+        -Details @{ RuntimeCommands = $runtimeCommands; UndeclaredCommands = $undeclaredCommands }
+
+    $commandsRequiringHelp = @(
+        $module.ExportedCommands.Values |
+            Where-Object CommandType -In Function, Cmdlet |
+            Sort-Object Name -Unique
+    )
+    $missingHelp = [Collections.Generic.List[string]]::new()
+    foreach ($command in $commandsRequiringHelp) {
+        try {
+            $help = Get-Help -Name $command.Name -Full -ErrorAction Stop
+            $synopsis = $help.Synopsis
+            if ([string]::IsNullOrWhiteSpace($synopsis) -or $synopsis -match '\{\{') {
+                [void] $missingHelp.Add($command.Name)
+            }
+        }
+        catch {
+            [void] $missingHelp.Add($command.Name)
+        }
+    }
+    $helpStatus = if ($missingHelp.Count -eq 0) { 'Pass' } else { 'Fail' }
+    $helpMessage = if ($missingHelp.Count -eq 0) {
+        "Installed help is available for all $($commandsRequiringHelp.Count) exported functions and cmdlets."
+    }
+    else {
+        "Installed help is missing or incomplete for: $($missingHelp -join ', ')."
+    }
+    Add-PscxInstallationDiagnostic -Category Package -Name 'Command help' `
+        -Status $helpStatus -Value ($commandsRequiringHelp.Count - $missingHelp.Count) `
+        -Expected $commandsRequiringHelp.Count -Message $helpMessage `
+        -Details @{ MissingCommands = @($missingHelp) }
+
+    $diagnostics
+}
+
 # -----------------------------------------------------------------------
 # Displays help usage
 # -----------------------------------------------------------------------
@@ -428,8 +882,8 @@ Export-ModuleMember -Alias $aliasesToExport `
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCC290yfArFcJkPj
-# uUu+L0iQTl1jW76213FcjEQkKT1MsaCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAmgqog8bMKgWvw
+# PYE17daF/wjle8qBtmzhsLLW4wPfLKCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -608,34 +1062,34 @@ Export-ModuleMember -Alias $aliasesToExport `
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgBE+yS5c5mDFtCDefz1nv
-# H4WJqcqYdL5HsXPThY/V3wcwDQYJKoZIhvcNAQEBBQAEggIAY6xsZhawO/sR2Iod
-# XxpzDEiaFipjHfpOoiA+M4W1T61gzqlymXlgp1axSeFpoS+MTlX2AUkJtJ9brvUW
-# Q3aJCVbO0KpOk2YLPw4F/6YREwj3PhGgrRKVJdmCPXEqWklDcIqnzULRmMMKzNG/
-# f5rhFNfe2ku19wQK9i9geOHk4vcMJw8treftzexmHHpqVkDlOavaNOSDtFAHPHGO
-# TyJXesUfgsV67SviSuYu60vZdkouapxgr8xH/H1VgGXm21Bn1PR2OUIiuhMGTE3z
-# Y3GDWEqgwGix9VHA45vBZte5JSUDdcuwEZjENObh2fXLH4vcl2qv58Dp4l/ZTDDy
-# FBCx6wVerkfa16zjTHU2STU/0ZKU3yTDrbCawsfjc+BUCDtLnPvCCx7+N8Fwa3eq
-# Yu8lMJfu3DuTSeilklLBqE/MQ4YtA0ujOh5HEtxjWYQlU9tIIcW7KsbFhwFcN28s
-# 3e+OcpHCshpzxVYJX2NvH/l6No8fypnTzE60KgLmEq+PJSdmy91RFGLmDQ1tpQBv
-# V+x1bGQPJUv4pXSdIo4oWtueqOIOxyqLbUYiigyB0uxDhYquuFQAeKj4B92C71kM
-# xFKw1Hh9W0qbBMPA2N0OgGaf9XPL7AKTuGWaE2WceDycmatKT8LCOv6jvhiyvz4w
-# GNzBl5RKFhKIgIaVxNiLqgI3UIKhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQg+aqXO6nBHVjxgv7yx4Z/
+# dfR6hHz8u/1BGTfQ5N5pahkwDQYJKoZIhvcNAQEBBQAEggIArdrfDNn3aQyDYPE3
+# 6QKfvcLKLNy5kf8R1kQ4xst5rdHrrY7BajA3KC6IUZW8+ZaZBCxm0yGMhWwHJgZW
+# 5BoCm9vlJWOcbyzgQYinWyRmW8++ExVNmhW6j2GpyBINMthfyWoos6q7ZJsPhdp8
+# OnL/OAAweIZbHcHUiB+XmBGgxzA/u9o9GCf6mzSYMaa4vmKQ5OOuaq036coIHlso
+# 9drbPLbIgcVKdWtF0E1Lg7XmWes1LdnLoFKhDoRMPG/m3G+lL1APd6n5GzpXsDQE
+# 6V9eTJa+D7GKVphfdBOkyCiqzX0jFiPIpUUe0zlxpyt4BoFWirtTx+p4oe1Zms92
+# 2jHz6vY5gMvgIy0AMngPjfB75a1DD+W7MnjBYqC3Kyo5ScC3FwLK32vr1n1rsnSM
+# bmvfG5meabAl+AvnVumlrPDlaT+d895NozjH/Ao52Ioqv5STx943CUpNRvrexI+X
+# Exbo4YYcCW0lh8jSyTPt6JbUwZg5Faj9+SHHKjAUrji/IufhaCJYBHaYQqqB3WiX
+# 8GUSvK6eYzZG3rmmTR3xkGOi2Id+MeEH6/bY6OGQRjTVI6k2gHdyjPDirykHR10J
+# OReummPPF1b4wtTbHpS3ODMWyXlN60JTgkmv8Y4na5E0PYPEoqLbyIu7iHsHuZq6
+# Fc8KuFHRzr/c/sieSxxIHShSarWhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODI1MTc0NjA0WjAvBgkqhkiG9w0BCQQxIgQgcYS9O4Fe4Ha6g2rLsypuXQu3CH3R
-# 5+83QrPwWfwTGU8wDQYJKoZIhvcNAQEBBQAEggIATbFURnHwKGUo9bqGCyfgit+R
-# 5j8as4Mqq3ivUjdb8gscjuGftqyzW5IcQ/s4UQSvbfeeDkfkWywGyvsFPXf7NqwM
-# w6sB50rVrUYCjfIahWSFNrFau/LiNcjpPS3gEsuKmEGKbEZzDwG67gB8/utrGWP5
-# BZnMTC/6QoUK27LxE70ISdge3iDzuHJCw9sOWR0go3y7LYxa3A3+Ii1DYhZzQTKw
-# m3fq0boOfgWIYDNJYgWA3KPCoDAjmy1r5e51LartZClszRkVAijfmtUjnjZ8Po5Q
-# kwqO7NGs+lbZPKuithLYg6ID6KwYBIikB+KYeYz2F8+drUjNCUDR0shmKnqhD8Tk
-# HUgNmDEH13qZ3sdSONh6J176b73kbIw64Fgoirez3gT8pKfJ+H7OxNsa6Zl0d9HV
-# EVH2zgegmX668Z7Hvyt2xMno0WGXRNnGCJsnTQQjyGq9+sYx8+wO8cqW9NAGW5uL
-# iIf7umE9x0r6jDnc5wxlwcTn42/cKzM1M3Tl2bnHkI/5596V33SpSapXdskHZn3P
-# DfPkMkmzXf9F3JBzbMDmcHWSlqppuvFdHulBq8bAQKceUgzh0EVWEeaDOxc9575a
-# gdMP6TXU+/iJgC/NCkUnErCkwC18BQ3pFLUAPhC4mSwvmC56w8vuGCAX7OWgyz7y
-# vtdovACGyrbgwey6V7I=
+# ODI3MjIxNjU2WjAvBgkqhkiG9w0BCQQxIgQgkV8on/QNCNpUY5BSjsZoVAQBZhoq
+# NZSdbknFkxYecYMwDQYJKoZIhvcNAQEBBQAEggIAmy8zaIhzDpI8fHYDdouksORX
+# VsDET3woLu1qlhbYXnKjyvoQmMHkazJVreqMiI1zjfjj1G/b/slEfrABCNLgN23t
+# 3z1Bgvr8sklolfUa953hkDjz0+htjhtkhG/mzOwbAiIU5cuS75mGoBRqatJZeYbt
+# JLeJ6x6/g3XIjlTCwe7nMPeCoFhCsR+4x3w/UavpGIkVMWqj3kbUvJ3lhmhudcjh
+# 7lZIXckykBSJ9ZlZ8MecHHdc8hRmF1vdEJ4VmtPq4K4lCNgkjzJaQaXLj38xPxx3
+# +VPu03BAU0Hgy9z0m4r9v+r3PrvjXQA4gNOojeIATnSW6qPOraHsGaEXMCy1Sokk
+# KIRLciL54shFxMPNwZBIOHaSHAMoyJMY/eNajxfhSd9ASJoyS/rD0kvUCgJXe0N+
+# e+PadmTn5opq97kGWswR64oLWUApFKEsQ02DDvU8xHySLvsomsUpJLspBn11qvLI
+# sYRwLkr4BT7aYsni+YbjBG6kvXDmF9yH86ryqSEPpVeIPCQBRnZcod2zs71XWCQD
+# WXKXrINSjtvUzHMKieAi8aKy1TEyf5LpLZ+jFT0oN/bNU5LGsSB+yOSQzST08FE0
+# CZ2BOPvEQ+xQLZADBiygbrVxyC8+4PpPTMx+5XNUJNZxxlefxTFRDV5b4kpK6Qmp
+# W1Q1edanZWBnKZSPh1s=
 # SIG # End signature block

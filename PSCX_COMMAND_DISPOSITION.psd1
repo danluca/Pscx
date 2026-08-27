@@ -80,6 +80,7 @@
             'Show-Tree'
             'Skip-Object'
             'Test-Assembly'
+            'Test-PscxInstallation'
             'Test-Script'
             'Test-Xml'
         )
