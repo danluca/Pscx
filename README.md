@@ -68,8 +68,9 @@ the [Imports](Imports/) folder for the applicable license files.
    Get-Content ./Pscx-3.8.0.sha256
    ```
 
-3. Extract the ZIP into a directory listed in `$env:PSModulePath`. Common
-   current-user locations are:
+3. Extract the ZIP directly into a directory listed in `$env:PSModulePath`.
+   The archive already contains each module's versioned directory, so no files
+   need to be rearranged. Common current-user locations are:
    - Windows: `~/Documents/PowerShell/Modules`
    - macOS/Linux: `~/.local/share/powershell/Modules`
 4. Import and verify the module:
@@ -80,10 +81,9 @@ the [Imports](Imports/) folder for the applicable license files.
    ```
 
 The cross-platform release ZIP includes `Pscx`, `Pscx.Archive`, and
-`Pscx.Time` as sibling module roots. The Full Windows ZIP also includes
-`Pscx.WinAdmin`. Install
-the desired roots using a versioned layout (`<module-name>/<version>/...`), then import
-the optional modules only when needed:
+`Pscx.Time` as sibling versioned module roots. The Full Windows ZIP also
+includes `Pscx.WinAdmin`. Direct extraction produces
+`<module-name>/<version>/...`; import the optional modules only when needed:
 
 ```powershell
 Import-Module Pscx.Archive
@@ -444,6 +444,10 @@ review and publication:
 - `Pscx-{version}.zip`;
 - `Pscx-{version}.spdx.json`;
 - `Pscx-{version}.sha256`.
+
+The ZIP stores every bundled module in the standard versioned PowerShell
+layout (`<module-name>/<module-version>/...`). Extract it directly into a
+directory on `$env:PSModulePath` for normal discovery and side-by-side imports.
 
 The CI workflow has no signing credentials and PSCX-built DLLs in its release
 artifacts are intentionally Authenticode-unsigned. Maintainers may sign

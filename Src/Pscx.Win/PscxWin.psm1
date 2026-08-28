@@ -457,24 +457,39 @@ $pscxAliases = [ordered]@{
     rvwer = 'Resolve-WindowsError'
     ln = 'New-HardLink'
 }
-foreach ($aliasName in $pscxAliases.Keys) {
-    $existingCommand = Get-Command -Name $aliasName -ErrorAction SilentlyContinue |
-        Select-Object -First 1
-    if ($Pscx:Preferences.OverrideExistingAliases -or $null -eq $existingCommand) {
-        Set-Alias -Name $aliasName -Value $pscxAliases[$aliasName] -Scope Local `
-            -Description 'PSCX compatibility alias'
-        $aliasesToExport += $aliasName
+$previousAutoLoadingPreference = Get-Variable -Name PSModuleAutoLoadingPreference `
+    -Scope Global -ErrorAction SilentlyContinue
+# Avoid recursively auto-loading the parent PSCX package while checking aliases
+# that the package manifest already advertises.
+$global:PSModuleAutoLoadingPreference = 'None'
+try {
+    foreach ($aliasName in $pscxAliases.Keys) {
+        $commands = @(Get-Command -Name $aliasName -ErrorAction SilentlyContinue)
+        $existingCommand = if ($commands.Count -gt 0) { $commands[0] } else { $null }
+        if ($Pscx:Preferences.OverrideExistingAliases -or $null -eq $existingCommand) {
+            Set-Alias -Name $aliasName -Value $pscxAliases[$aliasName] -Scope Local `
+                -Description 'PSCX compatibility alias'
+            $aliasesToExport += $aliasName
+        }
+    }
+}
+finally {
+    if ($null -ne $previousAutoLoadingPreference) {
+        $global:PSModuleAutoLoadingPreference = $previousAutoLoadingPreference.Value
+    }
+    else {
+        Remove-Variable -Name PSModuleAutoLoadingPreference -Scope Global
     }
 }
 
 $publicContract = Import-PowerShellDataFile -LiteralPath (Join-Path $PSScriptRoot 'PscxWin.psd1')
 Export-ModuleMember -Alias $aliasesToExport -Function $publicContract.FunctionsToExport `
-    -Cmdlet $publicContract.CmdletsToExport
+    -Cmdlet $publicContract.CmdletsToExpor
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBhwF9R9tUfNXAg
-# VxGPR7KKgiJKcVkNnQ4vLS5gBDmiEqCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBtVjKmHM+lYwss
+# 2CnSa2k/LhTcoKE0hv781p3Zc2nt0aCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -653,34 +668,34 @@ Export-ModuleMember -Alias $aliasesToExport -Function $publicContract.FunctionsT
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgDCXQbJgWJn6EyytHExwk
-# auyYYBzL2SoXd0JOpD9iAyIwDQYJKoZIhvcNAQEBBQAEggIAnk0Sd0u6aOJmzRit
-# 4EH8OMwS/gdPousIZJRPeYRwHBq1qbYnDT39wU6nHpAOz8hILT4a5qeMS0nUyDOb
-# 65ANMtdmGWteK0Ln/LpjndJNyBI2I0PGGt6bhpxtAy7S060US0kpzJHAVKrdT9Q0
-# wR8dDv//IEMhuBkSMu2wEZ2Pr6HsZx+zwImNA/nXXXGLQYVdkQ0DGKl4e0yD9I9l
-# WfEPApj/8LFYoHy0ZmcXcIKjZwWTff9WTFWo+iWvzVJPtwfGq4+lNRs/sV9O/8RC
-# YXLyNSEmzKxkk9kwf6/1/hRelvrDvphz0YOU0vqW92u1H/xiW0RxrAsX9l/k5e3T
-# foMB9+GNMcxgp31znSpogbaIcrwDMA7Ng3kt7kORE1ansKO1deLtAGzs0kg0OKdf
-# zdNmV/ZnHQvw+HG4cceapz6pIXFCBHWV167O+815nbUfIZmRaCzlcva+pFwwZlUR
-# l6fycPgOBBq9FOAbhhHJ2yygXGPXmezlpQWYJvNAy8Rw8ds3y0/1hI3WXfLghhq7
-# xL8Gzj5z6F64m+CRAFy3nh5QGX4I5vls50sD1dmAwCs4qjUCTAV3nmmlFA2n3poD
-# X2424tH0rad1ZnJKO3lORQ8y+sUyashSG8qmmufDRTsg5nSuy2ra0iUU/V9uxXfZ
-# tHuWuSZ+6xzvO53Sn5Amr9GMmcmhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgwqCN+qyNWNcPdLhD9Prx
+# TZZXNcCpjtDPLP81Uh53UC4wDQYJKoZIhvcNAQEBBQAEggIAZS3rDn1xt46eQvYD
+# DCwk+8Gg6vYfNQDBrIFZ+d8Czi5e1nFSefe5rdfPpOdpMcqGmh1m052kd09LmY11
+# mLjDxngeWk4PeariOkohTtZYj/ykwI0Ch2pP/5mRVB+XhMtT9dPfLzPMIIeXgGdQ
+# 0H7+X/2Wy6tTPct0UTQXYvi2ZM2iPGrZ2LuMPetbNVy3109CVavGRXuDymH+xLo7
+# BL4InTeVYEm6kujqDXphWE/GsGN99z36Uk7OCvFmrAqC4JbmqyRoEYv8USuu9E9d
+# 08kwHD2RpW+nptA/4QxNO1AXcD4HsujWcc/RQ+kFbpTGUPJETAiVsr+cNKR6uiBI
+# mab6ocVP83CoZ/ASX+ztBDK3NmJb45xuotapKUxdpbMkZjcwFR7niMM57G2KqGaL
+# Eno5LYXeIoUR8B1N0OV8ZNxV99CO1ayYEA3ifwW0AE7MyCXnF1GDOZOJ6oETXge/
+# yJp6nMFS3F/6YcJWR7ndIZE8SmZsuCYlBj59EGZVNP2ZDaGRSRjX7KyW31dGyyQ/
+# +ZGX/tThNa863bZ93/9Ctkz/PbJdWyEmEd3ArP2weBX8BJeVw+n7/4z/E9PtH55g
+# yyYqIxwBcnd93th0H0ASFnYQ+Uca8JCz8WIQyiAAVW3wto6NDG7tBgGuBMu5UPW/
+# 3aIf875qplyYVXzWm/C8ucHnZ3mhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODI1MTc0NTU5WjAvBgkqhkiG9w0BCQQxIgQg6skCsIQTbp7r+i4Ydlb+M7jFfghm
-# lw/9chjTL2DnFXYwDQYJKoZIhvcNAQEBBQAEggIAclRxto+ooqTUoJh45CoYyuR5
-# 5VpYUmmwHKG2w0sgStoPKJK5dOHVNB1okh7sjVcVWkUdZ6oKwLPcFeCgyw5XBp+5
-# nQgY7SYI32y1MQThpXuNXhl364SCoHl5/dUAd3FiFP6zJWZoqHcJHBJgPFj2LrED
-# rgICRf2xZznY275KozTBV8rlqVzt98ApmqJXyzqowW35jfaWflZbffquKBrazJRx
-# q5jxxID4AMSeOh6KiAdzFfJh6zaTw5izCLE0Bt7Vd0F55dpvBDEzZm4ZhqRZc5ih
-# rMac2Jt6OH4/VMNOI8k6pty1P3Olgo7pN8lNPJWrlYM64SZnKR1cS/VEMCkZjh5E
-# 93YzmkNGS7TQsmFn2Jx32cbmo3UpLbZazSGgtiTNIENqaeBbxvWxwWW5ZshnTt89
-# +7EMZlGikzN1g8SuOBwQYZAsq2pcTKMBNEcjN890QNGmH8IHpMGLPYkg46tgM9Yl
-# HduaEMuP0w5HZRnNJDYqoXnUv4/EP5HQ2tfPt26Z6UOwkMW01Py69QDwqwwydwQ5
-# mMG9+FAEeae4Cch6j92HonakvTOdYXJQXioeTNQylBWTwz5gUBYt+d9b6opAp2c7
-# g97IWwYCmk8Vlow/ZTcz+gEL2jA2iFfxhPnSI4g2eaFSoKoaV/5z44bGC3wWY4JF
-# acQy1nGCgs2jDp0TSjY=
+# ODI4MjEwNTA0WjAvBgkqhkiG9w0BCQQxIgQg4W38wu7GmrYv770WUldAvnhgN12b
+# /K0eOu7OkwZncFEwDQYJKoZIhvcNAQEBBQAEggIAZl+7xtvTPwd2TYQ3SnLE/w7l
+# p+/4s0WmArrl001pe9VLZMCHvEuja/pyGBIbr6wknG+ND22glbfe9AjfTEvJI7S5
+# 3xq8Wx4kyy8aSN8/sHfZ3bGvh5EeUYVXSM/jJPYqVGWLAN0s5kwQW/bC9X+NnVMF
+# zb6DVCmPf8OMG3x/w0n5keRcRDv6ViCtnhCbpQSywRwWW/sQWURifgIvXTy60jLH
+# ZVPIpici3oNrGzh3hhTezgwJyOxL0yzHwBrSBWerOTJCy8gVzPtrPy8FzCzHWqub
+# eQ3mIPqrb6CDjwAFdo4D1EZX3tc/zUdN/rh9pTM0qas1B0gMY+ePj/Rp9WudeMyg
+# 019P6VsqCCutQ9dIJqejJgJwpFtKz8P8cuFWNEb3HPQaRFnVgypFEkKFJb0M9Q24
+# qVCHPuU8whoPevtuFrzJCWSDu3FJu26na4HCm+sD67M5yN6lFYW1R4tOFaQq5kSB
+# 8Z+OKOkvOEHzpmeybtnNPHPb8MSx5hCeR64JiRJt+LA+TNE7NoLhV+naiYnqvsMI
+# rA/l1EYLap2fjDLHAiwlr/A1qztt1CORT7tOnetlQt0FinOtk0/cQauF5T9Cdjfk
+# KSnVeAK5QK/Xjvhi4DhorgftSAZ4OqVaHZ+4R9UfreybaMT50h8FuHl3YhN9AYsh
+# mpEDcSzTWoyYGL4oQLQ=
 # SIG # End signature block

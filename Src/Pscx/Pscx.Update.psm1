@@ -449,9 +449,19 @@ function Test-PscxPackageCandidate {
 
     $modules = [Collections.Generic.List[object]]::new()
     foreach ($directory in $directories) {
-        $manifestPath = Join-Path $directory.FullName "$($directory.Name).psd1"
+        $moduleRootFiles = @(Get-ChildItem -LiteralPath $directory.FullName -File)
+        if ($moduleRootFiles.Count -gt 0) {
+            throw "The '$($directory.Name)' module contains files outside its version directory: $($moduleRootFiles.Name -join ', ')."
+        }
+        $expectedVersionDirectory = $ExpectedVersion.Core.ToString(3)
+        $versionDirectories = @(Get-ChildItem -LiteralPath $directory.FullName -Directory)
+        if ($versionDirectories.Count -ne 1 -or $versionDirectories[0].Name -ne $expectedVersionDirectory) {
+            throw "The '$($directory.Name)' module must contain exactly the '$expectedVersionDirectory' version directory."
+        }
+        $versionRoot = $versionDirectories[0].FullName
+        $manifestPath = Join-Path $versionRoot "$($directory.Name).psd1"
         if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
-            throw "The '$($directory.Name)' module has no root manifest."
+            throw "The '$($directory.Name)' module has no manifest in its version directory."
         }
         try {
             $manifest = Import-PowerShellDataFile -LiteralPath $manifestPath
@@ -468,13 +478,13 @@ function Test-PscxPackageCandidate {
         }
         $modules.Add([pscustomobject]@{
                 Name = $directory.Name
-                SourcePath = $directory.FullName
+                SourcePath = $versionRoot
                 ManifestPath = $manifestPath
             })
     }
 
     $mainManifest = Import-PowerShellDataFile -LiteralPath (
-        Join-Path $PackageRoot 'Pscx/Pscx.psd1'
+        $modules.Where({ $_.Name -eq 'Pscx' }, 'First')[0].ManifestPath
     )
     $requiredPowerShell = [version]$mainManifest.PowerShellVersion
     $compatible = $PSVersionTable.PSEdition -eq 'Core' -and
@@ -801,8 +811,8 @@ Export-ModuleMember -Function Invoke-PscxUpdate
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCA9YuWbLN9V1t/e
-# /4VSYYBVYQczBpPSU9HC9RCy4LZzg6CCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAc7qYYk0up0VFL
+# HHrAX5qZwCVlwUiI5E1h1WX/Ovodq6CCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -981,34 +991,34 @@ Export-ModuleMember -Function Invoke-PscxUpdate
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgovrau1Hnh0AtM/C2GXwE
-# 38JFoWbqr8cpS4VgvxYpjgUwDQYJKoZIhvcNAQEBBQAEggIAcQRg1zbD6xayGCtz
-# OhU/9nUtfkN82Kjg0DtK93y8rJg8PacIPHRMJZphND571WC2z/0ZUiiDqHHplB3J
-# vm8gAGC1tmD3dDocliKVurQyZ9M/19l6IkFmMpU/0P0p0Bick0jOrrbmCYV8fgXK
-# bIeLTmOjsmNIWBA7Aw/+ypdHlOKOssNjB74cDX8KPWQC3yiIydWEKLC/uH8cZ6ez
-# +XDnWax1bwGsVBaAZBLZ1sXjwG9x3fuCYxwov+0Byv6EA35aWgzuAQL6/sRXmer2
-# 1cjA/MZ/ZBjqnUaZi2QIWxcBFLmMMDXpHIYDdUBkKFTEIcJOFeYVxXpHzN4M9a0l
-# 2cH3XrIjOy9pXV+2O4jSRktdbYamQwg11iHgZd0L9GhxhDCDxOUGNVUfc8QU5I+U
-# uotGsRnVfLJHhKd1ZHxk/FIAI7tqSJup3O0rL+5/kJB3PJ1d+3RHBaBXf920pi5g
-# 7fBQ5WVQ+xGdJjSh5eW3RWTLLJ7xo6eZjZvQF8RDZ5zNdAaf6Adbsj+zQ/7Yo0Dt
-# XBgxLF2Owjt+uQlYOdL+L8tsrvS0jsZSgT3EHVhWZYpQy73Vi938XxzCPMlQ81Tv
-# +gEPsnnxoeztbt8XzcJVHrYJu0XCONdhSkqchQu7Ie9H+5v7z5dwX85Htcn5HCOG
-# 1IjISVW+c5ghxE7YOqTvp/WNfAShggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgB9iJIV5Xop5kGkDixEbl
+# 99mEDDYK+kRrHPmwwM1L7t8wDQYJKoZIhvcNAQEBBQAEggIAPHJ4gIHn5l4OLI4H
+# k4dFdglnQkE1wj3/voVqLxNn1BAfoqbvVI9485cYc4nLSE5F67I+yo/6CYIjzsAQ
+# k9mVmghDdK+3QRZYPBigv6BZlAM5bn2459tc6/JAgO9wygssBAZqLiSaPykwexYN
+# EmXGg8PajcvFfntVXLikViD7bZJ2abLQxVDzYr7+7wI8xrfJu2GQqh/46pXknpgp
+# n8ZtN8wO3+y48mRrISZkbDJlhaL3mvYRmA2RTwjQv0TczH39ki2nk8ljgGNtIwiD
+# ZSK2Ej+c6tNYt/Kdvgk3VcSJjyPhUZAKUm+pHiVottbdeIbCpdRY6C6EvTaCRFd3
+# qnZDo7fltX8G8PhLgWpyuu5/i/9pJyo38dMkzUleSgwH3Wl/yZk0gRMnDs9RLJQx
+# I0NOdLiy6jLDLab+CDkXvyFwhMEBvI+8nVDJGVZtQSpAcrOdv9jqIVegfhRp9u4K
+# X+1b6DBXQDySjFzpDs1xvyhOIGd66UXADdK13UZjyR+nwoI931H3bq66gHE6/NYX
+# xVoQxlTTzAmAbnUWa3hMiFCFZbV/Bn+aHTEmnQ6bvG+y9Lj+aD3P6NqrT1E7H8ey
+# tmRo0kgXpbOLpang4M1HUrZ1H1uOdCqGyenkk1wlknzCn8tnyeZWbPJdzKlnRqKP
+# nlY+LvP3C+fV+e+mdTN00QHuM5KhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODI4MDUwNjE4WjAvBgkqhkiG9w0BCQQxIgQgPkdWWqkpERE67RWuiAaMWprxPI9Q
-# HFrbBOV9msg+yL8wDQYJKoZIhvcNAQEBBQAEggIAoG8z3tc0YMM4DsnXh08Nb/i8
-# h92/fl8MCCT+lwjzDHdbRNLyhllWXVnT0Wl8PZkdHHYfZO900ScVLP1w2ORbilht
-# SJWupxqYw/6CfccrH3YtOaBGwN8iGkfczX9LGaFYOrjgM7q1vXwbr6FOa/UZ/ZmY
-# aWAUbZFsT8byWnJnjWozso2nwGj/uYbyYgQ1z607AAu1sgz8YIq4VA2yo0RbPEZb
-# VHQLAqPNfWcunJd3O1uHTkzoQPqRPG0u/JMTSd6AM2F1UiCU/l4GstONWht7eOgJ
-# JYymrsOttj66EpTI8qTtaORSQWxWIOI6Q1pGNI6Hp2MtYjBz5+u2BgfRMthGn71f
-# n0V0ImH77xh9rwNcBS2gbeU6AlKQ/pwN77Ew4xhdtH4Sts2zD5I/dafIrXssPg35
-# jhq9JxHrK5baycbB0cMoqpIOSi6ZwM2ysQ0piEKYQ7AbCvD+0WtYyOMZFe4kO0yD
-# SM4YJrKWnhkBkJHjj+xDAgSR0CZza2Oi2b10HSuTDLjADi1Gcq8kw7KfChIH3Py1
-# REUdYMLWNUaNbTpwt7uEj5bqgROEspXTzCC3XuOVEw6R0qnVxLy29Wro/ne5/7kj
-# e1VuP5W1qWpMnA5PAHTA4a18vTt0n4xS6GpbjJwxnYE30gHz+qI7VBcp8LPX0Dps
-# FrysiGdV1IBP9eCPMss=
+# ODI4MjEwNDU0WjAvBgkqhkiG9w0BCQQxIgQgS6u0QRliVmNfSPYkEZgeRYUv9SRZ
+# RInneidziv6SB1kwDQYJKoZIhvcNAQEBBQAEggIAYKQuUwdHBNqiibigzWmo3YB2
+# LNay+rt6ubTJAuuquzGsGVeszXRBGnSd3JMVHJ9VU9WRi9UuCyCGzyt/lZlv4LYT
+# zK3ee6RX8w/ZDeyUdCetuxnPKD0VQNSFIGF0MvfDC+qyNzkEMS8Wmnoz5Ggy5mEZ
+# QMJRzNfuvhWy5Cq7N0Q/lxoQ0ntxfuO2VzOyMeqWtBZUPQJ6erlhhoI7zwCkIPLP
+# x3RXBZ6rXqRCyjkcdJUW9CCns+NIl8i02LSsXTcNImycAYmV3Rjb3bpR+uyDLQSq
+# iv6m5Qij3/JILFu0sq7Oe0S9zG4zzU48b9uOwuTayH9aUCHPmgLeHFEtVPXiC9Lo
+# DeaN3fXDhHNdvxV5Ipc9v439EF0cU50YOeCIiPZJF6JUfqH9R3bnOj/N9dJrZcGC
+# atlpYdYhsk5iWaCE6Pt0LW3zn4eq154MMVmT6VkuFqgkQ1AfrxfFk7WV0+8xsFUc
+# ujgwdqLHgqiE8YuBmKeLbY373uPKHkRgLt+f4ZeuxWaGma24Lga6ncsVh9QH65J1
+# 23csn+ox9kjJ50algyFmN3E7pJAS8u/ZcMoiM4Jn9+vIXclvaves2eVugIfeOHjl
+# v54B3v7v+NDiYxvzEDyDKV3h9Ddm/Fz5YUQtflv/qt6h4NJDqr6tTAgVK/WCXmR5
+# TAR0Pu1wx7Ara8YtjEA=
 # SIG # End signature block

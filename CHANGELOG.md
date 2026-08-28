@@ -56,6 +56,11 @@
 * Added a portable, self-contained HTML dashboard over the authoritative test,
   coverage, and static-analysis results, generated consistently by local and CI
   test pipelines and uploaded with CI artifacts.
+* Changed the unified release ZIP to the standard versioned PowerShell module
+  layout so it can be extracted directly onto `PSModulePath` for discovery and
+  side-by-side version-qualified imports.
+* Prevented name-based imports from recursively auto-loading PSCX while its
+  advertised compatibility aliases are being initialized.
 
 ## 3.8.0 - August 2026
 

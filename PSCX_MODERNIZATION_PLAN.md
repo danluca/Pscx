@@ -849,10 +849,10 @@ For each group:
 - [x] Make the report self-contained and usable offline without CDN resources,
   platform-specific browser automation, or exposing environment-sensitive
   paths and data.
-- [ ] Generate release ZIPs with the standard versioned module layout,
+- [x] Generate release ZIPs with the standard versioned module layout,
   `Pscx/<module-version>/...`, deriving the directory name from the
   authoritative module version rather than hard-coding it.
-- [ ] Validate that extracting the ZIP directly into a directory on
+- [x] Validate that extracting the ZIP directly into a directory on
   `$env:PSModulePath` supports normal discovery, version-qualified import, and
   side-by-side installation without rearranging package contents.
 - [ ] Publish at least one preview of each new package.
@@ -934,6 +934,6 @@ The following issues are small enough to begin independently:
 | 5. Feature classification | Complete | 100% |
 | 6. Dependency and binary reduction | Complete | 100% |
 | 7. Cohesive improvements | Complete | 100% |
-| 8. PSCX 4.0 release | In progress | 25% |
+| 8. PSCX 4.0 release | In progress | 33% |
 
 Update this table when a phase changes state. Detailed completion should remain in the checklists so the summary does not become a second source of truth.

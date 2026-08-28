@@ -62,6 +62,7 @@ $timeModuleRoot = Join-Path $artifactsRoot 'module/Pscx.Time'
 $winAdminModuleRoot = Join-Path $artifactsRoot 'module/Pscx.WinAdmin'
 $helpOutputPath = Join-Path $artifactsRoot 'help'
 $packageOutputPath = Join-Path $artifactsRoot 'packages'
+$releaseLayoutRoot = Join-Path $artifactsRoot 'release-layout'
 $testResultsPath = Join-Path $artifactsRoot 'test-results'
 $resolvedBuildScope = if ($BuildScope -eq 'Auto') {
     if ($IsWindows) { 'Full' } else { 'Core' }
@@ -682,13 +683,74 @@ function Invoke-Package {
 
     Write-Step "Create unified Pscx $packageVersion ZIP"
     Remove-BuildDirectory $packageOutputPath
+    Remove-BuildDirectory $releaseLayoutRoot
     New-Item -ItemType Directory -Path $packageOutputPath -Force | Out-Null
-    $archivePath = Join-Path $packageOutputPath "Pscx-$packageVersion.zip"
-    $packageRoots = @($moduleRoot, $archiveModuleRoot, $timeModuleRoot)
+    New-Item -ItemType Directory -Path $releaseLayoutRoot -Force | Out-Null
+    $packageModules = @(
+        @{ Name = 'Pscx'; SourcePath = $moduleRoot }
+        @{ Name = 'Pscx.Archive'; SourcePath = $archiveModuleRoot }
+        @{ Name = 'Pscx.Time'; SourcePath = $timeModuleRoot }
+    )
     if ($resolvedBuildScope -eq 'Full') {
-        $packageRoots += $winAdminModuleRoot
+        $packageModules += @{ Name = 'Pscx.WinAdmin'; SourcePath = $winAdminModuleRoot }
     }
-    Compress-Archive -LiteralPath $packageRoots -DestinationPath $archivePath
+    try {
+        foreach ($packageModule in $packageModules) {
+            $versionRoot = Join-Path $releaseLayoutRoot "$($packageModule.Name)/$moduleVersion"
+            New-Item -ItemType Directory -Path $versionRoot -Force | Out-Null
+            Get-ChildItem -LiteralPath $packageModule.SourcePath -Force |
+                Copy-Item -Destination $versionRoot -Recurse -Force
+        }
+
+        $archivePath = Join-Path $packageOutputPath "Pscx-$packageVersion.zip"
+        $packageRoots = @($packageModules | ForEach-Object {
+                Join-Path $releaseLayoutRoot $_.Name
+            })
+        Compress-Archive -LiteralPath $packageRoots -DestinationPath $archivePath
+    }
+    finally {
+        Remove-BuildDirectory $releaseLayoutRoot
+    }
+}
+
+function Assert-ReleaseArchiveLayout {
+    param([Parameter(Mandatory)][string] $ArchivePath)
+
+    $expectedModules = @('Pscx', 'Pscx.Archive', 'Pscx.Time')
+    if ($resolvedBuildScope -eq 'Full') {
+        $expectedModules += 'Pscx.WinAdmin'
+    }
+
+    $archive = [IO.Compression.ZipFile]::OpenRead($ArchivePath)
+    try {
+        $entries = @($archive.Entries | ForEach-Object { $_.FullName.Replace('\\', '/') })
+        $fileEntries = @($archive.Entries | Where-Object { $_.Name } |
+                ForEach-Object { $_.FullName.Replace('\\', '/') })
+        $topLevelNames = @($entries | ForEach-Object { ($_ -split '/')[0] } | Sort-Object -Unique)
+        $unexpectedRoots = @($topLevelNames | Where-Object { $_ -notin $expectedModules })
+        if ($unexpectedRoots.Count -gt 0) {
+            throw "The release ZIP contains unexpected roots: $($unexpectedRoots -join ', ')."
+        }
+
+        foreach ($moduleName in $expectedModules) {
+            $versionPrefix = "$moduleName/$moduleVersion/"
+            $moduleEntries = @($fileEntries | Where-Object { $_.StartsWith("$moduleName/") })
+            if ($moduleEntries.Count -eq 0) {
+                throw "The release ZIP contains no files for '$moduleName'."
+            }
+            $misplacedEntries = @($moduleEntries | Where-Object { -not $_.StartsWith($versionPrefix) })
+            if ($misplacedEntries.Count -gt 0) {
+                throw "The release ZIP contains files outside '$versionPrefix': $($misplacedEntries -join ', ')."
+            }
+            $manifestEntry = "$versionPrefix$moduleName.psd1"
+            if ($manifestEntry -notin $fileEntries) {
+                throw "The release ZIP is missing '$manifestEntry'."
+            }
+        }
+    }
+    finally {
+        $archive.Dispose()
+    }
 }
 
 function Invoke-Validate {
@@ -895,6 +957,7 @@ function Invoke-Validate {
     if (-not (Test-Path -LiteralPath $archivePath)) {
         throw "Expected package archive is missing: $(Get-RelativePath $archivePath)"
     }
+    Assert-ReleaseArchiveLayout -ArchivePath $archivePath
     $changeLogPath = Join-Path $moduleRoot 'CHANGELOG.md'
     $changeLogContent = Get-Content -LiteralPath $changeLogPath -Raw
     if ($changeLogContent -notmatch "(?m)^##\s+$([regex]::Escape($moduleVersion))(?:\s|$)") {
@@ -915,10 +978,14 @@ function Invoke-Validate {
 }
 
 function Invoke-ImportTest {
-    $manifestPath = Join-Path $moduleRoot 'Pscx.psd1'
-    if (-not (Test-Path -LiteralPath $manifestPath)) {
-        throw "The staged package is missing: $manifestPath"
+    $manifestCandidates = @(
+        (Join-Path $moduleRoot 'Pscx.psd1'),
+        (Join-Path $moduleRoot "$moduleVersion/Pscx.psd1")
+    ) | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf }
+    if ($manifestCandidates.Count -ne 1) {
+        throw "Expected exactly one staged or versioned Pscx manifest; found $($manifestCandidates.Count)."
     }
+    $manifestPath = $manifestCandidates[0]
 
     New-Item -ItemType Directory -Path $testResultsPath -Force | Out-Null
     $versionLabel = if ($ExpectedPowerShellVersion) {
@@ -1256,8 +1323,8 @@ foreach ($item in $expandedTasks) {
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCD3N4aJJaHw6d4u
-# /5Vqk31o1MqngfnM0o+LoGGSecU56KCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDzypiTDwGEtZvr
+# D0JST/fMPPS9wQ9jdtaMhTrb8OhscKCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -1436,34 +1503,34 @@ foreach ($item in $expandedTasks) {
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgmIN0P9npOoYMuSwYqMPV
-# 7mZl+Mi06giKwbvxsZbBI0gwDQYJKoZIhvcNAQEBBQAEggIAfdxDtnjg3UKeg9Oj
-# 4xhMNT77KfD0s5N0oCGXBDhz9TkNRJ5RXJ2LXmZUIk2cEDT6pXp4vPx4F/w/ZkeO
-# pEouynw9R3aOOVhJ3Cjc9hrgaW9TLZZnztVgxswfWVmh64fuhSrekGvPJ0+/mKSK
-# jSt+7ZsR1Ra3KUWfhxJ4zPECKqiao6JUuSBh+ODLPs9/1+AfSIhGlC7Kt0Eqma3d
-# 0ompnJhMcWTPE8m8w/YF5LM9ef8qwx+obo7m5IQ4pLg+GHI0abYe12/f2yXdkxDz
-# bmAK0Tnr8IeWeXbtzUXb8kBxqJXRX/nygVFTXb/u5/5o/k9mRZHfdDacIapnjEPt
-# oIvopxtybAPTzLaX1HLZ85yJXWZUeY3NmusQ9Q0ZdcEMm3O/cYkIMDxtAJ08B7Eq
-# IErSGZY+A6mIm2s/En4w431bTieE7BrwIS6VsWq2N6fUCRtFkCovk9vk5BtJZ+9n
-# vKuAdGMMwHfFjwIrBJXrD3zLynOtuKhI8PxaD3uyZjsK66nJcx+H1N/uDGD6+eq9
-# T7FG6si5RAxjLRJJDEwGdFr7bsbc18VsDQT2wVEQaq3Z/pRgBiwl4JIauq1sGxk+
-# 2h86Bb453L09MJtvAK1t9QFd+xtQcKRB7ZwEAtDIkdoeJOXL4iPbVPKgPZvwHJEM
-# SmuNxdAcMSleJXxvCWFyySyrr1ihggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgngseCwDSE7PgKzF1bbC3
+# fv6djCNciKkFH/ptR24p9HwwDQYJKoZIhvcNAQEBBQAEggIAIL1WOIxtYC6NLhyL
+# +zOy98nGYIg6yZKTWC7Rhht6VHRNnjWgPCTRWsiXcgJHSoXU8UhZPcvhJpI7AssZ
+# btUlCjH8+/JbCtOTYvHjKYiRlURQiWDsSNCNmnkN0XMHWmVP2WSVWm9jbNTdjJRM
+# 5BN4iBHcEOh1wV0GJYlcrojF27G1PG/Azm6gQEa3odiOhnN8/SNiLpdrm3dKeUUe
+# 0n2E2OQ7Uq7ncW3rmo+o77x9B+6piF3PGL7wBX9CXoxA2X4oGmd6tsY15oORg7LV
+# qxB7LHCMErdwSAr/p8PcNxoR8xR+ceTZqvEeKzDZ6WSbiCMCiNsqw7nEtFwszN7k
+# CYiT452kwBvpw3F5y+HVwxtaFRP3Wy0e+IM9tTMM7sKoEZ8hLTC2BtjfenlPoiKT
+# 27UJZBqWHGHzLD/8t28AdTlhvnCoQukmtiKBwO5zgxHvfBctjEywIogiGpfrjT0a
+# SEinZq/SbvTzRlAOPY8oeuVIVdKA0O/FnVAKgHYf9hkYpoW7YWiBmY9uE3/31Utj
+# RmK7md5l3wkuGYrdnwHadWre+O7iE3Z92T1ztUdjaeekOkVt+CHyPY4VUtFAYSU2
+# p5Qf50Vokybs4mIvx4nB3D/CK6qraYPV8cYzJhzMSOXhZ/Xi7qI0HpaGlxsI8sXi
+# TksGEDAqEI+Bouc2KtGOI8Ju5L6hggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODI4MTkyNTU4WjAvBgkqhkiG9w0BCQQxIgQgxG+2fKcNyoSfCFARtmOSBaqzf7DF
-# hRNf52KfCK08m78wDQYJKoZIhvcNAQEBBQAEggIAvbwFuq4ChMgKxA1+3bqM4hwS
-# OgoT/xftvZQnRQP+a3/Mj9bQ8mElx9Lqfy6ruw2oW0WsHKpnG9y0kK413BVgURP7
-# a7e3y3Ho7DuxTesIEKbRl0ugCR7rdfg2Y4+GcIR4BkkPvu8EkEewXh1KzRmmO3Fp
-# sSkV7/Bf91OY/uW75pluTIkZQP9rxJQhyWqMfmK5ei4A1usAwbdAen3PXeO+5vK+
-# nFS7f1RvYclugWVUzxCJ8qQxH5ibgW141Wl4g3vyxxCgOq64MWjSRhc0DNBgMrjT
-# U6Ow/QJq8I48vbpfIaCxy2y2/CMCpiKQdMB4e+EVDoLNnSJiYdQ8dNlFuVZ8Vg07
-# FGYVsF6QPI1mMwAHe3v3rAZ/JjbcDmbpeFCj7dKY/lf193UDWjXjinkp/iP+Ruoo
-# rzWm8VKm8k6vRpCTcxlUpSd6M5gIB6/tDmAx3lYxqfnDJ61juBhFZ5hfAL3dsA0j
-# 4u1JQyMpwQITKazs0QwNLK9qNsj7SJuVmslil0BHepPQ6hXRdy++4d7i4kE+nMNI
-# cD/v8QNbdWBWCBhitABrz7e3H7esSjaZGlsdKtNdVkqDuDKycFgRXrt/jwd89YB3
-# KLvKNkNLdAULaZ3Y7ntVfjunnloKxnBRlWamrKpyvD+YPlzFcL/gQ1Jua4hI0CdT
-# I3uq/SciHe8U4KcYpOY=
+# ODI4MjEwNDI3WjAvBgkqhkiG9w0BCQQxIgQgBqcTI8npkvwvehgNv/gwX+JYXdS5
+# 3itb5aYi6MYyY4swDQYJKoZIhvcNAQEBBQAEggIAtI5/BH0PhNXSSNCVz0ZG96Yt
+# oQlF/yEA89BK00lTL+Y7EzCbphcmi3CMdP1iAOsfV8nss4Rsgcl0PzQe1RtMy5Cn
+# eP692oGTVeW12sE2IHiaj89iJeebSSqkf6yG0AH7DjqrIsIOdlJ5T88zj/AAt0UY
+# VwG5OdORsKUffBeZYv0t4FftKSjrOlGTu0TJbPF4TbxSyM7ko0GcXcJNlq8z2OlO
+# ppu6NyCa4chIQyCMUEqU7MhgqwDEOpdKKcRMXsNW0WgvzvsksO7c2G6i84o40u2a
+# SlUyEJ1qiG01rgv0TPp7ftNYYV06UOl+7hV6xoQiHoVWILUEMkwwaJESQPQ13K/X
+# fXeBGw7G1NQ0w+UHry3zr+fclQ52hc52laTRMjFeTyeMOrd2B4k2Lh66HMM5UyZT
+# diba2RDUZ0kShJ6R9jlRP2pcqJzO3vDP5k6O2oXhXFaks2NKuIGjI26kQzQzGZo6
+# LYkaNe5Mx8D2Vs4lTVqeCgSlwbVekG6LMIGHJOz8Tb6f3bhiMkrMg9qO/y9heSYw
+# MQyljGjcQAHLEafnovp9pN3v35jtTXmN9xUGI4GWmnRY8x8yl+8v5nGx6OnWSky0
+# SjdjLuuSGtdEeI1N+h+l/8fDNsjwW25IlJrtbQR/KEW5ElJ0G3ECAfHgUk3ST5CY
+# N5g3bRMKW4oCKx8k81g=
 # SIG # End signature block

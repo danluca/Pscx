@@ -12,7 +12,8 @@ existing PSCX installation.
 ## Runtime and installation changes
 
 PSCX 4.0 requires PowerShell 7.6 LTS and .NET 10. Windows PowerShell 5.1 is not
-supported. Install the GitHub Release ZIP into versioned module directories so
+supported. The GitHub Release ZIP already contains versioned module
+directories. Extract it directly into a directory on `$env:PSModulePath` so
 3.8 and 4.0 can remain side by side during migration:
 
 ```text
