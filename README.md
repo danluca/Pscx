@@ -347,6 +347,7 @@ operations can also be run when their prerequisites already exist:
 ./build.ps1 -Task Restore,Compile
 ./build.ps1 -Task Test
 ./build.ps1 -Task Pester
+./build.ps1 -Task Dashboard
 ./build.ps1 -Task Package,Catalog,Validate -BuildScope Full
 ./build.ps1 -Task Package,Validate -BuildScope Core
 ./build.ps1 -Task Audit
@@ -365,6 +366,14 @@ Build output is written beneath the ignored `artifacts` directory. Pass
 pure-logic `Pscx.InternalTests` project. `Pester` starts a clean PowerShell
 process and tests the staged package. Their TRX, NUnit, Cobertura, framework
 summaries, and combined status are written beneath `artifacts/test-results`.
+`CI` and `TestPipeline` also generate the self-contained
+`Pscx.TestDashboard.html` convenience view from those authoritative files. It
+shows overall and per-suite status, counts, durations, failure details, and
+separate PowerShell and managed-code coverage without external web resources.
+Use `./build.ps1 -Task Dashboard` to regenerate it from an existing result set.
+CI uploads the HTML page with the machine-readable test-results artifact; open
+the downloaded page in any browser. Absolute filesystem paths are redacted from
+displayed failure details.
 The pinned Pester version and separate coverage gates are defined in
 `Tests/TestPolicy.psd1`; Pester is saved beneath ignored `.tools` output and is
 not redistributed. `TestAll` exposes the non-release-blocking

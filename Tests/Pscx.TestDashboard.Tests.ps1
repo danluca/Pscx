@@ -1,161 +1,199 @@
-[CmdletBinding()]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+    'PSReviewUnusedParameter',
+    '',
+    Justification = 'DashboardScriptPath is Pester container data consumed in BeforeAll.'
+)]
 param(
     [Parameter(Mandatory)]
-    [string] $ModulePath,
-
-    [Parameter(Mandatory)]
-    [string] $ArchiveModulePath,
-
-    [Parameter(Mandatory)]
-    [string] $TimeModulePath,
-
-    [string] $WinAdminModulePath,
-
-    [Parameter(Mandatory)]
-    [ValidateSet('Core', 'Full')]
-    [string] $BuildScope,
-
-    [Parameter(Mandatory)]
-    [string] $ResultsPath,
-
-    [string] $PowerShellPath = 'pwsh'
+    [string] $DashboardScriptPath
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-$PSStyle.OutputRendering = [System.Management.Automation.OutputRendering]::PlainText
 
-$repositoryRoot = Split-Path -Parent $PSScriptRoot
-$policy = Import-PowerShellDataFile -LiteralPath (Join-Path $repositoryRoot 'Tests/TestPolicy.psd1')
-$pesterVersion = [string]$policy.PesterVersion
-$toolModuleRoot = Join-Path $repositoryRoot '.tools/modules'
-$pesterManifest = Join-Path $toolModuleRoot "Pester/$pesterVersion/Pester.psd1"
+BeforeAll {
+    $script:dashboardScriptPath = (Resolve-Path -LiteralPath $DashboardScriptPath).Path
 
-if (-not (Test-Path -LiteralPath $pesterManifest)) {
-    New-Item -ItemType Directory -Path $toolModuleRoot -Force | Out-Null
-    Write-Host "Saving Pester $pesterVersion to $toolModuleRoot"
-    Save-PSResource -Name Pester -Version $pesterVersion -Repository PSGallery `
-        -Path $toolModuleRoot -TrustRepository
-}
-if (-not (Test-Path -LiteralPath $pesterManifest)) {
-    throw "Pester $pesterVersion was not saved at the expected path: $pesterManifest"
-}
+    function Get-PscxDashboardFixture {
+        param(
+            [Parameter(Mandatory)][string] $Root,
+            [ValidateSet('Passed', 'Failed')][string] $Status = 'Passed'
+        )
 
-Import-Module $pesterManifest -Force -ErrorAction Stop
-if ((Get-Module Pester).Version -ne [version]$pesterVersion) {
-    throw "Expected Pester $pesterVersion but loaded $((Get-Module Pester).Version)."
-}
-
-$modulePath = (Resolve-Path -LiteralPath $ModulePath).Path
-$archiveModulePath = (Resolve-Path -LiteralPath $ArchiveModulePath).Path
-$timeModulePath = (Resolve-Path -LiteralPath $TimeModulePath).Path
-$winAdminModulePath = if ($BuildScope -eq 'Full') {
-    (Resolve-Path -LiteralPath $WinAdminModulePath).Path
-}
-else {
-    $null
-}
-$resultsPath = [System.IO.Path]::GetFullPath($ResultsPath)
-try {
-    $powerShellExecutable = Get-Command -Name $PowerShellPath -CommandType Application -ErrorAction Stop |
-        Select-Object -First 1 -ExpandProperty Source
-}
-catch {
-    throw "Could not resolve the PowerShell executable '$PowerShellPath'."
-}
-New-Item -ItemType Directory -Path $resultsPath -Force | Out-Null
-$testResultPath = Join-Path $resultsPath 'Pscx.Pester.xml'
-$coveragePath = Join-Path $resultsPath 'Pscx.PowerShell.coverage.xml'
-$coverageModulePaths = @($modulePath, $archiveModulePath, $timeModulePath)
-if ($winAdminModulePath) {
-    $coverageModulePaths += $winAdminModulePath
-}
-$coverageFiles = @(
-    Get-ChildItem -LiteralPath $coverageModulePaths -Recurse -File -Filter *.psm1 |
-        Select-Object -ExpandProperty FullName
-)
-
-$container = @(
-    New-PesterContainer `
-        -Path (Join-Path $repositoryRoot 'Tests/Pscx.StaticAnalysisRunner.Tests.ps1') `
-        -Data @{ PowerShellPath = $powerShellExecutable }
-    New-PesterContainer `
-        -Path (Join-Path $repositoryRoot 'Tests/Pscx.TestDashboard.Tests.ps1') `
-        -Data @{ DashboardScriptPath = (Join-Path $repositoryRoot 'Tools/New-PscxTestDashboard.ps1') }
-    New-PesterContainer `
-        -Path (Join-Path $repositoryRoot 'Tests/Pscx.Update.Tests.ps1') `
-        -Data @{ UpdateModulePath = (Join-Path $modulePath 'Pscx.Update.psm1') }
-    New-PesterContainer `
-        -Path (Join-Path $repositoryRoot 'Tests/Pscx.Package.Tests.ps1') `
-        -Data @{
-            ModulePath = $modulePath
-            ArchiveModulePath = $archiveModulePath
-            WinAdminModulePath = $winAdminModulePath
-            BuildScope = $BuildScope
-            PowerShellPath = $powerShellExecutable
+        $managedRoot = Join-Path $Root 'managed'
+        New-Item -ItemType Directory -Path $managedRoot -Force | Out-Null
+        $isFailed = $Status -eq 'Failed'
+        $managedFailed = if ($isFailed) { 1 } else { 0 }
+        $managedPassed = if ($isFailed) { 1 } else { 2 }
+        $managedOutcome = if ($isFailed) { 'Failed' } else { 'Passed' }
+        $managedFailure = if ($isFailed) {
+            @"
+      <Output><ErrorInfo><Message>Managed &lt;failure&gt; at C:\Users\secret\source.cs</Message><StackTrace>at C:\Users\secret\source.cs:line 42</StackTrace></ErrorInfo></Output>
+"@
         }
-    New-PesterContainer `
-        -Path (Join-Path $repositoryRoot 'Tests/Pscx.Archive.Package.Tests.ps1') `
-        -Data @{ ArchiveModulePath = $archiveModulePath }
-    New-PesterContainer `
-        -Path (Join-Path $repositoryRoot 'Tests/Pscx.Time.Package.Tests.ps1') `
-        -Data @{
-            ModulePath = $modulePath
-            TimeModulePath = $timeModulePath
-            PowerShellPath = $powerShellExecutable
+        else {
+            ''
         }
-    if ($BuildScope -eq 'Full') {
-        New-PesterContainer `
-            -Path (Join-Path $repositoryRoot 'Tests/Pscx.WinAdmin.Package.Tests.ps1') `
-            -Data @{
-                ModulePath = $modulePath
-                WinAdminModulePath = $winAdminModulePath
+        @"
+<?xml version="1.0" encoding="utf-8"?>
+<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times start="2026-08-28T10:00:00Z" finish="2026-08-28T10:00:01Z" />
+  <Results>
+    <UnitTestResult testName="Managed test &lt;unsafe&gt;" duration="00:00:00.25" outcome="$managedOutcome">
+$managedFailure
+    </UnitTestResult>
+    <UnitTestResult testName="Managed passing test" duration="00:00:00.10" outcome="Passed" />
+  </Results>
+  <ResultSummary outcome="$Status">
+    <Counters total="2" executed="2" passed="$managedPassed" failed="$managedFailed" error="0" timeout="0" aborted="0" notExecuted="0" />
+  </ResultSummary>
+</TestRun>
+"@ | Set-Content -LiteralPath (Join-Path $managedRoot 'Pscx.InternalTests.trx') -Encoding utf8
+
+        $pesterFailed = if ($isFailed) { 1 } else { 0 }
+        $pesterPassed = if ($isFailed) { 1 } else { 3 }
+        $pesterSkipped = if ($isFailed) { 1 } else { 0 }
+        $pesterFailure = if ($isFailed) {
+            @"
+  <test-case name="Pester test &lt;unsafe&gt;" result="Failed" duration="0.5">
+    <failure><message>Pester failure at /home/runner/work/Pscx/private.ps1</message><stack-trace>at /tmp/Pester_case/test.ps1:42</stack-trace></failure>
+  </test-case>
+"@
+        }
+        else {
+            '<test-case name="Pester passing test" result="Passed" duration="0.5" />'
+        }
+        @"
+<?xml version="1.0" encoding="utf-8"?>
+<test-run name="Pester" result="$Status" total="3" passed="$pesterPassed" failed="$pesterFailed" skipped="$pesterSkipped" duration="2.5">
+$pesterFailure
+</test-run>
+"@ | Set-Content -LiteralPath (Join-Path $Root 'Pscx.Pester.xml') -Encoding utf8
+
+        '<coverage line-rate="0.50" />' |
+            Set-Content -LiteralPath (Join-Path $Root 'Pscx.PowerShell.coverage.xml') -Encoding utf8
+        '<coverage line-rate="0.25" />' |
+            Set-Content -LiteralPath (Join-Path $Root 'Pscx.Managed.coverage.xml') -Encoding utf8
+
+        [ordered]@{
+            Status = $Status
+            AnalyzerCounts = [ordered]@{ Warning = 2; Information = 3 }
+            AnalyzerOrchestration = [ordered]@{
+                InfrastructureFailures = if ($isFailed) {
+                    @([ordered]@{ File = '/home/runner/work/Pscx/private.psm1'; Reason = 'fixture failure' })
+                }
+                else {
+                    @()
+                }
             }
+        } | ConvertTo-Json -Depth 6 |
+            Set-Content -LiteralPath (Join-Path $Root 'Pscx.StaticAnalysis.summary.json') -Encoding utf8
+
+        [ordered]@{
+            Status = $Status
+            BuildScope = 'Core'
+            PowerShellVersion = '7.6.0'
+            Suites = [ordered]@{
+                Managed = [ordered]@{ Status = $Status; Error = $null; DurationSeconds = 1.0 }
+                Pester = [ordered]@{ Status = $Status; Error = $null; DurationSeconds = 2.5 }
+                Static = [ordered]@{
+                    Status = $Status
+                    Error = if ($isFailed) { 'Static failure at /private/tmp/analyzer.ps1' } else { $null }
+                    DurationSeconds = 3.0
+                }
+            }
+        } | ConvertTo-Json -Depth 6 |
+            Set-Content -LiteralPath (Join-Path $Root 'Pscx.TestSummary.json') -Encoding utf8
     }
-)
-$configuration = New-PesterConfiguration
-$configuration.Run.Container = $container
-$configuration.Run.PassThru = $true
-$configuration.Output.Verbosity = 'Normal'
-$configuration.Output.RenderMode = 'Plaintext'
-$configuration.TestResult.Enabled = $true
-$configuration.TestResult.OutputFormat = 'NUnit3'
-$configuration.TestResult.OutputPath = $testResultPath
-$configuration.CodeCoverage.Enabled = $true
-$configuration.CodeCoverage.Path = $coverageFiles
-$configuration.CodeCoverage.OutputFormat = 'Cobertura'
-$configuration.CodeCoverage.OutputPath = $coveragePath
-$configuration.CodeCoverage.CoveragePercentTarget =
-    [decimal]$policy.PowerShellCoverageMinimumPercent
+}
 
-$result = Invoke-Pester -Configuration $configuration
-$summary = [ordered]@{
-    Framework = 'Pester'
-    Version = $pesterVersion
-    Result = $result.Result
-    TotalCount = $result.TotalCount
-    PassedCount = $result.PassedCount
-    FailedCount = $result.FailedCount
-    SkippedCount = $result.SkippedCount
-    CoveragePercent = $result.CodeCoverage.CoveragePercent
-    CoverageMinimumPercent = [decimal]$policy.PowerShellCoverageMinimumPercent
-    TestResultPath = $testResultPath
-    CoveragePath = $coveragePath
-}
-$summary | ConvertTo-Json -Depth 4 |
-    Set-Content -LiteralPath (Join-Path $resultsPath 'Pscx.Pester.summary.json') -Encoding utf8
+Describe 'PSCX self-contained test dashboard' {
+    It 'renders status, counts, durations, coverage, and sanitized failure details' {
+        $resultsPath = Join-Path $TestDrive 'failed-results'
+        Get-PscxDashboardFixture -Root $resultsPath -Status Failed
+        $sourceHashesBefore = @(
+            Get-ChildItem -LiteralPath $resultsPath -Recurse -File |
+                ForEach-Object { (Get-FileHash -LiteralPath $_.FullName).Hash }
+        )
 
-if ($result.FailedCount -gt 0 -or $result.Result -ne 'Passed') {
-    throw "Pester failed: $($result.FailedCount) of $($result.TotalCount) tests failed."
+        & $script:dashboardScriptPath -ResultsPath $resultsPath | Out-Null
+
+        $dashboardPath = Join-Path $resultsPath 'Pscx.TestDashboard.html'
+        $html = Get-Content -LiteralPath $dashboardPath -Raw
+        $html | Should -Match 'Overall status:.*Failed'
+        $html | Should -Match 'Total tests</span><strong>5</strong>'
+        $html | Should -Match 'Passed</span><strong>2</strong>'
+        $html | Should -Match 'Failed</span><strong>2</strong>'
+        $html | Should -Match 'Skipped</span><strong>1</strong>'
+        $html | Should -Match 'Suite duration</span><strong>6\.50 s</strong>'
+        $html | Should -Match 'PowerShell</span><strong>50\.00%'
+        $html | Should -Match 'Managed code</span><strong>25\.00%'
+        $html | Should -Match 'Managed test &amp;lt;unsafe&amp;gt;|Managed test &lt;unsafe&gt;'
+        $html | Should -Match '\[path\]'
+        $html | Should -Not -Match 'C:\\Users\\secret|/home/runner|/private/tmp|/tmp/Pester'
+        $html | Should -Not -Match '<script|<link|https?://'
+
+        $sourceHashesAfter = @(
+            Get-ChildItem -LiteralPath $resultsPath -Recurse -File |
+                Where-Object Name -NE 'Pscx.TestDashboard.html' |
+                ForEach-Object { (Get-FileHash -LiteralPath $_.FullName).Hash }
+        )
+        $sourceHashesAfter | Should -Be $sourceHashesBefore
+    }
+
+    It 'is deterministic and reports a successful run without failure markup' {
+        $resultsPath = Join-Path $TestDrive 'passed-results'
+        $outputPath = Join-Path $resultsPath 'dashboard.html'
+        Get-PscxDashboardFixture -Root $resultsPath
+
+        & $script:dashboardScriptPath -ResultsPath $resultsPath -OutputPath $outputPath | Out-Null
+        $firstHash = (Get-FileHash -LiteralPath $outputPath).Hash
+        & $script:dashboardScriptPath -ResultsPath $resultsPath -OutputPath $outputPath | Out-Null
+
+        (Get-FileHash -LiteralPath $outputPath).Hash | Should -Be $firstHash
+        $html = Get-Content -LiteralPath $outputPath -Raw
+        $html | Should -Match 'Overall status:.*Passed'
+        $html | Should -Match 'No test or suite failures were reported'
+    }
+
+    It 'reports unavailable suite files while retaining orchestration errors' {
+        $resultsPath = Join-Path $TestDrive 'partial-results'
+        New-Item -ItemType Directory -Path $resultsPath -Force | Out-Null
+        [ordered]@{
+            Status = 'Failed'
+            BuildScope = 'Core'
+            PowerShellVersion = '7.6.0'
+            Suites = [ordered]@{
+                Managed = [ordered]@{ Status = 'Failed'; Error = 'managed command failed'; DurationSeconds = 0.2 }
+                Pester = [ordered]@{ Status = 'Failed'; Error = 'Pester command failed'; DurationSeconds = 0.3 }
+                Static = [ordered]@{ Status = 'Failed'; Error = 'static command failed'; DurationSeconds = 0.4 }
+            }
+        } | ConvertTo-Json -Depth 5 |
+            Set-Content -LiteralPath (Join-Path $resultsPath 'Pscx.TestSummary.json') -Encoding utf8
+
+        & $script:dashboardScriptPath -ResultsPath $resultsPath | Out-Null
+
+        $html = Get-Content -LiteralPath (Join-Path $resultsPath 'Pscx.TestDashboard.html') -Raw
+        $html | Should -Match 'managed command failed'
+        $html | Should -Match 'Pester command failed'
+        $html | Should -Match 'static command failed'
+        $html | Should -Match 'PowerShell</span><strong>&mdash;</strong>'
+    }
+
+    It 'fails clearly when the unified orchestration result is missing' {
+        $resultsPath = Join-Path $TestDrive 'incomplete-results'
+        New-Item -ItemType Directory -Path $resultsPath -Force | Out-Null
+
+        { & $script:dashboardScriptPath -ResultsPath $resultsPath } |
+            Should -Throw '*required Unified result file is missing*'
+    }
 }
-if ($result.CodeCoverage.CoveragePercent -lt [decimal]$policy.PowerShellCoverageMinimumPercent) {
-    throw "PowerShell coverage $($result.CodeCoverage.CoveragePercent)% is below the $($policy.PowerShellCoverageMinimumPercent)% minimum."
-}
+
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCMx75fB7ucv92J
-# uHywIrwnp2RQYtjs6kl5gZtZPV7ObKCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDjdaf8oFO7qj8K
+# AjsNGVjxgshXUarqRkz10oqA/KatAqCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -334,34 +372,34 @@ if ($result.CodeCoverage.CoveragePercent -lt [decimal]$policy.PowerShellCoverage
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgiV2ufL9p7xJH3U1IjpBm
-# t5VPYHLV+hXKaOUfJZeeFZIwDQYJKoZIhvcNAQEBBQAEggIAFEc+NHh0WNuuP3ef
-# iQKMj7LnbBSmTs2x4g20vwnESxNbhIcquM/u9n1rfQ3DY5N1f0JO4coI8WSX9h8t
-# 5RxdUt12udtdVanhynD9TlbrVVx3CmPETUnnkytafpbSs5KmNbPkiMoepn7raiKu
-# 6/CXiqr8Zh/VW2qEg0dYANkSYWuiP/OIwxR1RZqgmRbD4p8kkO+xJMru0sZAphA7
-# Kz0FeueG0tduHx1Mew+LQix1ip9UGwbVX6+tm/UDGQRr1qQ/6i9d6iCxIT1w/8W2
-# 8NvxKSxvjXVZ0C1dyG4NNVZf8sSEja0NzAOudIqXoNkOP7EkYv56TXz1aw7ZaoF3
-# ox4ERzxntrC/Kx3JkhtVWgNSn6f/CGtjioHHWxtm/qCtw0gmkQ5H92qRYGzk1B+F
-# Qg18aUKDdhsJWiwTzctbD+YsXVShsycyKZjSrD3sM25jlHADGS13/XiWUzdmfAet
-# i8+TLnI8RzZa6KCIpCYefHNa3gx2XVioHDnTscPq27cLND6EC9H/Lo4CxceKHyVQ
-# t5HB9PX216qtGAmh2JYEKRnefjb70uL765NQR3RgztrC5BHalib3AjSZTYKLSYqZ
-# +bzccnOg0UidRLBNs7kq/0xqI9LBIY7DTUun1ysCqtvg1FUNKJ1tdo0v0CB1boCT
-# lgo0JIrsYG+9fbk6fkXH9j/C1HKhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgmEpnvvd3FLo9O5ydf7Yh
+# VfQ1MnoKJOApgD23f1bEm3MwDQYJKoZIhvcNAQEBBQAEggIAOoXLAo7JcyK61WN9
+# 8mw0/TuflSpl48/lagQbkAsqBjNr4cokwYBwZkwcdfdnBYKtBjtzi0bQWCIroAMg
+# kUzSysl+07WF/mVK6U7tffIYRPZct1xnfJOhUZchqHIl3ITLS3G5mqMGGXoWz7Ya
+# Xwv9hkKcDENfBjrkNGatK/8GqR+WcLBOh5QRPCjBUeBiifEVbDwRInf3xTCBUMJK
+# VX+zCDTJtkBnOFuWI7RKCKyS/GdzXsh5abd5jAraUycKuRuyKwcFKckra9vAS/DJ
+# GYLA3ACI8zjkhd8jAqUjyk5wbMOMSI85QS1tGXWjy4/YIlvhfsa9fnbrudFaFyUW
+# RG2dJY8pPA9F00WR99Q/uy2B67DMie2g14czJKCF5i/XeAM0D6UB1y2BtF/Do2U5
+# uu+ApW8erDrimVJOJP2EPgnO62riMZK1U5pPCF8puPO3mNmm1hH2f23gv6tSkwZD
+# 9eUbWvFePccWgH9oFwVMo1aaz1chMYKH4Llyqk699cxrRFpSW2WrjCBtOKqBIHOQ
+# m9nlyiMesGFdenzZ1xbg6PgcyMshu4UWqa2+eY87tSYnCYHH+bzjAi1Xsq/0/6d7
+# BzFMS2mHHOyf9x6DSqTj6aVBgQvRJQgI+gGfjTHHiA8L7Aql4zR7M22/5PNc+S7d
+# dMRPAeM/IcpNZ6NlF1o0Vkcx3i2hggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODI4MTkyNjEwWjAvBgkqhkiG9w0BCQQxIgQgAShHz0+hqqdjvDDKrlgR5nyX/OXe
-# 09xNWynfjdSHN/gwDQYJKoZIhvcNAQEBBQAEggIAOiBL11qNN/gVuXzBPCusnDQF
-# sqlcMXx8bte0/2/vzCbW0ILo8WLKO5VRD4EWxhyiQmmJEThfpEmwOaQPKPrze+9o
-# 38Amthl6Z88uHyuID9TjeVtEZaYQaGdXKNB75URjZ5AwvJBcfcFVPTHBg3UN74J2
-# UdGW0TJh+X+AmA4HaKWrYbh5oyuhRDCzh6zb4e6GQ/HLKcCXUYFh8eChvrpYU9gO
-# PxLK0y1JswjLLsWndz/Jm/HAyL9i8XhBAJg0oHKANsxQ1yOsyqDHE0xoqWLC4GVu
-# 8uMJdxviEfkLI+rg6LU1TMUwLO4E4refwcHlrr0lK2jLdWdFmTJ+9a8346Fy+o8Z
-# a2hVy4RrE0+UKMhZQxDOI+uh4oz5b8KzRuLcrQuKe3t2JA0phEkuqcfWO9e2RsdR
-# U6dU66hX2+jWg9VJKTGMJhBkrELny+kgzaFixPiZWQ2Do4wGnuORjngHn3Mnepf8
-# Wm7rqnxCsksh9zOTnJzxjL9Pu/vttAJQ2Xccc0SRAsLcD3lavmyYjn4tS3HZv58g
-# Fuh6WcrH6aa0QYROoQRzWEqjOR6/j8of/fGX0WGExH8jCfMYEH4oPhhMnzM+qAqo
-# BQ0Y9PDN6eNVYAq5iGKQDt06CWKzx9aIiG2BVnA75P17BxlbDHeXv+fziE6j9SSe
-# 96x8rK4ifJTRai82FsM=
+# ODI4MTkyNjM3WjAvBgkqhkiG9w0BCQQxIgQgHOgyX3dIYcJ7upIEzRhz7pgtaNkJ
+# 6bCrS7GXOeJRwkQwDQYJKoZIhvcNAQEBBQAEggIAnkd+ZRCO55wZSuaoIi9Z/JGe
+# TBOx5T4y/4jNH6f5Ba9XN7qkQU6rHSNLFHGlswYVqoR7EmsvXSF90IO3ZcLAqCfk
+# 2LmZ6Bt4MbqgZ5Sy6adjkGSn2Z/S1CeJlkmvYVOE7vdA9s5/pPos3XzEbyHgwZUX
+# SA3Ai58FqokLuJUh0qeCj81Ij1fmoSxGkXyELLxty6PiKEauTg0OhvBxKE9JOIoW
+# L4P7v+CyyyubMqZsGegQ9sBIHdW/0LK9DlaLtJeb3HA2wvDwgCE+h3njsewRyhZo
+# WoMe4Uor1+TFTHFG/lDdtN20MMX8Yjy9qX8yzhIXmZEWTU3+7T4IHu61IVhOvDzq
+# Y+Jfft2XGrlLDYsCmTZ6mC6b6KiVZoINRVJf3FScOi4k0FL2z5MjrxE2IhlTe1Xf
+# WDnWoMB+OfJnB26XGNd5Dg4h8bGEDnEzZmdQ/8ShplI112pesOD3w8rTJAlqWz1/
+# f0vIdG1tmcx1NDgrMIrQU0aMeo1bOI8WoHlMQbGCc/7xtdRqEV8uQwDeD5HYhUMN
+# nU4AOSS9b6NjynDh+Kw7Vp6KGPULWOkHRoJ/lrQjoUN+R/LH1aEEj7Ic9wNTkS8h
+# 3wjEp3pgAHSMvXv/Sh/LpGUd18EOI6XjnyQgk1ezq5buCKiygpSRxio6Z+MkEUh2
+# oClpUsYouGBO970NXMA=
 # SIG # End signature block

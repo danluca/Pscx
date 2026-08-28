@@ -8,6 +8,7 @@ param(
         'Test',
         'Pester',
         'Static',
+        'Dashboard',
         'Catalog',
         'TestPipeline',
         'ImportTest',
@@ -584,6 +585,21 @@ function Invoke-StaticValidation {
     )
 }
 
+function Invoke-TestDashboard {
+    Write-Step 'Generate self-contained HTML test dashboard'
+    Invoke-NativeCommand $PowerShellPath @(
+        '-NoLogo',
+        '-NoProfile',
+        '-NonInteractive',
+        '-File',
+        (Join-Path $repositoryRoot 'Tools/New-PscxTestDashboard.ps1'),
+        '-ResultsPath',
+        $testResultsPath,
+        '-OutputPath',
+        (Join-Path $testResultsPath 'Pscx.TestDashboard.html')
+    )
+}
+
 function Invoke-Catalog {
     if ($resolvedBuildScope -ne 'Full') {
         throw 'The complete README catalog requires a Full Windows package.'
@@ -617,6 +633,7 @@ function Invoke-UnifiedTest {
         [ordered]@{ Name = 'Pester'; Action = { Invoke-PesterTest } },
         [ordered]@{ Name = 'Static'; Action = { Invoke-StaticValidation } }
     )) {
+        $stopwatch = [Diagnostics.Stopwatch]::StartNew()
         try {
             & $suite.Action
             $outcomes[$suite.Name] = [ordered]@{ Status = 'Passed'; Error = $null }
@@ -626,6 +643,10 @@ function Invoke-UnifiedTest {
             $outcomes[$suite.Name] = [ordered]@{ Status = 'Failed'; Error = $message }
             $failures.Add("$($suite.Name): $message")
             Write-Error "$($suite.Name) suite failed: $message" -ErrorAction Continue
+        }
+        finally {
+            $stopwatch.Stop()
+            $outcomes[$suite.Name].DurationSeconds = [Math]::Round($stopwatch.Elapsed.TotalSeconds, 3)
         }
     }
 
@@ -637,6 +658,18 @@ function Invoke-UnifiedTest {
     }
     $summary | ConvertTo-Json -Depth 5 |
         Set-Content -LiteralPath (Join-Path $testResultsPath 'Pscx.TestSummary.json') -Encoding utf8
+
+    try {
+        Invoke-TestDashboard
+    }
+    catch {
+        $message = $_.Exception.Message
+        $failures.Add("Dashboard: $message")
+        $summary.Status = 'Failed'
+        $summary | ConvertTo-Json -Depth 5 |
+            Set-Content -LiteralPath (Join-Path $testResultsPath 'Pscx.TestSummary.json') -Encoding utf8
+        Write-Error "Dashboard generation failed: $message" -ErrorAction Continue
+    }
 
     if ($failures.Count -gt 0) {
         throw "Unified tests failed. $($failures -join ' | ')"
@@ -1206,6 +1239,7 @@ foreach ($item in $expandedTasks) {
         Test { Invoke-Test }
         Pester { Invoke-PesterTest }
         Static { Invoke-StaticValidation }
+        Dashboard { Invoke-TestDashboard }
         Catalog { Invoke-Catalog }
         UnifiedTest { Invoke-UnifiedTest }
         ImportTest { Invoke-ImportTest }
@@ -1222,8 +1256,8 @@ foreach ($item in $expandedTasks) {
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCC8kbtOtaEHV5p4
-# +cu2deASHeZ1J5s3Lx0cqJqJqcYV9KCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCD3N4aJJaHw6d4u
+# /5Vqk31o1MqngfnM0o+LoGGSecU56KCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -1402,34 +1436,34 @@ foreach ($item in $expandedTasks) {
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgwhqempBA0efZRdHMu+Yq
-# emqmhGvtgnraaIXgdyqpDMwwDQYJKoZIhvcNAQEBBQAEggIABlPBZJS/C7GWoGXT
-# mEUz6++ICb6OR9oRhGnsxbgHPAzav5CGNMQOQtyyJGipsgBsRVq29ntRX1NUmN8i
-# libU1dokwdqX7W8h9hVGbL5yL7xRD978Qq6ZuA73dd0ebQfwVkwFzV9rXvBrVAHM
-# 92bNQK/ycbZpkjjmpWFW3UmuSMEklD/DaTUPIxrNGB97+WPfwb4EvKPesfNw3pwZ
-# CyOSczgJk9i7WnVPEusGHQD+ZV+QUZ6FdmdIp3DY2XGbABHTaNJ16ksJst0zj/6w
-# hkdYgbTSN5vym7uWGMa4HBx82JRkDah1RFT2HO9Nt6ss6tRl29A/KzH2TGSE/cZv
-# 5YJW08jMkKDYKwJq8k03NtLVs+tazKGFmYfN3zi65bnlRtJHEIkFHHYCELgmwxrL
-# z1XCaKjRfuq2Ww8AKH+OpGDwLVPaJwNzGa6fDKIr22J/f0rg536xtttbbUJaKDll
-# BKS5ufJT2NtC0NYAqUMhqTprdgMF0RYpHNjvsNapwQnlpXDcJVkR0xz+sQCxEhR8
-# ZXiWB2xW+YVRDY9ePbFW2wE+gc+/UhUOKIOFBe9Ca6sYeBka+AQLtzRY3b2+np9M
-# vba1bhhzew3kUY0EgPaiyvo2qm0hAZNBac8UGBSCLA4IdzwftsdljMwDkMQZnZS6
-# wh6Q5Soxm/a3+ELGTjg9+WQkvpWhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgmIN0P9npOoYMuSwYqMPV
+# 7mZl+Mi06giKwbvxsZbBI0gwDQYJKoZIhvcNAQEBBQAEggIAfdxDtnjg3UKeg9Oj
+# 4xhMNT77KfD0s5N0oCGXBDhz9TkNRJ5RXJ2LXmZUIk2cEDT6pXp4vPx4F/w/ZkeO
+# pEouynw9R3aOOVhJ3Cjc9hrgaW9TLZZnztVgxswfWVmh64fuhSrekGvPJ0+/mKSK
+# jSt+7ZsR1Ra3KUWfhxJ4zPECKqiao6JUuSBh+ODLPs9/1+AfSIhGlC7Kt0Eqma3d
+# 0ompnJhMcWTPE8m8w/YF5LM9ef8qwx+obo7m5IQ4pLg+GHI0abYe12/f2yXdkxDz
+# bmAK0Tnr8IeWeXbtzUXb8kBxqJXRX/nygVFTXb/u5/5o/k9mRZHfdDacIapnjEPt
+# oIvopxtybAPTzLaX1HLZ85yJXWZUeY3NmusQ9Q0ZdcEMm3O/cYkIMDxtAJ08B7Eq
+# IErSGZY+A6mIm2s/En4w431bTieE7BrwIS6VsWq2N6fUCRtFkCovk9vk5BtJZ+9n
+# vKuAdGMMwHfFjwIrBJXrD3zLynOtuKhI8PxaD3uyZjsK66nJcx+H1N/uDGD6+eq9
+# T7FG6si5RAxjLRJJDEwGdFr7bsbc18VsDQT2wVEQaq3Z/pRgBiwl4JIauq1sGxk+
+# 2h86Bb453L09MJtvAK1t9QFd+xtQcKRB7ZwEAtDIkdoeJOXL4iPbVPKgPZvwHJEM
+# SmuNxdAcMSleJXxvCWFyySyrr1ihggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODI4MDQzMjUzWjAvBgkqhkiG9w0BCQQxIgQgnyob1YRcYg/rbcQ7nePRCWwICioW
-# j2MEE+WvTZd5BjkwDQYJKoZIhvcNAQEBBQAEggIAcU/LN3utLGYRWL6fhWEF31m/
-# cw0aVRQBQ9Vd1TYNKcei5GgzXGFTrQVWeUN+ExuCEuzwJZ+0mm5aB9EZcE5RfmzV
-# LJvqBsK6s9jodiZc2TQzWowU35UxkQR9BfKaQMKp9QZILaFKKPpOYUimCBwJJW4S
-# dh7zUv9FoCMP3HGVrlwRQY0SuWOPwOC+JWGB0IaRaxq4dsYzDZYAGFbvZG+72yDg
-# oCPAFaj1GbdJew9fZmHIqLcroIuLV6zdva2T30dU+PEybDKS1m4Eyr4Gm4KrnhxG
-# Hn0IemoNjtJSXl1lPlDak5CcMp2WoqHTE5kkhe1GUQp3cVUUwUgn3Wdho7M6uYYr
-# m657sCgk9t79EMLffOAb7eXXrN75D+gHZ8m+FqZOc6qOO04lRHSIbUQGist5YOM8
-# 6rvAd7lNvASbNocC9uHAJzw+QKYAD1fAlPeaD7BsSkcvhFxzolb6LQwac+5idSf/
-# TNkpuvJeEwgX+DEPNrCGSLnVp9Do3DdjE6krF5wQmoxOBEHJH+6ayKhGn3FDNcFJ
-# iHs7V+09BSdjH8VKkNUcQfct+cNniiZuR8sTp8wlf6yqOP5gJ63kx3xOzLKuQsK2
-# VsJTtKwdFjlGE+szP2jmDKprVy7cgKUovBy041/fhB8WYgIMBvgL+0UcbfzEUuBV
-# EDkIWgWlHbr+wELRNnA=
+# ODI4MTkyNTU4WjAvBgkqhkiG9w0BCQQxIgQgxG+2fKcNyoSfCFARtmOSBaqzf7DF
+# hRNf52KfCK08m78wDQYJKoZIhvcNAQEBBQAEggIAvbwFuq4ChMgKxA1+3bqM4hwS
+# OgoT/xftvZQnRQP+a3/Mj9bQ8mElx9Lqfy6ruw2oW0WsHKpnG9y0kK413BVgURP7
+# a7e3y3Ho7DuxTesIEKbRl0ugCR7rdfg2Y4+GcIR4BkkPvu8EkEewXh1KzRmmO3Fp
+# sSkV7/Bf91OY/uW75pluTIkZQP9rxJQhyWqMfmK5ei4A1usAwbdAen3PXeO+5vK+
+# nFS7f1RvYclugWVUzxCJ8qQxH5ibgW141Wl4g3vyxxCgOq64MWjSRhc0DNBgMrjT
+# U6Ow/QJq8I48vbpfIaCxy2y2/CMCpiKQdMB4e+EVDoLNnSJiYdQ8dNlFuVZ8Vg07
+# FGYVsF6QPI1mMwAHe3v3rAZ/JjbcDmbpeFCj7dKY/lf193UDWjXjinkp/iP+Ruoo
+# rzWm8VKm8k6vRpCTcxlUpSd6M5gIB6/tDmAx3lYxqfnDJ61juBhFZ5hfAL3dsA0j
+# 4u1JQyMpwQITKazs0QwNLK9qNsj7SJuVmslil0BHepPQ6hXRdy++4d7i4kE+nMNI
+# cD/v8QNbdWBWCBhitABrz7e3H7esSjaZGlsdKtNdVkqDuDKycFgRXrt/jwd89YB3
+# KLvKNkNLdAULaZ3Y7ntVfjunnloKxnBRlWamrKpyvD+YPlzFcL/gQ1Jua4hI0CdT
+# I3uq/SciHe8U4KcYpOY=
 # SIG # End signature block

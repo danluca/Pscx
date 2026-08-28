@@ -838,15 +838,15 @@ For each group:
   and never retries or hides a genuine finding.
 - [x] Add regression coverage for the static-analysis runner so a child-process
   failure cannot lose its diagnostic context on Windows, Linux, or macOS.
-- [ ] Generate a portable HTML test dashboard from the existing managed-test
+- [x] Generate a portable HTML test dashboard from the existing managed-test
   TRX, Pester NUnit XML, coverage, and static-validation JSON outputs. Present
   overall and per-suite status, passed/failed/skipped counts, failure details,
   duration, and the separate PowerShell and managed-code coverage results.
-- [ ] Produce the same HTML dashboard from local and CI test runs and upload it
+- [x] Produce the same HTML dashboard from local and CI test runs and upload it
   as a browsable CI artifact. Keep the XML, JSON, TRX, and coverage files as
   the authoritative machine-readable results; the dashboard is a convenience
   view and must not become a second source of test truth.
-- [ ] Make the report self-contained and usable offline without CDN resources,
+- [x] Make the report self-contained and usable offline without CDN resources,
   platform-specific browser automation, or exposing environment-sensitive
   paths and data.
 - [ ] Generate release ZIPs with the standard versioned module layout,
@@ -934,6 +934,6 @@ The following issues are small enough to begin independently:
 | 5. Feature classification | Complete | 100% |
 | 6. Dependency and binary reduction | Complete | 100% |
 | 7. Cohesive improvements | Complete | 100% |
-| 8. PSCX 4.0 release | Not started | 0% |
+| 8. PSCX 4.0 release | In progress | 25% |
 
 Update this table when a phase changes state. Detailed completion should remain in the checklists so the summary does not become a second source of truth.
