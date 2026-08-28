@@ -83,6 +83,13 @@ Before making material changes:
 
 Treat the modernization plan as direction, not blanket authorization to implement every listed item. Work only on the task currently approved by the maintainer.
 
+## Shell and command execution
+
+- Use PowerShell 7 (`pwsh`) as the shell for repository and internal agent commands.
+- Do not fall back to `cmd.exe` or Windows PowerShell when `pwsh` cannot be found, launched, or accessed.
+- If a `pwsh` command fails because of sandbox access or executable resolution, retry the same command with `pwsh` outside the sandbox after obtaining any required approval.
+- If `pwsh` still cannot run outside the sandbox, stop and report the executable path and exact error so the maintainer can troubleshoot the environment. Do not continue through a different shell.
+
 ## Change discipline
 
 - Keep changes focused on the requested outcome.
