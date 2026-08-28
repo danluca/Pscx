@@ -47,6 +47,9 @@
   normalization and existence validation, platform-native case comparison
   with an explicit Unix `-CaseInsensitive` override, Windows persistent
   scopes, `ShouldProcess`, and structured `-PassThru` change results.
+* Added task-oriented command discovery, a concise platform/support matrix,
+  guidance on when PSCX adds value over nearby built-ins, and a PSCX Light
+  3.x/legacy PSCX-to-4.0 migration guide.
 
 ## 3.8.0 - August 2026
 

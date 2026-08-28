@@ -42,7 +42,7 @@ use the defaults built into PSCX.
 
 The `ModulesToImport` preference controls optional feature modules. Some
 optional modules are unavailable outside Windows. The default configuration
-keeps directory services formatting, filesystem extensions, transcription, and WMI
+keeps directory services formatting, filesystem extensions, and transcription
 features disabled.
 
 The release ZIP also contains separately imported sibling modules.
@@ -52,17 +52,48 @@ short-path annotation, and foreground-window commands.
 
 ## Help and command discovery
 
-List commands available in the current session:
+List commands in the default module or discover the explicitly imported
+sibling modules:
 
 ```powershell
 Get-Command -Module Pscx
+Get-Module Pscx.Archive, Pscx.Time, Pscx.WinAdmin -ListAvailable
 ```
 
-Show full help for a command:
+Start with a task, then use full command help for details:
 
 ```powershell
+Get-TextFileInfo -Path ./src/*.cs
+Get-PathVariable -Name PATH
+Test-Script -Path ./build.ps1 -PassThru
 Get-Help ConvertTo-Base64 -Full
 ```
+
+Import `Pscx.Archive` for cross-platform archive creation, listing, and safe
+extraction. Import `Pscx.Time` for the optional NodaTime-backed types. On
+Windows, import `Pscx.WinAdmin` for lower-frequency administration commands.
+
+Run the read-only installation diagnostic when behavior differs between
+machines:
+
+```powershell
+Test-PscxInstallation | Where-Object Status -In Warning, Fail
+```
+
+The repository's task-oriented command guide explains when PSCX adds value
+over nearby built-in commands. Its generated public API catalog identifies the
+platform and availability of every command.
+
+## Migrating to PSCX 4.0
+
+PSCX 4.0 uses explicit exports and collision-aware aliases. Archive commands,
+NodaTime types, and lower-frequency Windows administration commands moved to
+the `Pscx.Archive`, `Pscx.Time`, and `Pscx.WinAdmin` sibling modules. Commands
+superseded by PowerShell, .NET, or maintained Microsoft modules were removed.
+
+Install 4.0 in a versioned module directory beside 3.8 while validating
+profiles and automation. See the repository migration guide for the complete
+command replacement and behavior-change tables.
 
 Show this topic again:
 
@@ -79,3 +110,5 @@ https://github.com/danluca/Pscx/issues.
 
 - https://github.com/danluca/Pscx
 - https://github.com/danluca/Pscx/blob/master/README.md
+- https://github.com/danluca/Pscx/blob/master/docs/COMMAND_DISCOVERY.md
+- https://github.com/danluca/Pscx/blob/master/docs/MIGRATING_TO_4.0.md

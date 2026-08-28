@@ -778,10 +778,20 @@ For each group:
 
 ### 7.4 Command discovery and documentation
 
-- [ ] Add examples organized by task rather than only alphabetically by noun.
-- [ ] Add “Why PSCX instead of the built-in?” notes for commands with nearby built-in functionality.
-- [ ] Add a platform/support table.
-- [ ] Add migration guidance from legacy PSCX and from PSCX Light 3.x.
+- [x] Add examples organized by task rather than only alphabetically by noun in
+  the [task-oriented command guide](docs/COMMAND_DISCOVERY.md), and surface
+  practical starting points in the installed `about_Pscx` help.
+- [x] Add “Why PSCX instead of the built-in?” notes for commands with nearby
+  built-in functionality, including guidance to prefer the built-in when the
+  PSCX convenience layer adds no needed behavior.
+- [x] Add a platform/support table covering the core, Windows companion,
+  explicit sibling modules, and platform-specific PATH behavior.
+- [x] Add a [PSCX 4.0 migration guide](docs/MIGRATING_TO_4.0.md) for both PSCX
+  Light 3.x and older full/upstream PSCX, including runtime, installation,
+  package-boundary, command-removal, alias, and output-contract changes.
+- [x] Validate the new guides' PowerShell example syntax, README links, removed
+  command coverage, and installed about-help discovery content in packaged
+  Pester tests.
 
 ### 7.5 Guided update and installation
 
@@ -923,7 +933,7 @@ The following issues are small enough to begin independently:
 | 4. Explicit public API | Complete | 100% |
 | 5. Feature classification | Complete | 100% |
 | 6. Dependency and binary reduction | Complete | 100% |
-| 7. Cohesive improvements | In progress | 60% |
+| 7. Cohesive improvements | In progress | 80% |
 | 8. PSCX 4.0 release | Not started | 0% |
 
 Update this table when a phase changes state. Detailed completion should remain in the checklists so the summary does not become a second source of truth.

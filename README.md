@@ -221,23 +221,19 @@ alias-to-command mapping appears in the generated catalog below.
 PSCX 4.0 supports Windows, Linux, and macOS. The default package selects its
 platform-aware payload during import:
 
-- The PSCX core assembly and the functions under **Cross-platform** below are
-  supported on all three operating systems, except for the foreground-window
-  commands called out in the catalog.
-- The PSCX Windows companion assembly, commands under **Windows only**, and
-  gsudo integration are available only on Windows.
-- YAML commands and the `yaml`/`yml` type accelerators are part of the
-  cross-platform core.
-- The separately imported `Pscx.Archive` module provides archive creation,
-  listing, and safe extraction on all three operating systems.
-- The separately imported `Pscx.Time` module provides the optional
-  NodaTime-backed date/time types and accelerators on all three operating
-  systems.
-- The separately imported `Pscx.WinAdmin` module provides the optional
-  Windows administration commands described above.
-- Optional submodules are controlled through `ModulesToImport` in
-  `Pscx.UserPreferences.ps1` or an import argument. Their default state is
-  shown in the catalog.
+| Component or capability | Import | Windows | Linux | macOS | Notes |
+| --- | --- | :---: | :---: | :---: | --- |
+| `Pscx` cross-platform core | `Import-Module Pscx` | Yes | Yes | Yes | Includes YAML commands and the `yaml`/`yml` accelerators. |
+| `Pscx` Windows companion | Loaded by `Pscx` on Windows | Yes | No | No | Terminal Services, reparse/mount points, privileges, shortcuts, gsudo, less, and other Windows integrations. |
+| `Pscx.Archive` | Explicit | Yes | Yes | Yes | Managed archive creation, listing, and safe extraction. |
+| `Pscx.Time` | Explicit | Yes | Yes | Yes | Optional NodaTime-backed types and accelerators. |
+| `Pscx.WinAdmin` | Explicit | Yes | No | No | Lower-frequency ADO/OLE DB, batch-environment, short-path, and foreground-window commands. |
+| Process-scoped PATH management | `Pscx` | Yes | Yes | Yes | Unix comparison is case-sensitive unless `-CaseInsensitive` is used. |
+| Persistent `User`/`Machine` PATH targets | `Pscx` | Yes | No | No | Uses Windows environment-variable storage. |
+
+Optional submodules within `Pscx` are controlled through `ModulesToImport` in
+`Pscx.UserPreferences.ps1` or an import argument. Their default state and each
+command's platform are shown in the generated catalog below.
 
 ### Text-file diagnostics and line endings
 
@@ -280,6 +276,18 @@ Test-PscxInstallation | Where-Object Status -In Warning, Fail
 
 The diagnostic is read-only: it does not import optional modules, launch
 tools, access the network, or change the current session.
+
+### Command discovery and migration
+
+The [task-oriented command guide](docs/COMMAND_DISCOVERY.md) groups PSCX by the
+job being performed—files and text, PATH and environment management, data
+conversion, validation, archives, and Windows administration—and explains
+when PSCX adds value over a nearby built-in command.
+
+For upgrades, use the [PSCX 4.0 migration guide](docs/MIGRATING_TO_4.0.md). It
+covers the runtime and versioned-layout changes, optional module boundaries,
+moved and removed commands, alias behavior, output-contract changes, and
+migration from both PSCX Light 3.x and older full/upstream PSCX releases.
 
 ## Maintainers
 

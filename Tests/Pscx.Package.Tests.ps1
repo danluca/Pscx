@@ -505,6 +505,66 @@ Describe 'Packaged PSCX help and examples' {
         }
         @($parseErrors) | Should -HaveCount 0
     }
+
+    It 'keeps the task and migration guides linked with valid PowerShell examples' {
+        $repositoryRoot = Split-Path -Parent $PSScriptRoot
+        $readme = Get-Content -LiteralPath (Join-Path $repositoryRoot 'README.md') -Raw
+        $relativeGuidePaths = @(
+            'docs/COMMAND_DISCOVERY.md'
+            'docs/MIGRATING_TO_4.0.md'
+        )
+
+        foreach ($relativeGuidePath in $relativeGuidePaths) {
+            $readme | Should -Match ([regex]::Escape("($relativeGuidePath)"))
+            $guidePath = Join-Path $repositoryRoot $relativeGuidePath
+            Test-Path -LiteralPath $guidePath -PathType Leaf | Should -BeTrue
+
+            $guide = Get-Content -LiteralPath $guidePath -Raw
+            $blocks = [regex]::Matches(
+                $guide,
+                '(?ms)^```powershell\s*\r?\n(?<code>.*?)^```\s*$'
+            )
+            $blocks.Count | Should -BeGreaterThan 0
+
+            $parseErrors = foreach ($block in $blocks) {
+                $tokens = $null
+                $errors = $null
+                [System.Management.Automation.Language.Parser]::ParseInput(
+                    $block.Groups['code'].Value,
+                    [ref]$tokens,
+                    [ref]$errors
+                ) | Out-Null
+                $errors
+            }
+            @($parseErrors) | Should -HaveCount 0 -Because "$relativeGuidePath examples must parse"
+        }
+    }
+
+    It 'documents every approved PSCX 4.0 command removal' {
+        $repositoryRoot = Split-Path -Parent $PSScriptRoot
+        $disposition = Import-PowerShellDataFile -LiteralPath (
+            Join-Path $repositoryRoot 'PSCX_COMMAND_DISPOSITION.psd1'
+        )
+        $migrationGuide = Get-Content -LiteralPath (
+            Join-Path $repositoryRoot 'docs/MIGRATING_TO_4.0.md'
+        ) -Raw
+
+        $removedCommands = @(
+            $disposition.RemovedCommands.Values | ForEach-Object { $_ }
+        )
+        foreach ($removedCommand in $removedCommands) {
+            $migrationGuide | Should -Match ([regex]::Escape($removedCommand)) `
+                -Because "$removedCommand needs migration guidance"
+        }
+    }
+
+    It 'ships task-oriented discovery and migration pointers in about help' {
+        $aboutHelp = Get-Help about_Pscx -Full | Out-String
+
+        $aboutHelp | Should -Match 'Test-PscxInstallation'
+        $aboutHelp | Should -Match 'Pscx\.Archive'
+        $aboutHelp | Should -Match 'Migrating to PSCX 4\.0'
+    }
 }
 
 Describe 'Representative public command behavior' {
