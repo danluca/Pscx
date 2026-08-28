@@ -1,158 +1,77 @@
-[CmdletBinding()]
+<#
+.SYNOPSIS
+    Checks for and optionally installs a newer compatible PSCX release.
+.DESCRIPTION
+    Queries PSCX GitHub Releases only when this script is invoked. Stable
+    releases are considered by default; use IncludePrerelease to opt into
+    preview releases.
+
+    Before installation, the script downloads the release ZIP and checksum to
+    a temporary directory, verifies SHA-256, validates archive paths and module
+    manifests, and confirms runtime compatibility. Installation requires
+    confirmation, uses versioned module directories, and never removes or
+    overwrites an existing PSCX version.
+.PARAMETER CheckOnly
+    Reports the newest compatible release without installing it. Package and
+    checksum validation still occur in a temporary directory.
+.PARAMETER IncludePrerelease
+    Includes prerelease versions in release selection. Draft releases are
+    always ignored.
+.PARAMETER DestinationRoot
+    Specifies the PowerShell Modules directory beneath which versioned PSCX
+    module directories are installed. The current-user module directory is
+    used by default.
+.EXAMPLE
+    & (Join-Path (Get-Module Pscx).ModuleBase 'Update-Pscx.ps1') -CheckOnly
+
+    Checks for the latest compatible stable release without installing it.
+.EXAMPLE
+    & (Join-Path (Get-Module Pscx).ModuleBase 'Update-Pscx.ps1')
+
+    Validates the latest compatible stable release and prompts immediately
+    before installing it.
+.EXAMPLE
+    & (Join-Path (Get-Module Pscx).ModuleBase 'Update-Pscx.ps1') -WhatIf
+
+    Reports the validated installation that would be performed without
+    changing a module directory.
+.OUTPUTS
+    Pscx.UpdateResult
+#>
+[CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'High')]
 param(
-    [Parameter(Mandatory)]
-    [string] $ModulePath,
+    [switch] $CheckOnly,
 
-    [Parameter(Mandatory)]
-    [string] $ArchiveModulePath,
+    [switch] $IncludePrerelease,
 
-    [Parameter(Mandatory)]
-    [string] $TimeModulePath,
-
-    [string] $WinAdminModulePath,
-
-    [Parameter(Mandatory)]
-    [ValidateSet('Core', 'Full')]
-    [string] $BuildScope,
-
-    [Parameter(Mandatory)]
-    [string] $ResultsPath,
-
-    [string] $PowerShellPath = 'pwsh'
+    [ValidateNotNullOrEmpty()]
+    [string] $DestinationRoot
 )
 
-Set-StrictMode -Version Latest
-$ErrorActionPreference = 'Stop'
-$PSStyle.OutputRendering = [System.Management.Automation.OutputRendering]::PlainText
+$supportModulePath = Join-Path $PSScriptRoot 'Pscx.Update.psm1'
+$supportModule = Import-Module $supportModulePath -Force -Scope Local -PassThru -ErrorAction Stop
 
-$repositoryRoot = Split-Path -Parent $PSScriptRoot
-$policy = Import-PowerShellDataFile -LiteralPath (Join-Path $repositoryRoot 'Tests/TestPolicy.psd1')
-$pesterVersion = [string]$policy.PesterVersion
-$toolModuleRoot = Join-Path $repositoryRoot '.tools/modules'
-$pesterManifest = Join-Path $toolModuleRoot "Pester/$pesterVersion/Pester.psd1"
-
-if (-not (Test-Path -LiteralPath $pesterManifest)) {
-    New-Item -ItemType Directory -Path $toolModuleRoot -Force | Out-Null
-    Write-Host "Saving Pester $pesterVersion to $toolModuleRoot"
-    Save-PSResource -Name Pester -Version $pesterVersion -Repository PSGallery `
-        -Path $toolModuleRoot -TrustRepository
+$invokeParameters = @{
+    CheckOnly = $CheckOnly
+    IncludePrerelease = $IncludePrerelease
 }
-if (-not (Test-Path -LiteralPath $pesterManifest)) {
-    throw "Pester $pesterVersion was not saved at the expected path: $pesterManifest"
+if ($PSBoundParameters.ContainsKey('DestinationRoot')) {
+    $invokeParameters.DestinationRoot = $DestinationRoot
+}
+if ($PSBoundParameters.ContainsKey('WhatIf')) {
+    $invokeParameters.WhatIf = $PSBoundParameters.WhatIf
+}
+if ($PSBoundParameters.ContainsKey('Confirm')) {
+    $invokeParameters.Confirm = $PSBoundParameters.Confirm
 }
 
-Import-Module $pesterManifest -Force -ErrorAction Stop
-if ((Get-Module Pester).Version -ne [version]$pesterVersion) {
-    throw "Expected Pester $pesterVersion but loaded $((Get-Module Pester).Version)."
-}
+& $supportModule { param($Parameters) Invoke-PscxUpdate @Parameters } $invokeParameters
 
-$modulePath = (Resolve-Path -LiteralPath $ModulePath).Path
-$archiveModulePath = (Resolve-Path -LiteralPath $ArchiveModulePath).Path
-$timeModulePath = (Resolve-Path -LiteralPath $TimeModulePath).Path
-$winAdminModulePath = if ($BuildScope -eq 'Full') {
-    (Resolve-Path -LiteralPath $WinAdminModulePath).Path
-}
-else {
-    $null
-}
-$resultsPath = [System.IO.Path]::GetFullPath($ResultsPath)
-try {
-    $powerShellExecutable = Get-Command -Name $PowerShellPath -CommandType Application -ErrorAction Stop |
-        Select-Object -First 1 -ExpandProperty Source
-}
-catch {
-    throw "Could not resolve the PowerShell executable '$PowerShellPath'."
-}
-New-Item -ItemType Directory -Path $resultsPath -Force | Out-Null
-$testResultPath = Join-Path $resultsPath 'Pscx.Pester.xml'
-$coveragePath = Join-Path $resultsPath 'Pscx.PowerShell.coverage.xml'
-$coverageModulePaths = @($modulePath, $archiveModulePath, $timeModulePath)
-if ($winAdminModulePath) {
-    $coverageModulePaths += $winAdminModulePath
-}
-$coverageFiles = @(
-    Get-ChildItem -LiteralPath $coverageModulePaths -Recurse -File -Filter *.psm1 |
-        Select-Object -ExpandProperty FullName
-)
-
-$container = @(
-    New-PesterContainer `
-        -Path (Join-Path $repositoryRoot 'Tests/Pscx.StaticAnalysisRunner.Tests.ps1') `
-        -Data @{ PowerShellPath = $powerShellExecutable }
-    New-PesterContainer `
-        -Path (Join-Path $repositoryRoot 'Tests/Pscx.Update.Tests.ps1') `
-        -Data @{ UpdateModulePath = (Join-Path $modulePath 'Pscx.Update.psm1') }
-    New-PesterContainer `
-        -Path (Join-Path $repositoryRoot 'Tests/Pscx.Package.Tests.ps1') `
-        -Data @{
-            ModulePath = $modulePath
-            ArchiveModulePath = $archiveModulePath
-            WinAdminModulePath = $winAdminModulePath
-            BuildScope = $BuildScope
-            PowerShellPath = $powerShellExecutable
-        }
-    New-PesterContainer `
-        -Path (Join-Path $repositoryRoot 'Tests/Pscx.Archive.Package.Tests.ps1') `
-        -Data @{ ArchiveModulePath = $archiveModulePath }
-    New-PesterContainer `
-        -Path (Join-Path $repositoryRoot 'Tests/Pscx.Time.Package.Tests.ps1') `
-        -Data @{
-            ModulePath = $modulePath
-            TimeModulePath = $timeModulePath
-            PowerShellPath = $powerShellExecutable
-        }
-    if ($BuildScope -eq 'Full') {
-        New-PesterContainer `
-            -Path (Join-Path $repositoryRoot 'Tests/Pscx.WinAdmin.Package.Tests.ps1') `
-            -Data @{
-                ModulePath = $modulePath
-                WinAdminModulePath = $winAdminModulePath
-            }
-    }
-)
-$configuration = New-PesterConfiguration
-$configuration.Run.Container = $container
-$configuration.Run.PassThru = $true
-$configuration.Output.Verbosity = 'Normal'
-$configuration.Output.RenderMode = 'Plaintext'
-$configuration.TestResult.Enabled = $true
-$configuration.TestResult.OutputFormat = 'NUnit3'
-$configuration.TestResult.OutputPath = $testResultPath
-$configuration.CodeCoverage.Enabled = $true
-$configuration.CodeCoverage.Path = $coverageFiles
-$configuration.CodeCoverage.OutputFormat = 'Cobertura'
-$configuration.CodeCoverage.OutputPath = $coveragePath
-$configuration.CodeCoverage.CoveragePercentTarget =
-    [decimal]$policy.PowerShellCoverageMinimumPercent
-
-$result = Invoke-Pester -Configuration $configuration
-$summary = [ordered]@{
-    Framework = 'Pester'
-    Version = $pesterVersion
-    Result = $result.Result
-    TotalCount = $result.TotalCount
-    PassedCount = $result.PassedCount
-    FailedCount = $result.FailedCount
-    SkippedCount = $result.SkippedCount
-    CoveragePercent = $result.CodeCoverage.CoveragePercent
-    CoverageMinimumPercent = [decimal]$policy.PowerShellCoverageMinimumPercent
-    TestResultPath = $testResultPath
-    CoveragePath = $coveragePath
-}
-$summary | ConvertTo-Json -Depth 4 |
-    Set-Content -LiteralPath (Join-Path $resultsPath 'Pscx.Pester.summary.json') -Encoding utf8
-
-if ($result.FailedCount -gt 0 -or $result.Result -ne 'Passed') {
-    throw "Pester failed: $($result.FailedCount) of $($result.TotalCount) tests failed."
-}
-if ($result.CodeCoverage.CoveragePercent -lt [decimal]$policy.PowerShellCoverageMinimumPercent) {
-    throw "PowerShell coverage $($result.CodeCoverage.CoveragePercent)% is below the $($policy.PowerShellCoverageMinimumPercent)% minimum."
-}
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDeuH+eNlCfDd45
-# BC+cKnxIx+pJebgaMDmg4prHKrGBQKCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBy9tgMn2zin9Yb
+# gCGTbowlxkHqOlDE8PWwx/2d2i3KQaCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -331,34 +250,34 @@ if ($result.CodeCoverage.CoveragePercent -lt [decimal]$policy.PowerShellCoverage
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgZDjVpMsuKcQs9TtEO2xN
-# S6osfOPGGrcwIA61vR0aH88wDQYJKoZIhvcNAQEBBQAEggIAXTGXLXVmvT7lLm4m
-# ys6MpXF19uXwezJFKJ+uUsWO14DCDN8PfRcbj39Zdv+kU3w9blsAxKH67j1y9NT2
-# cYOqWTV7vhkRZl1C32HFhzeVow7XXWVZ7EAE0NXqQvujZTuEn/g/RMDIMwMRH49u
-# NwRMyapRuNYxEH9rmHwfuC0EKjeT1vbXt2dHcA0eHcB/1FhKngLnFfG2+vXrATSu
-# SFXHZGo2Ua2FAmxLIOVIevDynxBMPyWe/xyNJFo6CDpO4ig7cND0Cpu08SoqJnpQ
-# N/DFKsYHJCgbGJcorFaGoMUEzlE4YD1FQ+CHRK8yOt1BdBbrE8QXmKC/lPJl1pr3
-# e4T2/svhe+yQiZlaEbd0n81KrB+aEFv+Mf/YzLNNGRmegrLSOprcowwvdXE8Tn2j
-# YxozRq11s1b/HUMTci4ojtflnSyqMi/jngMv64D73xRgr0ahQ1lb8f4sSPGerqUI
-# foZJn9KFEjy7SkjU/HnD0Noj2k7ZYCOb86FNnQ52oxCNyJVDMpixeq+/GkhJ5Ifb
-# WqXpxlFy0jaiwzIEI0VHihJ4qnebah+kzfB5kiGqEjK9lIw+Z+IB9/gyqUsPvzsT
-# AHDJJVucF6ZpJZYE8UsdNeVNqEoSaPlliqlRrvSLztF61zvAJcUbdPAHQuJXUBKM
-# fzoYXxVKYE8W4ymfQ61QIRms+yuhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgcrEKt6QEgqLgyh+htsuG
+# 8AqY59lw5/SHD/90ouJ9YC8wDQYJKoZIhvcNAQEBBQAEggIAQRXYVMqErPRtU4Kk
+# BIkznIRZLZKclywC+/hodL3iXG3KjsjXDVEvduD9aLlxho/ZFNlVwOjzQVlW4Yue
+# 6sBYIYseuikKwljE+2uyVwEo1LEIYiqJHxAFRPLfpJva8WgSUQ6BYk7+r9V12ZgF
+# WcwqMlX7kZJYp3fM7ZOrMruK/AMHS964csdQfneecu1b3O7Hdm6PP9nHjpdY0MuT
+# MB54bRxx0uGir/9uclRDok2ga2e10Khhz6wAEA5M3/rzUNnOQGsH72pdAHwluPGA
+# 4Gfkfmgsr86xmXfjD8842tIamkk+Xk/AZ1+nWMk7Y5giJ1hOYnMBPH8hd4aDC51T
+# LnMfnWrKLeIl0W8nOZZkhG9MBJrM3DSyMwCHwZDIfoUm2hIBvYPwg0+Qg1bRvLEh
+# Mt4/QzDiiUj/ZOWwR01VevTdaGbLmmtUjBRdwKRmU3Dw4UUN5VH8nwYWZPjRtAlR
+# NBNh+tfRt5u+RWY6DUIOWlhhXBsTxr7mFw/Sit+08GZeQQrYo4s0CBoFVHO1lM7t
+# 1VtMgY0dyOfzZJEYCovbP1WK+P2C+afybQPLFW6TG6NOWGnyLHklrDhQIRwQg6Du
+# pAdNGNE5wdgoszYiLh+y+qLvolYfm5MnqBvkLgAexwSjjNqXJFNKsSVtXCg6KXze
+# Kbr2itE0EC2fIIRiJHh/fDXHrWOhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODI4MDQzMjU1WjAvBgkqhkiG9w0BCQQxIgQgUusQ3d+esCYNrM5YM/unQcxMCH75
-# IxflAaWwjdXDghIwDQYJKoZIhvcNAQEBBQAEggIAp3tSEZcGlmCbXwmlDN/iLxHg
-# sxq2CbRRf0Js0nFsgrjecYSLIQA9QBFGVMppEYCpIC7lQFKdDRXBm0Y8BsuaHzpP
-# EFxNJyq8XM2f4rHV+ozowMWHix4L8EMvC2UGbLAvaqhCYo0hraCjAyi+F2xLZ4Fy
-# YAm7iT+Kyx+5c+5lZ4F6hgP5tuiW1EQxlN+ktDU8eI3pmXO9VtHZ9SuVFi1F4/Km
-# yD6ko/FXsfw2LtS8ZNYAj2uMjqOGNjvIbT0HWPN+iG7hnb0vwKWW79dmGMujfNZQ
-# Tj/mEGyFvgp+NlYbiZqaf2CAd6RcUEKtgo2Hv26kXx/VkhuDoTycdPjadfZkfKT9
-# rqOk32UiJwg42LYsigOypQAWwNbsZbUhrAw/CpiJNEZ+/eD2unMA3X6WtFBb7FYK
-# yPK26mMAwp46+HauzS2QOml2J3LhaVapqrnO/tLns76wOT4i/iUgykYeYQHM3nhj
-# JF0JfqMou04gErhtpQGKasVqKPBdmp6cf/bLO+yKUdlKC2cZ6t3268bMxhQe+wlV
-# VttouMBNhku2zl/MZ6F3z1NKdPj+CQEE+HMWcxO1wKBg07lbIein5QxXEQO8Xupk
-# iyys+fN+yp/IHzBoWbY3iuWI7RjYN00A6NWYpMNFwEmy+TJs3QXgEDZc3HqX3bzw
-# OdMEZg/dxZn2gdHvyck=
+# ODI4MDQzMjU0WjAvBgkqhkiG9w0BCQQxIgQgW/hRQdpnNjNdbVlyXKO3HEOg69as
+# WUuAbqlqNJmxITswDQYJKoZIhvcNAQEBBQAEggIANMXUoAkZfFSSGnyUojzzRBIu
+# E/gslRs9laOIM0Ki8C3O+41Lz1XRUP/NQ+HiZxFUV9hQzBml/Vk8Nudr/ZFuwUem
+# b0JBt8NLwW5OrSopOUWomN/6w0YSUTWXVOFDLa/zhOefdR71yluYLzMC+1QJlm4A
+# 31ngDhFzrShCkUieXB17194y1c/K7Bf9U3xOC28Etx567LtriM8kOT45fSwV0v7B
+# z90e6h30o7R3Fi4tata4yFA1woC6BqDWFhPUqXRls5TaZkdJ5erJyKA6VkdNL6DH
+# +en6GCKMSqhO4UF3CsaU9YthkKjPXv2xJWqi/VbiscxrV8g+jvPoJ/4dY+c3BYwP
+# pDtpfYJPfBAyz4Cv5VfwdPAhiMoWFvRdTqZIOFeAwZXF5cc4TueR7ude6/RaA/hc
+# fBrtpW6poRNBGoaPCgPF3LRTaYYCxL5hu8oed8OXZN35Tn5Mjs0VRXtdVPPkHj1b
+# EvSB5AxODiJ6usctYeeByXTwmOTVa42E6CixG+FedchGHaEWkcFV5fs+Jsz61KFw
+# JVTqIezr8kbobkTjFLEyq86W3lT3s/7WAGFcLxLFukqRW87T0SDXRIkwd8ixmZtF
+# SjfIPtm+GyzwPhXFtxKZiJA/GnGcN3fNtgd7ZmVF+vlSpKLhT7piA38Q5dTZBxHT
+# XUqdiSazZ5Xn0y6/soI=
 # SIG # End signature block

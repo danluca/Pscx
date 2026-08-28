@@ -795,31 +795,31 @@ For each group:
 
 ### 7.5 Guided update and installation
 
-- [ ] Add an explicitly invoked PowerShell update script that discovers the
+- [x] Add an explicitly invoked PowerShell update script that discovers the
   latest compatible stable PSCX release from GitHub Releases, compares it with
   installed versions, and reports the available version and release-notes URL.
   Allow prerelease discovery only through an explicit opt-in switch.
-- [ ] Require interactive confirmation immediately before installation and
+- [x] Require interactive confirmation immediately before installation and
   support `ShouldProcess`, including `-WhatIf`; do not check the network or
   prompt automatically during module import or normal command execution.
-- [ ] Download the release ZIP and checksum to a temporary location, verify the
+- [x] Download the release ZIP and checksum to a temporary location, verify the
   SHA-256 checksum and package manifest/version, and reject unsafe archive paths
   before modifying a module directory.
-- [ ] Install atomically into the versioned `Pscx/<module-version>/...` layout,
+- [x] Install atomically into the versioned `Pscx/<module-version>/...` layout,
   retain existing versions for rollback, and report the installed path and the
   command needed to import the new version. Keep removal of older versions a
   separate, explicit operation.
-- [ ] Handle offline, proxy, rate-limit, incompatible-runtime, permission, and
+- [x] Handle offline, proxy, rate-limit, incompatible-runtime, permission, and
   interrupted-install failures with actionable errors and no partial install.
-- [ ] Test release selection, semantic-version comparison, confirmation,
+- [x] Test release selection, semantic-version comparison, confirmation,
   `-WhatIf`, checksum failure, archive safety, side-by-side installation, and
   recovery behavior without depending on the live GitHub service.
 
 ### Exit criteria
 
-- [ ] New features have cross-platform tests and full help.
-- [ ] Each feature directly supports the CLI-extension mission.
-- [ ] No new large mandatory dependency is introduced into the core.
+- [x] New features have cross-platform tests and full help.
+- [x] Each feature directly supports the CLI-extension mission.
+- [x] No new large mandatory dependency is introduced into the core.
 
 ---
 
@@ -933,7 +933,7 @@ The following issues are small enough to begin independently:
 | 4. Explicit public API | Complete | 100% |
 | 5. Feature classification | Complete | 100% |
 | 6. Dependency and binary reduction | Complete | 100% |
-| 7. Cohesive improvements | In progress | 80% |
+| 7. Cohesive improvements | Complete | 100% |
 | 8. PSCX 4.0 release | Not started | 0% |
 
 Update this table when a phase changes state. Detailed completion should remain in the checklists so the summary does not become a second source of truth.

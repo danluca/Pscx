@@ -95,6 +95,24 @@ Install 4.0 in a versioned module directory beside 3.8 while validating
 profiles and automation. See the repository migration guide for the complete
 command replacement and behavior-change tables.
 
+## Guided update
+
+The installed `Pscx` module directory contains `Update-Pscx.ps1`. It performs
+no work during module import; invoke it explicitly to discover, download,
+validate, and optionally install a newer compatible GitHub Release:
+
+```powershell
+$updateScript = Join-Path (Get-Module Pscx).ModuleBase 'Update-Pscx.ps1'
+& $updateScript -CheckOnly
+& $updateScript -WhatIf
+& $updateScript
+```
+
+Stable releases are selected by default. Use `-IncludePrerelease` to opt into
+preview releases. The script verifies the release checksum and package before
+prompting, installs into versioned module directories, and retains every
+existing version for explicit rollback or cleanup.
+
 Show this topic again:
 
 ```powershell

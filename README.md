@@ -117,6 +117,40 @@ writes its exact module file counts and uncompressed sizes to
 The release ZIP includes local offline help. PSCX does not configure
 `Update-Help` or publish separate online help packages.
 
+### Guided update
+
+An installed PSCX 4.0 package includes `Update-Pscx.ps1` in the `Pscx` module
+directory. The script runs only when explicitly invoked; importing PSCX never
+checks the network or prompts. Check the latest compatible stable release with:
+
+```powershell
+$updateScript = Join-Path (Get-Module Pscx).ModuleBase 'Update-Pscx.ps1'
+& $updateScript -CheckOnly
+```
+
+`-CheckOnly` still downloads the candidate ZIP and checksum to a temporary
+directory so it can verify SHA-256, archive paths, manifests, version identity,
+and runtime compatibility. Run the script without `-CheckOnly` to receive a
+confirmation prompt immediately before installation, or inspect the planned
+change with `-WhatIf`:
+
+```powershell
+& $updateScript
+& $updateScript -WhatIf
+
+# Opt in to preview releases; drafts are never considered.
+& $updateScript -IncludePrerelease
+```
+
+The updater installs all applicable sibling modules side by side beneath the
+current-user module root as `<module-name>/<module-version>/...`, retains older
+versions, and returns the installed paths, release-notes URL, and exact import
+command. It never overwrites or removes an existing version directory; cleanup
+or rollback remains a separate explicit decision. Use `-DestinationRoot` to
+select another directory from `$env:PSModulePath`. An optional `GITHUB_TOKEN`
+environment variable may be used when unauthenticated GitHub API rate limits
+are too restrictive.
+
 ### Replacements for removed Windows administration commands
 
 PSCX 4.0 removes command groups that are superseded by maintained Microsoft

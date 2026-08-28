@@ -50,6 +50,9 @@
 * Added task-oriented command discovery, a concise platform/support matrix,
   guidance on when PSCX adds value over nearby built-ins, and a PSCX Light
   3.x/legacy PSCX-to-4.0 migration guide.
+* Added an explicitly invoked, cross-platform guided updater for GitHub Release
+  discovery, stable/prerelease policy, checksum and package validation,
+  confirmation and `-WhatIf`, and recoverable side-by-side versioned installs.
 
 ## 3.8.0 - August 2026
 
