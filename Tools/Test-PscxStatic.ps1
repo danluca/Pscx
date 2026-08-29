@@ -119,7 +119,65 @@ if ($windowsAutomationReferences.Count -gt 0) {
 $resultsPath = [IO.Path]::GetFullPath($ResultsPath)
 New-Item -ItemType Directory -Path $resultsPath -Force | Out-Null
 $infrastructureResultPath = Join-Path $resultsPath 'Pscx.StaticAnalysis.infrastructure.json'
+$diagnosticResultPath = Join-Path $resultsPath 'Pscx.StaticAnalysis.diagnostics.json'
 Remove-Item -LiteralPath $infrastructureResultPath -Force -ErrorAction SilentlyContinue
+$analyzerWorkerTimeoutSeconds = 120
+
+function Write-PscxAnalyzerDiagnosticReport {
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Passed', 'Failed')]
+        [string] $Status,
+
+        [Parameter(Mandatory)]
+        [bool] $CollectionComplete,
+
+        [AllowEmptyCollection()]
+        [object[]] $RawDiagnostic = @(),
+
+        [AllowEmptyCollection()]
+        [object[]] $InfrastructureFailure = @(),
+
+        [AllowEmptyCollection()]
+        [object[]] $BaselineViolation = @()
+    )
+
+    $uniqueDiagnostics = @(Get-PscxCanonicalAnalyzerDiagnostic `
+            -Diagnostic $RawDiagnostic `
+            -RepositoryRoot $repositoryRoot)
+    $counts = [ordered]@{
+        Raw = $RawDiagnostic.Count
+        Unique = $uniqueDiagnostics.Count
+        Duplicate = $RawDiagnostic.Count - $uniqueDiagnostics.Count
+        Error = @($uniqueDiagnostics | Where-Object Severity -EQ Error).Count
+        Warning = @($uniqueDiagnostics | Where-Object Severity -EQ Warning).Count
+        Information = @($uniqueDiagnostics | Where-Object Severity -EQ Information).Count
+    }
+    [ordered]@{
+        Status = $Status
+        CollectionComplete = $CollectionComplete
+        Environment = [ordered]@{
+            PowerShellVersion = $PSVersionTable.PSVersion.ToString()
+            PowerShellEdition = $PSVersionTable.PSEdition
+            FrameworkDescription = [Runtime.InteropServices.RuntimeInformation]::FrameworkDescription
+            OSDescription = [Runtime.InteropServices.RuntimeInformation]::OSDescription
+            OSArchitecture = [Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
+            ProcessArchitecture = [Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString()
+            PSScriptAnalyzerVersion = $analyzerVersion
+        }
+        Baseline = [ordered]@{
+            Warning = [int] $baseline.PSScriptAnalyzer.Warning
+            Information = [int] $baseline.PSScriptAnalyzer.Information
+        }
+        Counts = $counts
+        BaselineViolations = @($BaselineViolation)
+        InfrastructureFailures = @($InfrastructureFailure)
+        Diagnostics = $uniqueDiagnostics
+    } | ConvertTo-Json -Depth 8 |
+        Set-Content -LiteralPath $diagnosticResultPath -Encoding utf8
+
+    $uniqueDiagnostics
+}
 try {
     $powerShellExecutable = Get-Command -Name $PowerShellPath -CommandType Application -ErrorAction Stop |
         Select-Object -First 1 -ExpandProperty Source
@@ -153,7 +211,8 @@ foreach ($file in $powerShellFiles) {
             -AnalyzerScript $analyzerFileScript `
             -AnalyzerManifest $analyzerManifest `
             -Path $file.FullName `
-            -RuleName @($ruleBatch -split ',')
+            -RuleName @($ruleBatch -split ',') `
+            -TimeoutSeconds $analyzerWorkerTimeoutSeconds
         $analyzerAttemptCount += $workItem.AttemptCount
         $analyzerWorkItemCount += $workItem.WorkItemCount
         $analyzerSubdivisionCount += $workItem.SubdivisionCount
@@ -162,6 +221,11 @@ foreach ($file in $powerShellFiles) {
         }
 
         if (-not $workItem.Succeeded) {
+            $null = Write-PscxAnalyzerDiagnosticReport `
+                -Status Failed `
+                -CollectionComplete $false `
+                -RawDiagnostic @($diagnosticList) `
+                -InfrastructureFailure @($infrastructureFailures)
             [ordered]@{
                 Status = 'Failed'
                 Orchestration = [ordered]@{
@@ -170,6 +234,7 @@ foreach ($file in $powerShellFiles) {
                     WorkItemCount = $analyzerWorkItemCount
                     AttemptCount = $analyzerAttemptCount
                     MaximumAttemptsPerWorkItem = 2
+                    WorkerTimeoutSeconds = $analyzerWorkerTimeoutSeconds
                     RuleBatchCount = $ruleBatches.Count
                     BatchSubdivisionCount = $analyzerSubdivisionCount
                 }
@@ -191,21 +256,55 @@ foreach ($file in $powerShellFiles) {
         }
     }
 }
-$diagnostics = @($diagnosticList)
+$rawDiagnostics = @($diagnosticList)
+$diagnostics = @(Get-PscxCanonicalAnalyzerDiagnostic `
+        -Diagnostic $rawDiagnostics `
+        -RepositoryRoot $repositoryRoot)
 $errors = @($diagnostics | Where-Object Severity -EQ Error)
-if ($errors.Count -gt 0) {
-    $errors | Format-Table RuleName, ScriptPath, Line, Message -AutoSize | Out-String | Write-Output
-    throw "PSScriptAnalyzer reported $($errors.Count) error(s)."
-}
-
 $analyzerCounts = @{}
+$baselineViolations = [Collections.Generic.List[object]]::new()
 foreach ($severity in 'Warning', 'Information') {
     $count = @($diagnostics | Where-Object Severity -EQ $severity).Count
     $analyzerCounts[$severity] = $count
     $maximum = [int]$baseline.PSScriptAnalyzer[$severity]
     if ($count -gt $maximum) {
-        throw "PSScriptAnalyzer $severity count increased from $maximum to $count."
+        $baselineViolations.Add([pscustomobject][ordered]@{
+                Severity = $severity
+                Baseline = $maximum
+                Actual = $count
+            })
     }
+}
+
+$diagnosticStatus = if ($errors.Count -gt 0 -or $baselineViolations.Count -gt 0) {
+    'Failed'
+}
+else {
+    'Passed'
+}
+$diagnostics = @(Write-PscxAnalyzerDiagnosticReport `
+        -Status $diagnosticStatus `
+        -CollectionComplete $true `
+        -RawDiagnostic $rawDiagnostics `
+        -InfrastructureFailure @($infrastructureFailures) `
+        -BaselineViolation @($baselineViolations))
+
+if ($errors.Count -gt 0) {
+    $errors | Format-Table RelativePath, Line, RuleName, Message -AutoSize -Wrap |
+        Out-String | Write-Output
+    throw "PSScriptAnalyzer reported $($errors.Count) error(s). See $diagnosticResultPath."
+}
+if ($baselineViolations.Count -gt 0) {
+    foreach ($violation in $baselineViolations) {
+        Write-Output "Complete $($violation.Severity) diagnostic inventory:"
+        $diagnostics | Where-Object Severity -EQ $violation.Severity |
+            Format-Table RelativePath, Line, RuleName, Message -AutoSize -Wrap |
+            Out-String | Write-Output
+    }
+    $description = @($baselineViolations | ForEach-Object {
+            "$($_.Severity) increased from $($_.Baseline) to $($_.Actual)"
+        }) -join '; '
+    throw "PSScriptAnalyzer baseline exceeded: $description. See $diagnosticResultPath."
 }
 
 $manifestFiles = @(
@@ -265,12 +364,16 @@ foreach ($extension in $formatExtensions) {
     PSScriptAnalyzerVersion = $analyzerVersion
     PowerShellFileCount = $powerShellFiles.Count
     AnalyzerCounts = $analyzerCounts
+    RawAnalyzerDiagnosticCount = $rawDiagnostics.Count
+    DuplicateAnalyzerDiagnosticCount = $rawDiagnostics.Count - $diagnostics.Count
+    DiagnosticReport = [IO.Path]::GetFileName($diagnosticResultPath)
     AnalyzerOrchestration = [ordered]@{
         Mode = 'SequentialChildProcess'
         InitialWorkItemCount = $initialAnalyzerWorkItemCount
         WorkItemCount = $analyzerWorkItemCount
         AttemptCount = $analyzerAttemptCount
         MaximumAttemptsPerWorkItem = 2
+        WorkerTimeoutSeconds = $analyzerWorkerTimeoutSeconds
         RuleBatchCount = $ruleBatches.Count
         BatchSubdivisionCount = $analyzerSubdivisionCount
         InfrastructureFailures = @($infrastructureFailures)
@@ -290,8 +393,8 @@ foreach ($extension in $formatExtensions) {
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAFHYGFOHQmsiqz
-# ZJpWXZ0KKizIzhnYPIzCjRmfqxIGnaCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBeVWJTi8al+ibE
+# DQNYaw6Zs1qwvEUe/vAGjBQcelKiYqCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -470,34 +573,34 @@ foreach ($extension in $formatExtensions) {
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgJL17Z43+/2734WSb7tlE
-# /B8zwSxH9jXNFSbH0oz8yQUwDQYJKoZIhvcNAQEBBQAEggIAsCm/LVwWcV+9lwUc
-# VJ0zTVarc+VR0i/RIxvPD+LEfpcpF21R/a4p7OJfl1JKqhT5MZDcCsddvoP3Dz70
-# pHyQwWKpdtOGMISmZ5U7b/Z0MOZJpQGtU9A6SB1G3PrL9743EftRzn0l7CkVQ+y7
-# AeGIB5kTQDJX9fIDw+Br80dBTJUlw0qJQ/9x/0VfrS0qY8Rawk20D9ItZwjvzcI0
-# jjAnIGQv3L99ykPSBrMteunqVhMDg/aBOYGGU5qq9guvZBF67LEV9DGGFkL327dk
-# CvxSqu2XPAE5WgbSq8ly9WWH1r01M9S4oxThYs8Wf4c9IVitnFADWkRnSfaysH+O
-# CV4CVcsq2XRkAl+dNBtHe1pLeUz+oors3R2Gtw8A1yonY8/z9o077alFAGxj5EXG
-# con9jBxjatMGPm1iLSdUz6isS0kzPfz2jHeKND9wVH0P68ZtIvoAGMT6hRgpdrQ4
-# 2do5hTWabRM6SHT3/K+vdZhNxx0peERGqIYxA72cBTeFAZrRL0oZ0OMWQAAVF5Kw
-# +a28rD9qjcQEndaE4lyTMPKSyLTH6gpNI4bo3QPO5KQ+ZQEBqa0HA2qdjuBC6NZt
-# S7Sver8CpM9+NaF6U1uSFSub0LjgKUhAPzDJoFYKoYoWgwTliFDtKnIUrCJfiNMD
-# 0rdqcZ0SFnnMIdkc26UQwRVE4WehggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQg8NvxW+3B9xgSv1QqjXJU
+# di0KtULbcQNYuW4iLl6U91wwDQYJKoZIhvcNAQEBBQAEggIANfDdgIeSFQ6LlsXJ
+# WE/Z5Ir6Jd7QBrF9V76dbvD7+rYnRY5MC3R0Bbj0mdwoqs7sUzDIjZOq8o8PRUB7
+# xMwmoaRTqI+bCUJ0QY0Un/8DycKT4GMOsqTkeY6pPrfbdv/uyxA1EzH/xBFgHatX
+# VcKWx3dTBujdmDssakfNTHaZGExXTEJiFfb+b3DqxSH9cT+n2QJYYLog8D5GK7oi
+# RrtHIXKH1WHr6xNeSckk2JLKFFtcHf/3IXqk3i2lO2aqp8nQTdpp+K+GEb4hnF+N
+# pMH++EUVDhOliNMChttqZA6sDiWbzzYR1PeJDebvvZNAp5FzZESqTEa2qyXX1Kna
+# 8swSEgHIdgYBWRBmnfGX7L7TMQ6WaXsvnh6LqTX8Zvy9h4XDgIv7FHNbvBMlCGHE
+# kIftacXhXmPhaH6m53G9LuulgoB1/U0ao0rCy7nLCh7wTdangDdoi00j9Xc/7f9S
+# b6keCukvF31Zd2Yvn9rNZchAkfwFYiZa9CLjwXLXawhAWDVgvj9raBFeE2ioRzgh
+# hDbbg/ukfXE0EbPCy/buR/RJhHnjFBUdmQfx4w9u59AJLL2yu2MfHSFjmNMX2tNJ
+# fTtdHOu29eYHjW8iVL6bCo8/4t2wnOT7oTT5Ii6E/e+SS/HfT+88tejnIVLJ8S9f
+# cwiz/vSzAinKrJ29GKE1wWiVUXWhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODI0MDIxMzIxWjAvBgkqhkiG9w0BCQQxIgQgXzv8tGNqcGoFaMeLU8fmZ4Z4LDQ0
-# Ku5ILhcHhAUMchcwDQYJKoZIhvcNAQEBBQAEggIAHAPXsymqbfrE8zUbI2Qqqig+
-# XEKD2poOvrgfqEXJUtyeOFXC0TQAMuQDqAoXoImQ5pXlfcr91fLo7MUG+AI79xgU
-# tAtGwarhp7pEKPRuRnvE5Ws2KXhymubjcPPUZ8nWzAEJ9p2MywVWzVZCWJkZdpCh
-# xskRbiy82OS8kaScY2a1g0Qow+mBoKv74xMH1Am50kY18sU5N82C4r4cQp1jxCtm
-# i7C8fouk6jRM8Es81NLj4w/jrcfIOrH2xARpz/WDuChVR1/CYXK9yg9RgEalbIf7
-# p2i7O3qg4x7PYbz0fToDNfg5A4VaVSTdG386OFEv24ZqF7U5rMtfiz/nf+b21azX
-# 6otXDzxOdYeFSOp1dwgbsOG7f1iiH+U5T+9ApZjqzWMXQVg/iZC6EwYuE96xzowI
-# lUtTwMXCBZMgrauwBOUJ766/GXs0shF7u2CBXsvYpCOD6lmsPudRE0Q8iP0Nmp5D
-# FXbW0jfKcDTJ34sFAcLLo1uu3TbsaIho8F0Qz/7iijJCtKWsguE+4jZVMQFy6EM2
-# xj86HIkPiL5UqyYpMSlm/IR/3bSrmi1/qZdPWfbru4hFzNPWTvuvU1pUXuz+RQqr
-# SlqrGuavhUyw5+Qlyp4z8e7s4LwKi3rPfwhyfe6/mEnxxWol8eIARwye4GdayHm5
-# BO8p62Im6Ac/e+xqcJo=
+# ODI5MTcwNTMwWjAvBgkqhkiG9w0BCQQxIgQgFpSrwDmHZKKLjAj6U3iuKToxHgKr
+# ByyRwieSYKwEufUwDQYJKoZIhvcNAQEBBQAEggIAxQajIRbTzoMAWoBjYSirmzi9
+# var79dIcllp6AJeGEEujzF6puaFpawauSDOA6kyUYd3SmAe3aMwh/hh+bKKek3TS
+# n1ngGgS7fgU37ZKerkrEYrltjchpQ3+Nx8memZ1ph8QPAFTQh50geD6sccMYU9WS
+# 5ig9jahR7PPNI/xl5ek0hID/kZU1SDYwhMYKVir1uuYn4OozQigcrJ21RkmIsCcJ
+# AUx16l5iA0oMjC5Yx6aDxIMrhEWjGR9Ql7mxxoMWxB4f5NYR/WkDxH1srYuWOfLZ
+# LH16Rk9nSJ7iAexryGz9qoZaDLTI97UJ1C6LS9Fk5BcaOUEG+TS7277lesvZPw07
+# wO5IKvz1TKZtoUxUp4uUlavJK0JqjJUR7yBib8zASCJcIQs/ecGPqOJKcZUNo8zm
+# GVg5pr/9L8ZyJitMkCftEJ1ZcY2rUd16/6u4EZhUPXFwXQrRfMVUF1LRbyVkxMZw
+# nIg5Yz31UofJb0aPHryElIOFPZ3qwfEUPCdFASTaPohzmlPagbAn9XmRngpQTSHU
+# Q5FEBUp9lRZq1Q5tnIaX2dKsxbv6kawxiZbT/sKrYyFRhyIj/X1Zr2b1inC8hoiN
+# PJnfzK6Qmy1sfrA30Wr9ltyFyGZorqviTeul+JvqJqCM6D87wa7zrXwd3yszkw+p
+# vKAbrzB6OD0p7MCjxgM=
 # SIG # End signature block

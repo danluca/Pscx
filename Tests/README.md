@@ -21,15 +21,17 @@ runs static validation, validates the package, and fails if any gate fails.
   contract, including default-import dependency isolation, explicit
   registration/removal, offline help, and package contents.
 - `Test-PscxStatic.ps1` owns repository-wide PSScriptAnalyzer, module-manifest,
-  XML/type/format-data, and formatting regression checks.
+  XML/type/format-data, and formatting regression checks. Analyzer workers are
+  time-bounded, and the gate writes a canonical diagnostic inventory with
+  runtime metadata before enforcing its warning and information baselines.
 
 `TestPolicy.psd1` pins Pester, PSScriptAnalyzer, and the build-only PlatyPS
 module and defines separate initial managed and PowerShell coverage gates.
 `StaticAnalysisBaseline.psd1` records
 existing analyzer and formatting debt; the static gate permits reductions but
-fails on regressions. Results are written beneath
-`artifacts/test-results` as TRX, NUnit 3 XML, Cobertura XML, framework JSON, and
-one aggregate JSON status.
+fails on regressions. Results are written beneath `artifacts/test-results` as
+TRX, NUnit 3 XML, Cobertura XML, framework JSON, the complete static-analysis
+diagnostic JSON, and one aggregate JSON status.
 
 `Pscx.PublicContract.psd1` temporarily records aliases and providers because
 the legacy manifests cannot declare providers and still use wildcard alias

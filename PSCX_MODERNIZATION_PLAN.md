@@ -838,6 +838,10 @@ For each group:
   and never retries or hides a genuine finding.
 - [x] Add regression coverage for the static-analysis runner so a child-process
   failure cannot lose its diagnostic context on Windows, Linux, or macOS.
+- [x] Bound each analyzer worker with a process-tree timeout, canonicalize and
+  deduplicate findings before applying the baseline, and always publish the
+  complete repository-relative diagnostic inventory with runtime/platform
+  metadata so environment-specific CI findings are actionable.
 - [x] Generate a portable HTML test dashboard from the existing managed-test
   TRX, Pester NUnit XML, coverage, and static-validation JSON outputs. Present
   overall and per-suite status, passed/failed/skipped counts, failure details,

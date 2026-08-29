@@ -430,6 +430,12 @@ summaries, and combined status are written beneath `artifacts/test-results`.
 `Pscx.TestDashboard.html` convenience view from those authoritative files. It
 shows overall and per-suite status, counts, durations, failure details, and
 separate PowerShell and managed-code coverage without external web resources.
+Static validation also writes `Pscx.StaticAnalysis.diagnostics.json` before
+enforcing its baseline. The report contains canonical, deduplicated findings,
+raw and unique counts, runtime/platform metadata, recovered infrastructure
+failures, and repository-relative paths. Analyzer workers have a bounded
+120-second lifetime; a timeout is retried and reported as an infrastructure
+failure rather than hanging the test job indefinitely.
 Use `./build.ps1 -Task Dashboard` to regenerate it from an existing result set.
 CI uploads the HTML page with the machine-readable test-results artifact; open
 the downloaded page in any browser. Absolute filesystem paths are redacted from

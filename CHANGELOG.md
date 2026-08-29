@@ -62,6 +62,9 @@
 * Included the maintainer's public code-signing root certificate with explicit
   Windows guidance for inspecting signatures and manually opting into trust;
   PSCX never installs the certificate or changes publisher trust automatically.
+* Strengthened static validation with time-bounded analyzer workers, canonical
+  diagnostic deduplication, environment metadata, and a complete diagnostic
+  report written before baseline enforcement.
 * Prevented name-based imports from recursively auto-loading PSCX while its
   advertised compatibility aliases are being initialized.
 
