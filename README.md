@@ -117,6 +117,66 @@ writes its exact module file counts and uncompressed sizes to
 The release ZIP includes local offline help. PSCX does not configure
 `Update-Help` or publish separate online help packages.
 
+### Optional signature validation on Windows
+
+Selected PowerShell files in PSCX carry Authenticode signatures created by the
+maintainer. The release includes the public, DER-encoded Lucas Code Root CA
+certificate at `Pscx/<version>/Certificates/Lucas-Code-Root-CA.cer`. It does
+not contain a private key. CI-built PSCX DLLs remain unsigned.
+
+Trusting this private root CA is optional and must be an explicit user action.
+Adding it to a trusted-root store trusts certificates issued by that CA, not
+only the PSCX files in the current release. Inspect the certificate first and
+confirm this expected thumbprint:
+
+```text
+DF7BF0334508703832E01D8E223ECBD3C4A160F8
+```
+
+The SHA-256 hash of the distributed `.cer` file is:
+
+```text
+9D01089FC819FF438660307BB0E47F3C06D4C855AA6DCE25CC201DD16A09F33A
+```
+
+On Windows, locate the installed certificate without importing the module and
+inspect its public identity:
+
+```powershell
+$module = Get-Module -ListAvailable Pscx |
+    Sort-Object Version -Descending |
+    Select-Object -First 1
+$certificatePath = Join-Path $module.ModuleBase 'Certificates/Lucas-Code-Root-CA.cer'
+$certificate = [Security.Cryptography.X509Certificates.X509Certificate2]::new(
+    $certificatePath
+)
+$certificate | Format-List Subject, Issuer, Thumbprint, NotBefore, NotAfter
+Get-FileHash $certificatePath -Algorithm SHA256
+```
+
+Only after independently confirming the identity and thumbprint, a user may
+choose to trust it for the current Windows account:
+
+```powershell
+Import-Certificate `
+    -FilePath $certificatePath `
+    -CertStoreLocation 'Cert:\CurrentUser\Root'
+```
+
+Then inspect a signed PSCX file, for example the module manifest:
+
+```powershell
+Get-AuthenticodeSignature $module.Path |
+    Format-List Status, StatusMessage, SignerCertificate, TimeStamperCertificate
+```
+
+Root trust establishes the certificate chain; it does not automatically add
+the maintainer's signing certificate to the `TrustedPublisher` store. Any
+PowerShell prompt to trust that publisher remains a separate user decision.
+PSCX does not install certificates, modify certificate stores, or automate
+publisher trust. Authenticode validation and this trust-store guidance are
+Windows-specific.
+
 ### Guided update
 
 An installed PSCX 4.0 package includes `Update-Pscx.ps1` in the `Pscx` module

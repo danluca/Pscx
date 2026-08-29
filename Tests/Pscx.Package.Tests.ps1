@@ -74,6 +74,29 @@ Describe 'Packaged PSCX module contract' {
             Should -BeNullOrEmpty
     }
 
+    It 'ships the expected public code-signing root certificate' {
+        $certificatePath = Join-Path $ModulePath 'Certificates/Lucas-Code-Root-CA.cer'
+        Test-Path -LiteralPath $certificatePath -PathType Leaf | Should -BeTrue
+        (Get-FileHash -LiteralPath $certificatePath -Algorithm SHA256).Hash |
+            Should -Be '9D01089FC819FF438660307BB0E47F3C06D4C855AA6DCE25CC201DD16A09F33A'
+
+        $certificate = [Security.Cryptography.X509Certificates.X509Certificate2]::new(
+            $certificatePath
+        )
+        try {
+            $certificate.Thumbprint | Should -Be 'DF7BF0334508703832E01D8E223ECBD3C4A160F8'
+            $certificate.Subject | Should -Be $certificate.Issuer
+            $certificate.GetNameInfo(
+                [Security.Cryptography.X509Certificates.X509NameType]::SimpleName,
+                $false
+            ) | Should -Be 'Lucas Code Root CA'
+            $certificate.HasPrivateKey | Should -BeFalse
+        }
+        finally {
+            $certificate.Dispose()
+        }
+    }
+
     It 'contains the expected platform assembly set' {
         $windowsAssemblyExists = Test-Path -LiteralPath (Join-Path $ModulePath 'Pscx.Win.dll')
         $windowsAssemblyExists | Should -Be ($BuildScope -eq 'Full')
@@ -1036,8 +1059,8 @@ Describe 'Optional feature imports' {
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCC9SeJfNcYTddxc
-# rPpq6x7kdZ7g7uspcK+i4azLRhe9MKCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCrbxDrRNQYw3Ml
+# Okq+VhJlG/607D1RL5ICNRJeCGPReKCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -1216,34 +1239,34 @@ Describe 'Optional feature imports' {
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgwPa+912xIpFscL5cCa3E
-# w0DNyT+h1A9jN72VQ6kd44swDQYJKoZIhvcNAQEBBQAEggIATvKVBkl2pj7Af2ic
-# wjHQpcobgW0RCtwPqywnoJbCNr4KHA+NiTU9qQh/+E2oWBlEqDkDMDlO48FI8MoC
-# QmTg4OZ58OSBNuKqpval1pjp2e685+0ygUpJLcVaI+gjDLFsdHqkjyIUmotcwk+O
-# amPRxC2tH4Y1L8jhZjDo+McFB+L6C9hWtCvlkiWmif4jsZfzUiaZ6cCjS+PKhTAG
-# 1Y+dvXEYQnd6DPYv5bHiIFJ7YCJMkys7ktIrb17WlpxDPZeMfEUpdl6QVMIoiK7T
-# mV1DL7FbznKBfJkS6/IrNO7pUIQNwlQUO5acMJ8BFGludofYHhjMFab6pfuTSvW5
-# FS/lDx/LH/A7cCGsOxT9D65HhGqkJovsWBD3CS4gqrz03ERM3y2DgzWiz45t/0DB
-# WMr2S+YB3HDzvKayCdnE0AB7bHlWKrkigz7raNBwWIzJNszJESqWezuj6wo2Ntph
-# unTSZSsKrkHx79iu5B3vSb+d+36F33cBZgPggvUa3m6bLAHebRmVK/tg5iu5f47q
-# idq377Q/6d0+gZZfUaDeLETeOYIXItCEqCqANCI/5IOoy95axD4t6f4TnHcKuQVI
-# nRj4XL+1x/VhIAjsYwHwjL9GsLDTPzx7zn5IlR9IWNX9p3WSMaMrS6iPKoPbHHTc
-# j0r+rw2r9aYPMvZ5pgBr7dB7eo2hggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgUDIBOSlv+kSy+UsTbgWh
+# ld/0Y+wViEBd2kXKqFwB9tYwDQYJKoZIhvcNAQEBBQAEggIAp1Q9s5mCvdabzJri
+# zfbEb3AVtzuyIT/u+8VmiqXxtGVKGqZP3QPkZzxCkUGE5VE0ECD1+BqZ6YW59QZ2
+# gT8hQqENzYOYTqcjpxd6QexrzBMFZIBRpF+c0b9WcmBDNQTKRL3BGaOnHW++n/le
+# +hfR0xuflcc3QEkchTzZRkpjCjr2NUgf5ocGnzM63a/xYl13nvPA5s3qv5ml5ZhF
+# e01S/rXIh3Bw44SnjJHrrS1mA8PBMZz4yyHWZB6AXNcW7UWkeaDJ5cQkYe+ZEWZL
+# 6oExkLFB+ACKgUunNaOpb7ux/PXllEI44iPkRlJBIaSwNhvA5/Hnaa/vqeLc0G/L
+# rWkuZxXt6B+e7QHL3AQj06QtEK+Y1I+EENjwLTazr2GSY/0TI/TnlmU0tftpH2jC
+# SS6KqBcf0Juf2Wx9DGkKXBE0KnFNJmgmRsYylCsg9ccqNiSMWueyonCTBAIXaxkR
+# REOMtVDBHwEqyw9O9M1GZAaT9jeLjGAA9qtGWW0GAMR3P33UcuTjFRbbjxSUhZwF
+# SQYOTJunlUK1bFUKeLPodhVjD9bWmza5iQGDckQylsnLzEhVPvqQo8LAll5hXPEI
+# rnY3jzs4xgLEDHyLPX7ciy5rjlshscbI7VHwrG2d8uVlHwQI4ERKvFMdPzvFNyUO
+# dwUJCSz7cikvw3uX8tHOUuZm0j+hggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODI4MDQzMjU0WjAvBgkqhkiG9w0BCQQxIgQgSBLb6lwr6anViahio9ZNxLD37O52
-# P4BXoEMOVTNXYSQwDQYJKoZIhvcNAQEBBQAEggIApAzDK2nXPEFa+aGjxJJ4Bw4/
-# UQnZXASlgXxTDvQRyw6/lX7Cy0xvNS2zfpfgDLcs++VwhHutUhV1ZP/m4/NnfXmB
-# GUOY3cp4esduBxvuhdTjYyWhaIbJVUiAqnjw3/KTDQgCy1SOkMr9v+M+WFbqEWSZ
-# PkziKUb3mjBr31DF28TGkiCglkj6/CWR425+aOK4Okbib9fUXBzGdkK4gCepNIgg
-# N1TmHELFw9nWoXN6LAIPhYrOiTjzqMLLa4Tm4shn/2S1BUVgA0XhDKZh6HmaceCd
-# Ri2jLWA/UZyUsHHvbs2etr7e1qtuC5WOt5lemwaD5HnWd9B3X1yc4g4K6KW5XkGv
-# 183C2INO4pijMm8+C0qk/vCMZnyuHODkBJpiQpEr50F/7zw4EdfEbyiP2rNWyslB
-# 5+xp7PTkavm6T6C4Z0LeInNLzB9qA2Ccia1weTPfhrH0cnDITAU5yv00E/Rww3Z0
-# eUiKYvTmyON3AIZdjyMoeXjsE6W8lnSRpOx0lLMN/54E0/guidHpp8YoWTKPUE2Z
-# BvyIRAOnGss8zNtbvcFMBOF/XKywTcd/cVFA93zpq2OEEQBgPRPFKT0uJKtJ6ZOl
-# 3OcJT21ZSNj0LYWO3v1G/bMxU/sPJYS8u+36XuNTGxqAC3YuN9gKCaoCtRLPipF3
-# Qo3FlRtMEU7oh9e0ksY=
+# ODI5MDM1MjIyWjAvBgkqhkiG9w0BCQQxIgQg0BY2Uu0Fo0kkjiTkDUYqcAvCUaa9
+# 4+jQveItxmXBOUQwDQYJKoZIhvcNAQEBBQAEggIAnkCPEl90EPel7Kft7TzVREAB
+# 2r9tLnmJCUE6XjwvlGCT3SMtbTH4ZOs0+moKlEFQA+PVW3drKw/9sqNOzIRXh8f9
+# k24tisbydqGm1qDjPpyuIL8oLGqegBW7c0kZ+rep3i17aTYtcHqAs8infEfSeMWI
+# 8idYZCdOC8F93RLv9Bn6wYJEObvjR+8qXquwqIOHktIU2g/xNof5yhE8c7VpXC1A
+# 1fm9OaVsUKoPuJqXxtGznGScYmVLX9wEqNJOGcyEQeHsXhjhvo2IcmELUzSlX0it
+# 5R3tV7eC/4R4O3G597y/yqs+2FdmDf3RuxPqGvquVD1xAdlNZs8maBfJncGvAbMA
+# jaLobMVsT//kdUvFRFcYGHf7uDFoO15WfAl8PDQH3vfdEVhA78Hc8uOrgldpCAuY
+# MvXqGelLxvtwbAAB0aDBRCUfJU2ZQJI1GZkcdqMXkbVct1cB1ZrHMHS679lAz+go
+# Kzy8orO2L5inW3ULFom9LqaRZr501bn0uVZDDkBrM2cXtzsnFI+bGZ8WVFGRlDo/
+# OTKp3p/Z4SF5kNJznNlRNR+KXGIcNDKolywt/iTG8zTjFeDJHD23D+pifY/GZboT
+# a8vZnyxaulScQz7BUdv9bMx5t7CatpdcD9gYw7YgmA/OfhVbPTBTlGqWd4goZVri
+# HJ9HKWiGt7CKtRwB8Z4=
 # SIG # End signature block

@@ -59,6 +59,9 @@
 * Changed the unified release ZIP to the standard versioned PowerShell module
   layout so it can be extracted directly onto `PSModulePath` for discovery and
   side-by-side version-qualified imports.
+* Included the maintainer's public code-signing root certificate with explicit
+  Windows guidance for inspecting signatures and manually opting into trust;
+  PSCX never installs the certificate or changes publisher trust automatically.
 * Prevented name-based imports from recursively auto-loading PSCX while its
   advertised compatibility aliases are being initialized.
 

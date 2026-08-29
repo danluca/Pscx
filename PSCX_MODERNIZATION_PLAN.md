@@ -855,6 +855,10 @@ For each group:
 - [x] Validate that extracting the ZIP directly into a directory on
   `$env:PSModulePath` supports normal discovery, version-qualified import, and
   side-by-side installation without rearranging package contents.
+- [x] Include the maintainer's public code-signing root certificate for
+  optional Windows Authenticode validation, document its expected identity and
+  broad trust implications, and require certificate-store or publisher-trust
+  changes to remain explicit manual user actions.
 - [ ] Publish at least one preview of each new package.
 - [ ] Publish a complete 3.x-to-4.0 migration guide.
 - [ ] Test clean install, upgrade, uninstall, and side-by-side scenarios.
