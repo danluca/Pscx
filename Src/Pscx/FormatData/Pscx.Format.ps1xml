@@ -26,14 +26,57 @@
         </TableRowEntries>
       </TableControl>
     </View>
+    <View>
+      <Name>PscxInstallationDiagnostic</Name>
+      <ViewSelectedBy>
+        <TypeName>Pscx.InstallationDiagnostic</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Status</Label>
+            <Width>14</Width>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Category</Label>
+            <Width>13</Width>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Name</Label>
+            <Width>28</Width>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Message</Label>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>Status</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>Category</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>Name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>Message</PropertyName>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
   </ViewDefinitions>
 </Configuration>
 
 <!-- SIG # Begin signature block -->
 <!-- MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor -->
 <!-- BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG -->
-<!-- KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBcs+0NICH/cxXB -->
-<!-- UEEU4z+ihBAucQ9A4p1BQU3EaZnEhKCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt -->
+<!-- KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDu94I1KV580dN/ -->
+<!-- HRIXO5yZQ8Zjq7G+tHK1ScIjIsr6xaCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt -->
 <!-- 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK -->
 <!-- EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV -->
 <!-- BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa -->
@@ -212,34 +255,34 @@
 <!-- cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l -->
 <!-- dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig -->
 <!-- AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL -->
-<!-- MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQghrOz7J7KtHT84zLGDR5A -->
-<!-- QpXzlt55KSNO/70pphBzwjAwDQYJKoZIhvcNAQEBBQAEggIAMr1w2e2YaYk1LdHu -->
-<!-- 1OAwzu3smCwTC7N33FhUtCjko4T0ZAVxh+VrtSBlpWLPjOJnhJB8wt/RW3N3EOpg -->
-<!-- G2CuWHVqhDutVuVUX3Z3BzGupROQGcCMRx8elA64l9GV8eeBWRCi5MtiXkU3wcnw -->
-<!-- l+QOCpBEfHu6mcm8YZnno6omBDDfKvudHpmixyBUUZe+jdpC3WGQ3dfzXvHlhBa+ -->
-<!-- nKKcGgfviH7+4AzcBuUIc0nFWJ1Qbt9oQgCKNRwZlRv2jP+cmOWu/A5QXkRkG98y -->
-<!-- UqozTCWFJYzMSCRjGiJ2l/OVzkNYaYg9Z6EINE8szY2rsa2+W2aa7s1P+kQF4PZr -->
-<!-- kYdzYS8TtWEGTU0bGV/V78CItrEOzp1l1ppz5AK14wgjOm4SWvIXsBNCAfX6dYbJ -->
-<!-- BJcUg+oyPeljRnjJmpbuQrC9Aq+FReuPn9IUilgSfWtzX8oSrtkzpje6sgj+VsnO -->
-<!-- TCxX2v5QUQnIgr7enEcZgzlVcTWVy43ulcbDncfKhoJSGmSflXENX2Q5hChuOXZZ -->
-<!-- gqq9XBK+lfBdFgEI/07S4Yy5Cp+ucRtT62L9SRCWADLDRumxaRq8joQlLtCjTeZZ -->
-<!-- UxdTHk6Ht4LZQ5j3df01rmitRYwOG6wBJsYzpec7Zd1r9n0Vgs4gQAUTyUGw81Cy -->
-<!-- sr4BVf4DDZFUDODeYFFFUVqpD+yhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C -->
+<!-- MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgf5eyaEndOlPNH0Nzq++E -->
+<!-- 7k1vYH2Sxk0P7TBAdKvxiTYwDQYJKoZIhvcNAQEBBQAEggIAq3uBfLzqjZgA2GFx -->
+<!-- +mJZcbHwDp4MAoq0KXcHE/5Dx9+3bwHG4MRgwLqgOFDUWNpUaFNO4PAcLXhRNTGV -->
+<!-- 3Pm6AzucvjSVSAhDmDosfQsrrg5L7tnTUVyeoqoXpuQSwdhVD8rkg0Bd95H/J2Rj -->
+<!-- 6UV53XNj02FpYVrqbSF2Ge7OYVvGsbVFzkNDtk1ubNjx7V0qBdlhu/ue5GUrHEFf -->
+<!-- i9OL9HJi72azzQdokFwA0BhwQf5+maL/fGOUDmbZvgsGbSf+Cyxo2Z81pL1pomK8 -->
+<!-- nBhZJcTePvVwwxF3MqU/Cxxkrmk52TqLaJa6xGf0Dv/UxplK/YsglpSrhDeUGW4z -->
+<!-- mgHs6XEWO13ZfuNIr0h+UqHmMQuBhpjvhu6bRicjJ9FYjVVg3XPw33Fn/9eGYUv2 -->
+<!-- 0S9JBeiJxR/cnb42th+B7/mUbwkuJ+3kL3Dvrd+OQ60tEc63LffAyObNa3MxZJhm -->
+<!-- xb15YB4qZ0y8MtaJkxS6/okydGF6GjoUoXVU9K9YRDER6kZ9Nlu9Vbgt7OoSm0O2 -->
+<!-- BhVUXI6XJhKqdWrRtBzMu5ukuvwCmg203SpNHDwE5sg36pmm+BP+bV5diy1jLkWE -->
+<!-- z4fsTZ27OflMhUBS0Uz8Fuhy7yhO/gQHsrSthYGUpEIF+MnHF88QEd0/pIydfGWq -->
+<!-- wVUxuqRYliirFcTjquGmnUc2lmGhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C -->
 <!-- AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/ -->
 <!-- BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg -->
 <!-- U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA -->
 <!-- oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw -->
-<!-- ODA4MDQ0ODQwWjAvBgkqhkiG9w0BCQQxIgQgJ+uE2xw9FdT7b8fkqfkxfiLZWGPv -->
-<!-- pH3WBSJluTwKXQwwDQYJKoZIhvcNAQEBBQAEggIAyVsnSm8mRMdc0tu7KSY1+m/z -->
-<!-- gNGIHocHDeD+0FldrLitqeWeDpWPZ43AFcx2Ma2oRfE4rK8lTbdVGb6hlNh4KuRh -->
-<!-- ba//F0QuqQigdGWzh+FMvDUpX1cBqIFQuauPux65V/MYSJ1gIAi4B4Cx5T9oRTD/ -->
-<!-- Zu+LoyXWlURcyCQmlGyv84O3yeRxGDfb9AEucTojKls+DGXUn8Ju8CzISkbyvY+I -->
-<!-- BbcIkSRXt9Ftw052us0ERYH/K/9WhmrUUFROMTmZoci3K9/2BSywRyydjQRQJjhi -->
-<!-- EUVkwDbruLbryaxlLFwb4KZy6769aZ2yCzgr3zJp8rj8Ib2GS6tzi1BNSwa/ArhM -->
-<!-- ZOnkvGA/X0aTj7qOaPcraeUvO6CwElwDt849qO1a0Pfa6ckSXT1IezXYLELxeW88 -->
-<!-- Nx/IifzjYEq2vXMwTNFiRvanafidi/xPIpHg3yf8oNUmmruoW7a0jlhUHWQspdEO -->
-<!-- eT7OKyQZDIYH60yGxAoTaFlidSm9MPAYWYs+mxfdKtxKHXyikRV2V8w4CJf/Z66r -->
-<!-- Wle/M3xKd8APMnkJghlbtPkLbshHPXM8tsVoMFC0BSkrbnWn78yS+iPCqO2FD7nC -->
-<!-- k3kZ2XXZeG/M8lDC1FHy1cLE7lteblUdvSkgtvcrJmNrkRSUdZKG0AWPi9njYCgP -->
-<!-- i49fDPcPp6WF/EJpq0I= -->
+<!-- ODI5MDM1MzM0WjAvBgkqhkiG9w0BCQQxIgQgykjkm80W+TL0XXcyazi5oZgYm7Zu -->
+<!-- tT9UEsN5npS61CgwDQYJKoZIhvcNAQEBBQAEggIAyGrXExbUn1LEyJSwPtqAvOdr -->
+<!-- mR3DyafGzwLVhfXpQBugcn2ZE1aq4n65fLcaMorsCyZKE8fqRoxvFW6QOSlViHuB -->
+<!-- fbeFCWcuYvxGlta0sdn/qZDJJAMx24pesSctYqwjZRtQqpmEBIl+RqbPPRbioCLU -->
+<!-- Je5vMSD8AuH+sXASWschWi3f6ZSEt2EbltVX7SKTDz5ktbD8Tp/kYH0m/KgiFYh+ -->
+<!-- Wau3wh+bfBxlMO5cTK7auZl7nkHp9Vku7mNtmludft+aHeE/0vVaQdP+/E6tmeB3 -->
+<!-- scZaVr/Iz5DOiVM86FAvT4WYIXf08cmwUnziwwgOKR9Ves7xS2jz1XpTfX35/l95 -->
+<!-- NSPcKT8OA07QVv2ZhXuQpR3A3CZl0HiMH4VxgfgaVWy9wU27UgPXH0M9MtdR5717 -->
+<!-- tRCvPLPtV8ADIdwN9H5v57LVFV8E0P9xPEP5KtrFJzQ+oMaiqqamfbh7DV/nFQbe -->
+<!-- KW4GDCIeqrAbX6P7rPWeSpHRlTjojVel9psWQ8i5w+ErSGOSJklimLrF9bbiFQ/w -->
+<!-- +01SoL+U9zxSBVn5BPTdyNIRAug/6SZIuzF2o88gUj7AIE6Jp0yznqA9Xi8FHVR4 -->
+<!-- cEUPOkvSzzsq8D8tW+R54sXbfguGeDhNGd78FQmSUoYcekIENkhIx7iU1SbBEtmw -->
+<!-- Ct+49GTOW/oIQWygMTU= -->
 <!-- SIG # End signature block -->

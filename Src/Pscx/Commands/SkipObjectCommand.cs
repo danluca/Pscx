@@ -15,6 +15,7 @@ using System.Management.Automation;
 namespace Pscx.Commands
 {
     [Cmdlet(PscxVerbs.Skip, PscxNouns.Object), Description("Skips an object - similar with LINQ Skip() method, allows the user to skip the first N and/or last N objects in a sequence")]
+    [OutputType(typeof(PSObject))]
     public class SkipObjectCommand : PartitionObjectCommandBase
     {
         protected override void NonSelectedItemImpl(object inputObject)

@@ -1,5 +1,73 @@
 # PowerShell Community Extensions Light Changelog
 
+## 4.0.0 - Unreleased
+
+* Started PSCX 4.0 development after publishing the stabilized PSCX 3.8.0
+  release.
+* Made module and child-module exports explicit, preventing accidental public
+  API additions and removals.
+* Made convenience aliases collision-aware: aliases are created normally when
+  their names are available, existing commands are preserved unless
+  `OverrideExistingAliases` is enabled, the CD submodule deliberately replaces
+  `cd`, and PowerShell's built-in `help` command is never replaced.
+* Added the previously internal `Remove-PathVariable` cmdlet to the supported
+  public API with help, `ShouldProcess`, and packaged-module tests.
+* Added explicit output metadata to retained core commands, structured
+  `Test-Script -PassThru` parser results, and structured-by-default
+  `Resolve-ErrorRecord` output with `-AsText` compatibility.
+* Removed direct host output from Base64 conversion and documented
+  `Set-PscxLocation -PassThru` as returning `PathInfo`.
+* Completed the retained-command contract audit, added missing output metadata
+  and common-parameter support, and added literal-path handling to
+  `Get-ViewDefinition`.
+* Moved `Read-PscxArchive`, `Write-PscxArchive`, and `Expand-PscxArchive` into
+  an optional cross-platform `Pscx.Archive` module shipped beside `Pscx` in a
+  unified release ZIP and backed by SharpCompress;
+  removed SevenZipSharp and bundled 7-Zip binaries from the default package,
+  and added safe-extraction and portable archive round-trip tests.
+* Added the optional Windows-only `Pscx.WinAdmin` sibling module for nine
+  lower-frequency ADO/OLE DB, batch-environment, short-path, and foreground
+  window commands without loading them during the default import.
+* Moved YAML conversion and its type accelerators into the cross-platform core,
+  moved `Stop-RemoteProcess` into the Windows companion module with a modern
+  CIM implementation, and made the .NET SDK policy accept stable 10.0.x
+  feature bands.
+* Removed PSCX's AD/DHCP, SQL Server-specific, and VHD commands in favor of the
+  maintained Microsoft ActiveDirectory, DhcpServer, SqlServer, and Hyper-V
+  modules, with replacement and installation guidance in the README.
+* Removed low-value line-ending, sample-text, hex-formatting, string, uptime,
+  garbage-collection, help, screen-capture, and WMI compatibility features;
+  retained `Get-FileTail` and the link commands as thin wrappers over modern
+  built-ins, and retained `Get-PscxHash` for its pipeline hashing behavior.
+* Moved the NodaTime-backed PSCX types and the `isodate`, `zonedtime`,
+  `offsettime`, `localtime`, `tz`, and `tzi` accelerators into the
+  separately imported, cross-platform `Pscx.Time` sibling module; the default
+  `Pscx` payload and import no longer include or load NodaTime.
+* Modernized PATH-variable management with ordered duplicate removal,
+  normalization and existence validation, platform-native case comparison
+  with an explicit Unix `-CaseInsensitive` override, Windows persistent
+  scopes, `ShouldProcess`, and structured `-PassThru` change results.
+* Added task-oriented command discovery, a concise platform/support matrix,
+  guidance on when PSCX adds value over nearby built-ins, and a PSCX Light
+  3.x/legacy PSCX-to-4.0 migration guide.
+* Added an explicitly invoked, cross-platform guided updater for GitHub Release
+  discovery, stable/prerelease policy, checksum and package validation,
+  confirmation and `-WhatIf`, and recoverable side-by-side versioned installs.
+* Added a portable, self-contained HTML dashboard over the authoritative test,
+  coverage, and static-analysis results, generated consistently by local and CI
+  test pipelines and uploaded with CI artifacts.
+* Changed the unified release ZIP to the standard versioned PowerShell module
+  layout so it can be extracted directly onto `PSModulePath` for discovery and
+  side-by-side version-qualified imports.
+* Included the maintainer's public code-signing root certificate with explicit
+  Windows guidance for inspecting signatures and manually opting into trust;
+  PSCX never installs the certificate or changes publisher trust automatically.
+* Strengthened static validation with time-bounded analyzer workers, canonical
+  diagnostic deduplication, environment metadata, and a complete diagnostic
+  report written before baseline enforcement.
+* Prevented name-based imports from recursively auto-loading PSCX while its
+  advertised compatibility aliases are being initialized.
+
 ## 3.8.0 - August 2026
 
 * Updated the runtime baseline to PowerShell 7.6 LTS and .NET 10.

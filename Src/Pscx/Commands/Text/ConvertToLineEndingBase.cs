@@ -12,7 +12,6 @@ using Pscx.Core.IO;
 using System;
 using System.IO;
 using System.Management.Automation;
-using System.Text;
 
 namespace Pscx.Commands.Text
 {
@@ -34,7 +33,7 @@ namespace Pscx.Commands.Text
         private SwitchParameter _force;
         private SwitchParameter _noClobber;
 
-        [Parameter(Position = 1, Mandatory = true,
+        [Parameter(Position = 1,
                    HelpMessage="Destination to write the converted file. If the destination is a directory, then the file is written to the directory using the same name.")]
         public string Destination
         {
@@ -64,100 +63,112 @@ namespace Pscx.Commands.Text
             set { _noClobber = value; }
         }
 
-        protected abstract string TargetLineEnding { get; }
+        [Parameter(HelpMessage = "Controls whether the converted file preserves, adds, or removes trailing line endings.")]
+        public FinalNewlineMode FinalNewline { get; set; } = FinalNewlineMode.Preserve;
+
+        [Parameter(HelpMessage = "Reports whether conversion is needed without writing a file.")]
+        public SwitchParameter Check { get; set; }
+
+        protected abstract TextFileLineEndingKind TargetLineEnding { get; }
 
         protected override void BeginProcessing()
         {
             base.BeginProcessing();
 
-            if (WildcardPattern.ContainsWildcardCharacters(_destination))
+            if (!Check && string.IsNullOrWhiteSpace(_destination))
+            {
+                ThrowTerminatingError(new ErrorRecord(
+                    new PSArgumentException("Destination is required unless -Check is specified."),
+                    "DestinationRequired",
+                    ErrorCategory.InvalidArgument,
+                    _destination));
+            }
+            if (!string.IsNullOrWhiteSpace(_destination) && WildcardPattern.ContainsWildcardCharacters(_destination))
             {
                 ArgumentException ex = new ArgumentException("Illegal characters in destination path");
                 ThrowTerminatingError(new ErrorRecord(ex, "IllegalCharsInPath", ErrorCategory.InvalidArgument, _destination));
             }
-            _destination = GetUnresolvedProviderPathFromPSPath(_destination);
+            if (!string.IsNullOrWhiteSpace(_destination))
+            {
+                _destination = GetUnresolvedProviderPathFromPSPath(_destination);
+            }
+        }
+
+        protected override void OnValidatePath(IPscxPathSettings settings)
+        {
+            settings.ShouldExist = true;
+            settings.PathType = PscxPathType.Leaf;
+        }
+
+        protected override void OnValidateLiteralPath(IPscxPathSettings settings)
+        {
+            settings.ShouldExist = true;
+            settings.PathType = PscxPathType.Leaf;
         }
 
         protected override void ProcessPath(PscxPathInfo pscxPath)
         {
-            string filePath = pscxPath.ProviderPath;
-            if (ShouldProcess(filePath))
+            try
             {
-                ConvertLineEndingFromFile(filePath);
+                string filePath = pscxPath.ProviderPath;
+                TextFileInfo info = TextFileOperations.AnalyzeFile(filePath);
+                System.Text.Encoding outputEncoding = _encoding.IsPresent ? _encoding.ToEncoding() : null;
+                if (_encoding.IsPresent && outputEncoding == null)
+                {
+                    throw new ArgumentException($"Unsupported encoding '{_encoding}'.", nameof(Encoding));
+                }
+                byte[] convertedBytes = TextFileOperations.ConvertLineEndings(
+                    info,
+                    TargetLineEnding,
+                    FinalNewline,
+                    outputEncoding);
+                string outputPath = GetOutputPath(filePath);
+                bool needsConversion = TextFileOperations.NeedsConversion(info, convertedBytes);
+                if (Check)
+                {
+                    WriteObject(new LineEndingCheckResult(
+                        info,
+                        outputPath,
+                        TargetLineEnding,
+                        FinalNewline,
+                        needsConversion));
+                    return;
+                }
+                if (!ShouldProcess(outputPath, $"Convert line endings to {TargetLineEnding}"))
+                {
+                    return;
+                }
+
+                using Stream output = OpenOutputStream(outputPath);
+                output?.Write(convertedBytes, 0, convertedBytes.Length);
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException ||
+                                       ex is InvalidDataException || ex is ArgumentException)
+            {
+                WriteError(new ErrorRecord(ex, "LineEndingConversionError", ErrorCategory.InvalidData, pscxPath.ProviderPath));
             }
         }
 
-        private void ConvertLineEndingFromFile(string filePath)
+        private string GetOutputPath(string filePath)
         {
-            FileHandler.ProcessText(filePath, delegate(StreamReader reader)
+            if (string.IsNullOrWhiteSpace(_destination))
             {
-                Encoding inputEncoding = reader.CurrentEncoding;
-                Encoding outputEncoding = (_encoding.IsPresent) ? _encoding.ToEncoding() : inputEncoding;
+                return filePath;
+            }
 
-                using (Stream output = OpenOutputStream(filePath))
-                {
-                    if (output == null) return;
-
-                    using (TextWriter writer = new StreamWriter(output, outputEncoding))
-                    {
-                        ConvertLineEnding(reader, writer);
-                    }
-                }
-            });
-        }
-
-        private Stream OpenOutputStream(string filePath)
-        {
             string outputPath = _destination;
-
             if (Directory.Exists(outputPath))
             {
                 string filename = System.IO.Path.GetFileName(filePath);
                 outputPath = System.IO.Path.Combine(outputPath, filename);
             }
 
-            return FileHandler.OpenWrite(outputPath, _noClobber.IsPresent, _force.IsPresent);
+            return outputPath;
         }
 
-        private void ConvertLineEnding(TextReader reader, TextWriter writer)
+        private Stream OpenOutputStream(string outputPath)
         {
-            char[] buffer = new char[4096];
-
-            char? lastChar = null;
-            int numRead;
-            while ((numRead = reader.Read(buffer, 0, buffer.Length)) > 0)
-            {
-                for (int i = 0; i < numRead; i++)
-                {
-                    char? curChar = buffer[i];
-                    if ((lastChar == LineEnding.Windows[0]) && (curChar == LineEnding.Windows[1]))
-                    {
-                        writer.Write(TargetLineEnding);
-                        curChar = null;
-                    }
-                    else if ((lastChar == LineEnding.Unix[0]) || (lastChar == LineEnding.MacOs9[0]))
-                    {
-                        writer.Write(TargetLineEnding);
-                    }
-                    else if (lastChar.HasValue)
-                    {
-                        writer.Write(lastChar.Value);
-                    }
-                    lastChar = curChar;
-                }
-            }
-
-            if (lastChar.HasValue)
-            {
-                if ((lastChar == LineEnding.Unix[0]) || (lastChar == LineEnding.MacOs9[0]))
-                {
-                    writer.Write(TargetLineEnding);
-                }
-                else
-                {
-                    writer.Write(lastChar.Value);
-                }
-            }
+            return FileHandler.OpenWrite(outputPath, _noClobber.IsPresent, _force.IsPresent);
         }
     }
 }

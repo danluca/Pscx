@@ -40,16 +40,154 @@ $allFiles = @(
     Get-ChildItem -LiteralPath $repositoryRoot -Recurse -File |
         Where-Object FullName -NotMatch $excludedDirectoryPattern
 )
-$powerShellFiles = @($allFiles | Where-Object Extension -In '.ps1', '.psm1', '.psd1')
+$powerShellFiles = @(
+    $allFiles |
+        Where-Object Extension -In '.ps1', '.psm1', '.psd1' |
+        Sort-Object FullName
+)
+
+# Enforce the platform ownership established by the Phase 5.4 source audit.
+$windowsAssemblyInfoFiles = @(
+    'Src/Pscx.Win/Properties/AssemblyInfo.cs'
+    'Src/Pscx.WinAdmin/AssemblyInfo.cs'
+)
+foreach ($relativePath in $windowsAssemblyInfoFiles) {
+    $content = Get-Content -LiteralPath (Join-Path $repositoryRoot $relativePath) -Raw
+    if ($content -notmatch 'SupportedOSPlatform\("windows"\)') {
+        throw "$relativePath must declare its assembly as Windows-only."
+    }
+}
+
+$crossPlatformSourceRoots = @(
+    'Src/Pscx.Core'
+    'Src/Pscx'
+    'Src/Pscx.Archive'
+)
+$crossPlatformCSharpFiles = @(
+    foreach ($relativeRoot in $crossPlatformSourceRoots) {
+        Get-ChildItem -LiteralPath (Join-Path $repositoryRoot $relativeRoot) -Recurse -Filter *.cs -File |
+            Where-Object FullName -NotMatch $excludedDirectoryPattern
+    }
+)
+$nativeInteropFiles = @(
+    $crossPlatformCSharpFiles |
+        Where-Object { (Get-Content -LiteralPath $_.FullName -Raw) -match '\b(?:DllImport|LibraryImport)\s*\(' } |
+        ForEach-Object { [IO.Path]::GetRelativePath($repositoryRoot, $_.FullName).Replace('\', '/') }
+)
+$approvedNativeInteropFiles = @(
+    'Src/Pscx.Core/EncodingConversion.cs'
+    'Src/Pscx/Commands/UIAutomation/SetForegroundWindowCommand.cs'
+)
+if ($difference = Compare-Object $approvedNativeInteropFiles $nativeInteropFiles) {
+    $difference | Format-Table -AutoSize | Out-String | Write-Output
+    throw 'Cross-platform native-interop ownership differs from the reviewed Phase 5.4 exceptions.'
+}
+
+$encodingConversion = Get-Content -LiteralPath (
+    Join-Path $repositoryRoot 'Src/Pscx.Core/EncodingConversion.cs'
+) -Raw
+if ($encodingConversion -notmatch 'OperatingSystem\.IsWindows\(\)' -or
+    $encodingConversion -notmatch "The 'oem' encoding is supported only on Windows") {
+    throw 'The native OEM encoding path must remain guarded from non-Windows execution.'
+}
+$foregroundWindow = Get-Content -LiteralPath (
+    Join-Path $repositoryRoot 'Src/Pscx/Commands/UIAutomation/SetForegroundWindowCommand.cs'
+) -Raw
+if ($foregroundWindow -notmatch 'SupportedOSPlatform\("windows"\)') {
+    throw 'Set-ForegroundWindow must retain its explicit Windows platform annotation.'
+}
+
+$crossPlatformPowerShellFiles = @(
+    foreach ($relativeRoot in $crossPlatformSourceRoots) {
+        Get-ChildItem -LiteralPath (Join-Path $repositoryRoot $relativeRoot) -Recurse -File |
+            Where-Object Extension -In '.ps1', '.psm1' |
+            Where-Object FullName -NotMatch $excludedDirectoryPattern
+    }
+)
+$windowsAutomationReferences = @(
+    $crossPlatformPowerShellFiles |
+        Where-Object {
+            (Get-Content -LiteralPath $_.FullName -Raw) -match
+                '\b(?:Get-WmiObject|Get-CimInstance|Invoke-CimMethod|New-CimSession|Win32_)\b'
+        } |
+        ForEach-Object { [IO.Path]::GetRelativePath($repositoryRoot, $_.FullName).Replace('\', '/') }
+)
+if ($windowsAutomationReferences.Count -gt 0) {
+    throw "Cross-platform PowerShell sources contain Windows automation references: $($windowsAutomationReferences -join ', ')"
+}
+
 $resultsPath = [IO.Path]::GetFullPath($ResultsPath)
 New-Item -ItemType Directory -Path $resultsPath -Force | Out-Null
+$infrastructureResultPath = Join-Path $resultsPath 'Pscx.StaticAnalysis.infrastructure.json'
+$diagnosticResultPath = Join-Path $resultsPath 'Pscx.StaticAnalysis.diagnostics.json'
+Remove-Item -LiteralPath $infrastructureResultPath -Force -ErrorAction SilentlyContinue
+$analyzerWorkerTimeoutSeconds = 120
+
+function Write-PscxAnalyzerDiagnosticReport {
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Passed', 'Failed')]
+        [string] $Status,
+
+        [Parameter(Mandatory)]
+        [bool] $CollectionComplete,
+
+        [AllowEmptyCollection()]
+        [object[]] $RawDiagnostic = @(),
+
+        [AllowEmptyCollection()]
+        [object[]] $InfrastructureFailure = @(),
+
+        [AllowEmptyCollection()]
+        [object[]] $BaselineViolation = @()
+    )
+
+    $uniqueDiagnostics = @(Get-PscxCanonicalAnalyzerDiagnostic `
+            -Diagnostic $RawDiagnostic `
+            -RepositoryRoot $repositoryRoot)
+    $counts = [ordered]@{
+        Raw = $RawDiagnostic.Count
+        Unique = $uniqueDiagnostics.Count
+        Duplicate = $RawDiagnostic.Count - $uniqueDiagnostics.Count
+        Error = @($uniqueDiagnostics | Where-Object Severity -EQ Error).Count
+        Warning = @($uniqueDiagnostics | Where-Object Severity -EQ Warning).Count
+        Information = @($uniqueDiagnostics | Where-Object Severity -EQ Information).Count
+    }
+    [ordered]@{
+        Status = $Status
+        CollectionComplete = $CollectionComplete
+        Environment = [ordered]@{
+            PowerShellVersion = $PSVersionTable.PSVersion.ToString()
+            PowerShellEdition = $PSVersionTable.PSEdition
+            FrameworkDescription = [Runtime.InteropServices.RuntimeInformation]::FrameworkDescription
+            OSDescription = [Runtime.InteropServices.RuntimeInformation]::OSDescription
+            OSArchitecture = [Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
+            ProcessArchitecture = [Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString()
+            PSScriptAnalyzerVersion = $analyzerVersion
+        }
+        Baseline = [ordered]@{
+            Warning = [int] $baseline.PSScriptAnalyzer.Warning
+            Information = [int] $baseline.PSScriptAnalyzer.Information
+        }
+        Counts = $counts
+        BaselineViolations = @($BaselineViolation)
+        InfrastructureFailures = @($InfrastructureFailure)
+        Diagnostics = $uniqueDiagnostics
+    } | ConvertTo-Json -Depth 8 |
+        Set-Content -LiteralPath $diagnosticResultPath -Encoding utf8
+
+    $uniqueDiagnostics
+}
 try {
-    $powerShellExecutable = (Get-Command -Name $PowerShellPath -CommandType Application -ErrorAction Stop).Source
+    $powerShellExecutable = Get-Command -Name $PowerShellPath -CommandType Application -ErrorAction Stop |
+        Select-Object -First 1 -ExpandProperty Source
 }
 catch {
     throw "Could not resolve the PowerShell executable '$PowerShellPath'."
 }
 $analyzerFileScript = Join-Path $PSScriptRoot 'Invoke-PscxAnalyzerFile.ps1'
+$analyzerRunnerPath = Join-Path $PSScriptRoot 'PscxAnalyzerRunner.psm1'
+Import-Module $analyzerRunnerPath -Force -ErrorAction Stop
 $ruleNames = @(
     Get-ScriptAnalyzerRule |
         Where-Object RuleName -NE 'PSUseToExportFieldsInManifest' |
@@ -60,42 +198,113 @@ $ruleBatches = @(
     $ruleNames[0..($ruleMidpoint - 1)] -join ','
     $ruleNames[$ruleMidpoint..($ruleNames.Count - 1)] -join ','
 )
-$analysisWork = @(
-    foreach ($file in $powerShellFiles) {
-        foreach ($ruleBatch in $ruleBatches) {
-            [pscustomobject]@{ Path = $file.FullName; Rules = $ruleBatch }
+$initialAnalyzerWorkItemCount = $powerShellFiles.Count * $ruleBatches.Count
+$analyzerWorkItemCount = 0
+$diagnosticList = [Collections.Generic.List[object]]::new()
+$infrastructureFailures = [Collections.Generic.List[object]]::new()
+$analyzerAttemptCount = 0
+$analyzerSubdivisionCount = 0
+foreach ($file in $powerShellFiles) {
+    foreach ($ruleBatch in $ruleBatches) {
+        $workItem = Invoke-PscxAnalyzerRuleBatch `
+            -PowerShellExecutable $powerShellExecutable `
+            -AnalyzerScript $analyzerFileScript `
+            -AnalyzerManifest $analyzerManifest `
+            -Path $file.FullName `
+            -RuleName @($ruleBatch -split ',') `
+            -TimeoutSeconds $analyzerWorkerTimeoutSeconds
+        $analyzerAttemptCount += $workItem.AttemptCount
+        $analyzerWorkItemCount += $workItem.WorkItemCount
+        $analyzerSubdivisionCount += $workItem.SubdivisionCount
+        foreach ($failure in $workItem.InfrastructureFailures) {
+            $infrastructureFailures.Add($failure)
         }
-    }
-)
-$serializedDiagnostics = @(
-    $analysisWork | ForEach-Object -Parallel {
-        & $using:powerShellExecutable -NoLogo -NoProfile -NonInteractive -File `
-            $using:analyzerFileScript -AnalyzerManifest $using:analyzerManifest `
-            -Path $_.Path -IncludeRule $_.Rules
-        if ($LASTEXITCODE -ne 0) {
-            throw "PSScriptAnalyzer failed for $($_.Path) with exit code $LASTEXITCODE."
-        }
-    } -ThrottleLimit 4
-)
-$diagnostics = @(
-    foreach ($serialized in $serializedDiagnostics) {
-        $serialized | ConvertFrom-Json
-    }
-)
-$errors = @($diagnostics | Where-Object Severity -EQ Error)
-if ($errors.Count -gt 0) {
-    $errors | Format-Table RuleName, ScriptPath, Line, Message -AutoSize | Out-String | Write-Output
-    throw "PSScriptAnalyzer reported $($errors.Count) error(s)."
-}
 
+        if (-not $workItem.Succeeded) {
+            $null = Write-PscxAnalyzerDiagnosticReport `
+                -Status Failed `
+                -CollectionComplete $false `
+                -RawDiagnostic @($diagnosticList) `
+                -InfrastructureFailure @($infrastructureFailures)
+            [ordered]@{
+                Status = 'Failed'
+                Orchestration = [ordered]@{
+                    Mode = 'SequentialChildProcess'
+                    InitialWorkItemCount = $initialAnalyzerWorkItemCount
+                    WorkItemCount = $analyzerWorkItemCount
+                    AttemptCount = $analyzerAttemptCount
+                    MaximumAttemptsPerWorkItem = 2
+                    WorkerTimeoutSeconds = $analyzerWorkerTimeoutSeconds
+                    RuleBatchCount = $ruleBatches.Count
+                    BatchSubdivisionCount = $analyzerSubdivisionCount
+                }
+                InfrastructureFailures = @($infrastructureFailures)
+            } | ConvertTo-Json -Depth 8 |
+                Set-Content -LiteralPath $infrastructureResultPath -Encoding utf8
+            throw (Format-PscxAnalyzerInfrastructureFailure -Failure $workItem.InfrastructureFailures)
+        }
+
+        if ($workItem.InfrastructureFailures.Count -gt 0) {
+            Write-Warning (Format-PscxAnalyzerInfrastructureFailure `
+                    -Failure $workItem.InfrastructureFailures `
+                    -Heading 'PSScriptAnalyzer infrastructure failure recovered by retry or rule-batch subdivision')
+        }
+        foreach ($diagnostic in $workItem.Diagnostics) {
+            if ($null -ne $diagnostic) {
+                $diagnosticList.Add($diagnostic)
+            }
+        }
+    }
+}
+$rawDiagnostics = @($diagnosticList)
+$diagnostics = @(Get-PscxCanonicalAnalyzerDiagnostic `
+        -Diagnostic $rawDiagnostics `
+        -RepositoryRoot $repositoryRoot)
+$errors = @($diagnostics | Where-Object Severity -EQ Error)
 $analyzerCounts = @{}
+$baselineViolations = [Collections.Generic.List[object]]::new()
 foreach ($severity in 'Warning', 'Information') {
     $count = @($diagnostics | Where-Object Severity -EQ $severity).Count
     $analyzerCounts[$severity] = $count
     $maximum = [int]$baseline.PSScriptAnalyzer[$severity]
     if ($count -gt $maximum) {
-        throw "PSScriptAnalyzer $severity count increased from $maximum to $count."
+        $baselineViolations.Add([pscustomobject][ordered]@{
+                Severity = $severity
+                Baseline = $maximum
+                Actual = $count
+            })
     }
+}
+
+$diagnosticStatus = if ($errors.Count -gt 0 -or $baselineViolations.Count -gt 0) {
+    'Failed'
+}
+else {
+    'Passed'
+}
+$diagnostics = @(Write-PscxAnalyzerDiagnosticReport `
+        -Status $diagnosticStatus `
+        -CollectionComplete $true `
+        -RawDiagnostic $rawDiagnostics `
+        -InfrastructureFailure @($infrastructureFailures) `
+        -BaselineViolation @($baselineViolations))
+
+if ($errors.Count -gt 0) {
+    $errors | Format-Table RelativePath, Line, RuleName, Message -AutoSize -Wrap |
+        Out-String | Write-Output
+    throw "PSScriptAnalyzer reported $($errors.Count) error(s). See $diagnosticResultPath."
+}
+if ($baselineViolations.Count -gt 0) {
+    foreach ($violation in $baselineViolations) {
+        Write-Output "Complete $($violation.Severity) diagnostic inventory:"
+        $diagnostics | Where-Object Severity -EQ $violation.Severity |
+            Format-Table RelativePath, Line, RuleName, Message -AutoSize -Wrap |
+            Out-String | Write-Output
+    }
+    $description = @($baselineViolations | ForEach-Object {
+            "$($_.Severity) increased from $($_.Baseline) to $($_.Actual)"
+        }) -join '; '
+    throw "PSScriptAnalyzer baseline exceeded: $description. See $diagnosticResultPath."
 }
 
 $manifestFiles = @(
@@ -155,17 +364,37 @@ foreach ($extension in $formatExtensions) {
     PSScriptAnalyzerVersion = $analyzerVersion
     PowerShellFileCount = $powerShellFiles.Count
     AnalyzerCounts = $analyzerCounts
+    RawAnalyzerDiagnosticCount = $rawDiagnostics.Count
+    DuplicateAnalyzerDiagnosticCount = $rawDiagnostics.Count - $diagnostics.Count
+    DiagnosticReport = [IO.Path]::GetFileName($diagnosticResultPath)
+    AnalyzerOrchestration = [ordered]@{
+        Mode = 'SequentialChildProcess'
+        InitialWorkItemCount = $initialAnalyzerWorkItemCount
+        WorkItemCount = $analyzerWorkItemCount
+        AttemptCount = $analyzerAttemptCount
+        MaximumAttemptsPerWorkItem = 2
+        WorkerTimeoutSeconds = $analyzerWorkerTimeoutSeconds
+        RuleBatchCount = $ruleBatches.Count
+        BatchSubdivisionCount = $analyzerSubdivisionCount
+        InfrastructureFailures = @($infrastructureFailures)
+    }
     ModuleManifestCount = $manifestFiles.Count
     XmlFileCount = $xmlFiles.Count
+    PlatformAudit = [ordered]@{
+        CrossPlatformCSharpFileCount = $crossPlatformCSharpFiles.Count
+        CrossPlatformPowerShellFileCount = $crossPlatformPowerShellFiles.Count
+        ApprovedNativeInteropFiles = $approvedNativeInteropFiles
+        WindowsAssemblyCount = $windowsAssemblyInfoFiles.Count
+    }
     FormattingCounts = $formatCounts
-} | ConvertTo-Json -Depth 5 |
+} | ConvertTo-Json -Depth 8 |
     Set-Content -LiteralPath (Join-Path $resultsPath 'Pscx.StaticAnalysis.summary.json') -Encoding utf8
 
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAJpmObuXolrqFb
-# zMJZctAvrjevTUE3wB9L4hI0C8tvUqCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBeVWJTi8al+ibE
+# DQNYaw6Zs1qwvEUe/vAGjBQcelKiYqCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -344,34 +573,34 @@ foreach ($extension in $formatExtensions) {
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgLWMsTJ11GUr7PICT1G0X
-# bKlABOL8U1r+6TZqhftd3VAwDQYJKoZIhvcNAQEBBQAEggIAqiATxEXtnmbmJaup
-# 0Sv6tddEfr4qEhew07kxwQ0KzHaZusTHrZbEqxGnryhCSeXaqzaWzM8OU1Vq69LR
-# raCo1IVWDFk7FFtVsZcLP/EBy5QSBjZ6NQpqQ1uCMj2MJpC46HEoea15WuISRGYK
-# 1MqAS2ooCzya1oEUZx2TLQlDE9VOtLtPdqYWw/tLfE8TlVigZqttwe+iGVU8WzKU
-# 8DE6JJgRNC5v63cI0Ndgk3a0i5EL1FybuNi/J0b4bgt4Ncd/OcO+LU0Dsg3yX6QO
-# e9Jx5Y5l/3A+bXPg8h4DvgddzqmbIS/PV935C1NGeFTmyYy17jeQx/wrPE0MQ5ok
-# ipiTnsoBne5kEp9oRUjjjk2c0FhbFQvzk0P+hdsLjb5nnKe7YUn+U5E1J8bGL8Uq
-# gfJSdKTAuAo9+PI+SkUHvW/tP+J+GM2lCAnTpjl9gnuYZFX3azib8EunpYEpSSwq
-# vjQCcfPvH44PE/myOOwcz1ViRrzK8FnDLGQMJiX09K2P38MkZsTTacz8RlULqk37
-# KPDF1LRJ7UtCOLCr5nFoBHgzx4YpGJNaEWy8p32b3/i03sB8bqHNy2TrC+d0u4Se
-# uthFOXJfWrG/NwHVoXsZ5QmMFg7MetnKRxtMjJBUQUeGqmXlDiUkmYjgMT2TplQt
-# XCkjYGUiVOFxxqowu0aYQD/2d4qhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQg8NvxW+3B9xgSv1QqjXJU
+# di0KtULbcQNYuW4iLl6U91wwDQYJKoZIhvcNAQEBBQAEggIANfDdgIeSFQ6LlsXJ
+# WE/Z5Ir6Jd7QBrF9V76dbvD7+rYnRY5MC3R0Bbj0mdwoqs7sUzDIjZOq8o8PRUB7
+# xMwmoaRTqI+bCUJ0QY0Un/8DycKT4GMOsqTkeY6pPrfbdv/uyxA1EzH/xBFgHatX
+# VcKWx3dTBujdmDssakfNTHaZGExXTEJiFfb+b3DqxSH9cT+n2QJYYLog8D5GK7oi
+# RrtHIXKH1WHr6xNeSckk2JLKFFtcHf/3IXqk3i2lO2aqp8nQTdpp+K+GEb4hnF+N
+# pMH++EUVDhOliNMChttqZA6sDiWbzzYR1PeJDebvvZNAp5FzZESqTEa2qyXX1Kna
+# 8swSEgHIdgYBWRBmnfGX7L7TMQ6WaXsvnh6LqTX8Zvy9h4XDgIv7FHNbvBMlCGHE
+# kIftacXhXmPhaH6m53G9LuulgoB1/U0ao0rCy7nLCh7wTdangDdoi00j9Xc/7f9S
+# b6keCukvF31Zd2Yvn9rNZchAkfwFYiZa9CLjwXLXawhAWDVgvj9raBFeE2ioRzgh
+# hDbbg/ukfXE0EbPCy/buR/RJhHnjFBUdmQfx4w9u59AJLL2yu2MfHSFjmNMX2tNJ
+# fTtdHOu29eYHjW8iVL6bCo8/4t2wnOT7oTT5Ii6E/e+SS/HfT+88tejnIVLJ8S9f
+# cwiz/vSzAinKrJ29GKE1wWiVUXWhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODA4MDUwNTM4WjAvBgkqhkiG9w0BCQQxIgQgm0uWGVH3uTBN3pht8SVB5IlrtRON
-# khZvLqfVL8RYFmkwDQYJKoZIhvcNAQEBBQAEggIAUZ7hAGoF4ViS2KrOC16JXQnb
-# U2vWKQuDvcY7cL2GXe8VFWcRGDAC15owCn9nLW0/kh4p8SlJxX+ko1+HMWCscXWn
-# oNYMqayeuoW35/cytsoXQt/8kj98vU/W2gJv26w6Ox5InRoSXZuy6SJeHVZNqDpy
-# T9BfLFR/kgNTglcNVgJXNAiyw/h1uJB0K5WZJS1WmZWfae3c0U5OLEzCnMxIhUM4
-# /J1sE4P2M14mADnbrpP1nG3T72Z68Q2f3UuNEy5QrJ9jXyFVPscRwD6tGJIns/01
-# DVdEiVFRyfScKEh7cH+L7PksHcol9F4PieRxKtbocgwnnHyiJ/VbrtLWHomYlUVI
-# zB7K38lqAHR95dN5XZfQIb5ibwL1ECx1agtuEKKcl18zCjjwsJ/gjTiZTbcCAL77
-# q8FjrU7KWShel5NsrDw7srcvmZ1tCtNPin+Qp6PBJjYXxrHYAsEXOvEmjQ5k7oVf
-# hboAtKdpdXJp5iYNwRYFuJQcainyc4wJlfC7hlfjZgit5evnkYsHqOe9tVspg5PG
-# +B7ggoMhEGRGu+fXnbdZAzdvFDo/HfLMKnvteVu6E/ZGPukLHI+xYTliBnvtO68y
-# kQUODxOIhmNcKRoJPsoIZq+J5gEWC4Mr++c+f5XYYGmWyx7Hoci4GCjRzBrKpdMo
-# jwV+MFDQPxBbbodkhi0=
+# ODI5MTcwNTMwWjAvBgkqhkiG9w0BCQQxIgQgFpSrwDmHZKKLjAj6U3iuKToxHgKr
+# ByyRwieSYKwEufUwDQYJKoZIhvcNAQEBBQAEggIAxQajIRbTzoMAWoBjYSirmzi9
+# var79dIcllp6AJeGEEujzF6puaFpawauSDOA6kyUYd3SmAe3aMwh/hh+bKKek3TS
+# n1ngGgS7fgU37ZKerkrEYrltjchpQ3+Nx8memZ1ph8QPAFTQh50geD6sccMYU9WS
+# 5ig9jahR7PPNI/xl5ek0hID/kZU1SDYwhMYKVir1uuYn4OozQigcrJ21RkmIsCcJ
+# AUx16l5iA0oMjC5Yx6aDxIMrhEWjGR9Ql7mxxoMWxB4f5NYR/WkDxH1srYuWOfLZ
+# LH16Rk9nSJ7iAexryGz9qoZaDLTI97UJ1C6LS9Fk5BcaOUEG+TS7277lesvZPw07
+# wO5IKvz1TKZtoUxUp4uUlavJK0JqjJUR7yBib8zASCJcIQs/ecGPqOJKcZUNo8zm
+# GVg5pr/9L8ZyJitMkCftEJ1ZcY2rUd16/6u4EZhUPXFwXQrRfMVUF1LRbyVkxMZw
+# nIg5Yz31UofJb0aPHryElIOFPZ3qwfEUPCdFASTaPohzmlPagbAn9XmRngpQTSHU
+# Q5FEBUp9lRZq1Q5tnIaX2dKsxbv6kawxiZbT/sKrYyFRhyIj/X1Zr2b1inC8hoiN
+# PJnfzK6Qmy1sfrA30Wr9ltyFyGZorqviTeul+JvqJqCM6D87wa7zrXwd3yszkw+p
+# vKAbrzB6OD0p7MCjxgM=
 # SIG # End signature block

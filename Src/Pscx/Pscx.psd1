@@ -10,33 +10,48 @@
     ModuleVersion      = "0.0.0"
     RequiredAssemblies = 'Pscx.dll' # needed for [pscxmodules] type (does not import cmdlets/providers)
     RootModule         = 'Pscx.psm1'
-    NestedModules      = @('Pscx.dll', 'NodaTime.dll')
-    AliasesToExport    = '*'
+    NestedModules      = @('Pscx.dll')
+    AliasesToExport    = @(
+        'call',
+        'cvxml',
+        'e',
+        'ehp',
+        'ep',
+        'fxml',
+        'gpar',
+        'gtn',
+        'ql',
+        'qs',
+        'rver',
+        'skip',
+        'sro',
+        'swr',
+        'tail',
+        'touch',
+        'ln',
+        'rvhr',
+        'rvwer'
+    )
     CmdletsToExport    = @(
         # PSCX main module
-        'Join-PscxString',
         'Get-DriveInfo',
         'Format-Byte',
         'ConvertTo-Base64',
         'Format-Xml',
         'Set-ForegroundWindow',
-        'Get-ForegroundWindow',
-        'Get-LoremIpsum',
-        'Format-Hex',
         'Get-PEHeader',
         'Test-Script',
         'Test-Xml',
         'Get-EnvironmentBlock',
         'Get-TypeName',
         'ConvertTo-WindowsLineEnding',
-        'Get-FileTail',
         'Get-PathVariable',
         'Pop-EnvironmentBlock',
         'Get-FileVersionInfo',
+        'Get-TextFileInfo',
         'Convert-Xml',
         'ConvertTo-Unit',
         'Set-FileTime',
-        'Split-PscxString',
         'ConvertTo-UnixLineEnding',
         'Get-PscxHash',
         'Edit-File',
@@ -44,70 +59,52 @@
         'Set-PathVariable',
         'Push-EnvironmentBlock',
         'Add-PathVariable',
+        'Remove-PathVariable',
         'ConvertFrom-Base64',
         'Skip-Object',
-        'ConvertTo-MacOs9LineEnding',
         #PSCXWin module
-        'Invoke-OleDbCommand',
         'Remove-ReparsePoint',
         'Get-RunningObject',
-        'Get-SqlData',
         'Test-UserGroupMembership',
-        'Get-DomainController',
-        'Get-AdoDataProvider',
-        'Get-OleDbData',
-        'Write-PscxArchive',
-        'Read-PscxArchive',
         'Get-ShortPath',
-        'Expand-PscxArchive',
-        'Get-AdoConnection',
-        'Get-PscxADObject',
         'Get-Privilege',
         'Remove-MountPoint',
         'Get-MountPoint',
-        'Invoke-AdoCommand',
         'New-Shortcut',
-        'Get-OleDbDataSet',
         'Set-VolumeLabel',
-        'New-Hardlink',
         'Get-OpticalDriveInfo',
         'Get-ReparsePoint',
         'Set-Privilege',
-        'Invoke-SqlCommand',
-        'New-Symlink',
-        'New-Junction',
-        'Get-PscxUptime',
-        'Get-SqlDataSet',
         'Invoke-Apartment',
         'Disconnect-TerminalSession',
         'Stop-TerminalSession',
         'Get-TerminalSession',
-        'Get-DhcpServer',
         'ConvertFrom-Yaml',
         'ConvertTo-Yaml'
     )
     FunctionsToExport = @(
+        # PSCX compatibility conveniences
+        'Get-FileTail',
+        'New-Hardlink',
+        'New-Symlink',
+        'New-Junction',
+        # PSCX diagnostics
+        'Test-PscxInstallation',
         #PSCX.CD
         'Set-PscxLocation',
         #PSCX.FileSystem
         'Add-DirectoryLength',
-        'Add-ShortPath',
         #PSCX.Utility
         'AddAccelerator',
         'RemoveAccelerator',
-        'PscxHelp',
         'PscxLess',
         'Edit-Profile',
         'Edit-HostProfile',
         'Resolve-ErrorRecord',
         'QuoteList',
         'QuoteString',
-        'Invoke-GC',
-        'Invoke-BatchFile',
         'Get-ViewDefinition',
         'Stop-RemoteProcess',
-        'Get-ScreenCss',
-        'Get-ScreenHtml',
         'Invoke-Method',
         'Set-Writable',
         'Set-FileAttributes',
@@ -116,9 +113,6 @@
         'Get-Parameter',
         'Get-ExecutionTime',
         'AddRegex',
-        #PSCX.Vhd
-        'Mount-PscxVHD',
-        'Dismount-PscxVHD',    
         #PSCXWin
         'Resolve-HResult',
         'Resolve-WindowsError',
@@ -127,7 +121,7 @@
         'gsudo', 
         'invoke-gsudo',
         'Test-IsGsudoCacheAvailable', 
-        'Test-IsProcessElevated', 
+        'Test-IsProcessElevated',
         'Test-IsAdminMember'
     )
     FormatsToProcess   = @(
@@ -168,8 +162,8 @@
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBEXT1KxYluNgcZ
-# 9md9UyXENBsjr9Y7rSL9OeK9HmUuZqCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCNRXVCeVjkWdca
+# 8gN43RCvWZ9yR/tABw9OJxpFHrg1v6CCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -348,34 +342,34 @@
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQg98qLMao4PURPT4i5a5sX
-# NsdcJ/jsCUxaeKFyFtZYjlMwDQYJKoZIhvcNAQEBBQAEggIAjDQbGitbObId+rrs
-# UUIDADujvnFAI8gsmljqZoIfhws5g138F4bSzcvaryp+Ra4LCvCQSm14nw/qej61
-# aP4PtOfA0Rj18XnwgxMED0UJBrMelJeJxEJ3sZwUDBRAi6HFCHOInHhA4JyP5swK
-# AFvxK45iMLfT5D0AqunQregTilHn4nSk+c4FCkN7AjjDHx3PM8TpQtyGgMRwGPzo
-# ATnNEs2C6JgqQBgWuy+bPriDhiFQQgisToiOdoW5yzyNHhVugJJDr5JLixMaiIDo
-# AuQvioHr7F89q/avmi5lmyHvkFA8/T8oq8/rDAnilv+OAZLGzmFc294glflhauWN
-# eH4BvDUgszIO7Apz/cFUq72mvEHNklZszsg8S2jfi4dtFRJJO63/1HfoLbN++14c
-# OyVwMJHqj+cFIpwCWm9D7OzC4lKeMyYLv9WA6bVsGKL5lKaK3LN4u4RO3MC6/TeD
-# /Bk6nbE2USP2qfkJwsAXjta9IMDqg8t8R0Hzek9Eo6/7n9eD0jE5toSBJszLh/g7
-# 1dwugGdeioHk368q/WxQRQG3oirnRkHdMKSgDS6sxP9aXDDzG7I4diYFPdnnKWze
-# Yio8FsO80zDS40eDkF821dzJSwL0iGSZEogznKBeiiWFu9Id+9QwG4quVYK27q1Q
-# Fgmu924ndIxklyXS73Hqn8bH/aChggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgjr1KPPqa9DODCNjh8KCS
+# LrAhpc+cFkXvQAags8ZwmJ0wDQYJKoZIhvcNAQEBBQAEggIAL4PIHYmE6uOF5mFM
+# 4MqKy5XdMLPJItGfA8tgtbhU7deil1JmKyX6XZDqb+vdsT6LBNKXpfaIpNHnQZHZ
+# j0PA7Hga4JbyiilHPtZiFPw1D8DKZ3OvoIaE+msfjO1BnMJ5hVuEWd7a3BX0LPLf
+# Hra0dcCriFWlaCPJcnFTplgva1moXPuQDHW4wEDi5U3lPgZAhsAdru9Kmvb6DNX9
+# V82tAoRsosdsvS0YKf/maW6JuxxsnUcrjK8VdRugCFvXKKimnzHOAOE5GTaWGlbq
+# hvOL4XbISkkJawiQgGvpPL171EMtnbgrrKVzHHIzePfdi5opnU5HBHv46I5zxt24
+# dGEBEIeVrXACzRf7Nzv8/lX+YPMek1Ef96I9ttmEmQq5dlMKVV0EWrGM5xmEHYF5
+# rxOIq281Pmql3VeKuW8ldJg5xEPEspZiSVIoeQH8Wt+VsYGyrne3g8ZVSAJ3DE1T
+# 6oWv8cVFQToYEZCmMf3K3psDYt3njT9FSK6wd9YVwd4QpGRuDuZh8sOjTzIVJnrJ
+# FiWBl3u2IrMmz0fqS4of3q4Q21R4cokKDr66n2tPj9sPjXWSiMqltXsuFD/Eabhr
+# YAbnSprMu6JTdInyF/tTqd5Pr6K+8Gew/2Aj/VewfUgSuBCJzjswmuaydMCNEFG5
+# /geu9M8YYdBCeh3EHcXH8Goya16hggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODA4MDQ0ODQ0WjAvBgkqhkiG9w0BCQQxIgQgSkqatxMR8iBgd15MvOWaF+QwLkBy
-# 8MJgi5fAlUDI9NMwDQYJKoZIhvcNAQEBBQAEggIAnIErLE/39wr1lgWMqOo5x6/L
-# C5SPtJN5GRiwCr6UZbDcFj0KtYPVMPpPB88rReNdMsOHfpbcL9oBmYZfIizL/wvr
-# QbVeLspnjT0usC+LuUrxOJtFLOJNUcf2SlSVLwFEjrEGve1tODfQqxbTnfr7GAng
-# t1pcf7HfWcByfBrGN4rZZOLfMl0EvHqZLGqZj4aVEsrFhCGUOU/wX40sdVdT/3NF
-# MeDQt2aMS2GezHQ9zVow1BKX3feMR7Uy7TimgWkCwgJBew+qV5fSE6GULBNpPeoh
-# Lv+q+ErgpOeaW5gHZDusRsrATznqRp4sIiheW25P23wNprx8nU2ehMDNqlnVfXf3
-# e6M+C5a6PRoAaam4JHUBoaIsAQyA2d1w+rWlGbn+PJuB/IwgRToS7VzcCWkGC7dQ
-# 8SRAqbnKUvtbVSeKbMvqHVRGQxL+LCoam5QwsgBFLDjN1DR+2jlrVHhCT2LgoK/V
-# 0CvtV7n4VsHxwPAyP5lWVvS+ADI2SNjNXLRCpCltLqnpK0hS270tua8qPS/re9TS
-# yraMM3nvk5mqXoV12kl+UCoM45ZBKBP2UnNtdHGba6FB7fSxQde0Jrp7cMM9jJHe
-# qWX1IRDJpoZUEzC8iqATxDooirsqF/fY4nV8CQMMmLWApf7f0e8R6nZ2NGOoqWpH
-# /0oPaIZSSfWEgxp5pLA=
+# ODI5MDM1MzM4WjAvBgkqhkiG9w0BCQQxIgQgXItWjrCD/nAYtoA0U6qx2sVo1W7p
+# zSA4Bx85kLqO9NAwDQYJKoZIhvcNAQEBBQAEggIAmlMnzBWWKSTuxNfM2uObJPn0
+# PP5oT9xW1WDMrq43Vf0Ygiaha7PhtQzggcgGnT0Jw5i8vOdGHAa1fSLqYKtB/TsP
+# lk2nhrBDf0dENw1Er4IZi5Qis3K8VZeMHhc/2DBB9MuF5NQOQO04y5J+L/1fAAUp
+# xnZsTs5M+bN4PYtcOBCowFZqJlKvBwf/vWtYn1DUqXXsPNKDVgKF7XsfWXUzc5uK
+# X48HO/nD7eyPM889s4qR5kogTlTTJTrbhDZvWC5JYmQkiQl9orsjRqA/wL45nMJC
+# zzcT7ClgHXEfZC9Z0uB3MwcaJxfqFM8I6yrhLR18za3gOCPLvvggKTiFZk1wqO1S
+# RGP9CGyRrGu26Kiq+zMHxm+18hLdExCMUxIUgn4WVnqu6eM4adt5yCQiMRPkysH9
+# cLqXDaAzvfDDxEg9N4vlyXJUYMUjIB7a4dG7NePe5TVFzE0VkZMzauZzOKxJZY7D
+# ivWJNwBsrpyDijYQkKRvSsaWLfuQOGhgUNAft4hudxrbi8a4rRBSuHkvATGLui0H
+# sHUevsExF6XBTRlHC1kO1wbzwQo0XkpT0eH5Z3w3L2EcpHStnJtMTMb6PuVbSx6U
+# 1QtSLbiD6fgzWzlUUAo4oph5p04uBGKp2RJsakL2ehBrEDpQBmU+FyXSZDFaaFXZ
+# UPXtS0Vzn7pDQr01a+M=
 # SIG # End signature block

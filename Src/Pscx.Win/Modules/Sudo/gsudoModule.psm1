@@ -89,6 +89,10 @@ Tests whether the gsudo credentials cache is available.
 Test-IsGsudoCacheAvailable
 Returns true when gsudo reports that its credentials cache is available.
 #>
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param()
+
     return ('true' -eq (gsudo status CacheAvailable))
 }
 
@@ -102,6 +106,10 @@ function Test-IsProcessElevated {
     Test-IsProcessElevated
     Returns true when the current process is elevated.
 #>	
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param()
+
     if ($PSVersionTable.Platform -eq 'Unix') {
         return (id -u) -eq 0
     }
@@ -120,6 +128,10 @@ The function Test-IsAdminMember checks if the currently logged-in user is a memb
 Test-IsAdminMember
 Returns true when the current user belongs to the local Administrators group.
 #>
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param()
+
     $userName = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
     $adminGroupSid = "S-1-5-32-544"
     $localAdminGroup = Get-LocalGroup -SID $adminGroupSid
@@ -250,8 +262,8 @@ Export-ModuleMember -function Invoke-Gsudo, gsudo, Test-IsGsudoCacheAvailable, T
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCD0sEwXLAWC2oh
-# iq230JKNrKzv2EFZX3iJ06VoQWeUEKCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAzQimahL8GmDJF
+# EEqP3jmqIvvVRqaiJ3zlNFA67i9JQaCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -430,34 +442,34 @@ Export-ModuleMember -function Invoke-Gsudo, gsudo, Test-IsGsudoCacheAvailable, T
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgbVfyT+4fPsr8RuKa6/RK
-# TFpMdf+IyMpCQO6kPJkyMncwDQYJKoZIhvcNAQEBBQAEggIAlweqsB7ihV7cAKZy
-# l/PYilCQswAbjDmF9nlDZ+ucE5G433MOjqZm4hOoopnjITnedzxpV7CwCLL+zYNc
-# 3AFZpQ4gzHZt7Rj1aVG5Ygyxdns5RIZ+W8sPr8NgTSEmRidoChAp4ORkT79bhP8A
-# UfKlmyWKjZY//QTN+IcSmJL+DGhCwGzI9Sxm0pxggTqgdZQgEIZrUdA3pynDqlWV
-# 7RXr/W4/jPsUTP0cZKRAKcXmnwkUQyVJQsJP/ab8IpWuj6aVbO630TzoZqzfyIEI
-# Bxq7ZYb/XJ00mo/g3Cnlcmowm/ppFO68RWZl02GK8iAdVGgf2MIhytWX1ZiXSp59
-# l97uN94O54f6eGX0zHDMAg53I/kXtfA92wcsqWvUbEU9BQ3r8kiyg0Ebvb/zBDO7
-# LR8Z8sxv5egkskKtRZQChG7I9TdXKpxtlm7j0OHYmk1Nx7Cy1q4bHtE9sZZeT25p
-# pQFwXWZTopCa5YmZsl8iLvchhC+H1iirpLUilpfuIhO9rbjXoHsKtLs81ek9/2Lu
-# 9O4QpdLT7Z2t8YLCfEbx+CuHgyKRNwcJs3m37RYwpykr9MojXp3sI1n3e2xs0Xzv
-# l59gSTCKRHgKspC+dG7GrozbxHSvKsjKrfj/dhQo9CTatbgPPQhTXFERx7XFMss7
-# XSMZCCCbZG20hDWtxCgLjo8YQSuhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQg3+i0s2bsGEtsm7cSH54t
+# fmIypwjhmPLNiY6WSlX4i+gwDQYJKoZIhvcNAQEBBQAEggIAnGxEfjVWSZ+dHiFe
+# JEyw0pW0DI9ytUhMpKNXrsBJks9VQv6E1TAkm/v5b2qAQvsav/X2zG+BiZALBen0
+# RLgiAYdEasJNdtf62nCiqKbBBxRbigXR89P97yLZYJ+zYxHlCMPB1E8A1MTBkgsS
+# l9Hj25/GN6z66PB4rTFfPZxplQJJiVu//WL4zF7EWUUxUuaKQ77a6wpQqOsS33Ug
+# kBt6hAfafkAe9L8S6M8Evz2dB5j5qiy1pkr0jAz0SA/4cPsSVCnE4zKPSBHNRZE7
+# FQqpy5MES02rs/2oqGEXvvTt+Efjo7fw4JjJmClWeSlbcWbpzok0Vfs3YFlp8JgZ
+# LYIpZyJKled03OVSxWbhp1qhMUgJBFicKzNjrE0NEa1jeIu+er0IQhIKDz45kK0o
+# F+EhwkuQg9dRhqha8KNjq7klfe3fvC3y6W1fC5w5LKgF8PoQIJDP+yD5Ze91Xlyk
+# 31ys389KqDpqFw3VRIy0bdUksUE3fpblPD/bzhVJPdali7cJqkw85QYF+zUlLWqy
+# X2FzBRf2J5PKLASrr8zvH74MeCYVCzH3r3cAc2xrhzq7R2cCGWKXLhaf3dWkNTJ+
+# IpzvL9OgWS/uQqYVsSpIxmjJpyPYGhzSaLwPUZ+JB02OCsf1zF1XoMt0ZjNK/UIR
+# 5BHZhei8eggpsUREjmp/Sw4R6j6hggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODA4MDQ0ODI5WjAvBgkqhkiG9w0BCQQxIgQg0k/tJ99+fbWUawXjfbx9EdHbywoU
-# pFZvxp9c+snl++EwDQYJKoZIhvcNAQEBBQAEggIAYI4e7gdo+Wt7o4T+zRd7+nUu
-# uOSDsvemj5yGLk2i4xVo3KgUN4gFKI+nO3tST/q4qypqdUJ8Lf3XniSEYuc+dQGo
-# S9NnFkS71AwltILnP7dhq8rL+OkE0f5GAAuQPtGD1Jdd5kHYGmKCjyzuGQuQU0Lv
-# Fi9Ud1ZjwQEtwngk9V/tzjT/ToBkz9kPeDqDKJQ7P2iaUkuFcPjKwykxqG5ue6an
-# RqkwPHj7ruVRO7STNURfwU7JsimVItX8xJDuKJFbAh2KR2dYN0ykN0rnM+tSdWsc
-# kgjRgaHpNwCmrJEazbxvOz+X58ycOEz/Rnx6Rn8COvYFj8XFRIV8KuKBr0a0GyaS
-# kJx9dJK17eh1KKINKCLQ3yPlE0dcqK/sssE2EK+s1H5oCvOKnekKIq9esvRuVzR+
-# sr1/2R+ct3Q2H4GmV75j1yn9cYkFiQS5kfLrYESZyJqsvWRARbSqZwsQGEkU8OA8
-# Q9zgTDCNWPCxcdO2YtDtoqoyqt0wwe2VwRgKEYq4UFzvzj5S6aBq9e9JVSlDGCYc
-# CkF9F4S8YW7gOaZwFGo/PJZy34AJ5/3bRi52kQMEBpD+yzczkuXpCEoeF4hsaS+4
-# Y4JzGgcy3Zy0zodivpn47oGWxeSyzng39oS9YwCjJW9Y+9FBEHuJfS3ZwZDgH5up
-# +eSfgcv4Os+BcL1hPc8=
+# ODI5MDM1MzMyWjAvBgkqhkiG9w0BCQQxIgQgZiu9YTEPYklmND2loqyQJoGWW1sA
+# 65K4eeVmHGPMVF8wDQYJKoZIhvcNAQEBBQAEggIAYRWVTqOzycZbAeaTUmS1v7pw
+# DmLgaA51fe+0SThNyQy/o2hdUr22id0Ai7gTKzaX0FPCp2YleE2c+Igxg/E4nPjy
+# faGQAixx3KjEHtXJ2CZn50KRPWpPpTjOTkez60puOVzc1j2BRukcjbeK27bL24au
+# Jk/Rkzj+w3OapP/OBm/HNHbZlNS1iReqah93RXzZDK2bvUsjEwKTJwEtrmjELleP
+# nHx4BuZ1Brfx3IwmAYRWENA69dUKd8CDF/7N6uXYy3zs70O4VBUAmOeT5C+cwyOH
+# wFdZMx0maMRa/6bPZU1ouVT1cSJr7DFmoyPdoIfeBRo0j0mKhWcKvzGnqnhljGmm
+# BhqFxMvFKPZkAbRqOF9xrV6dgwKZ7zKMMXo13obVkdi6tqzMz/SCGLCnffB/7l5x
+# ThFUCfyzFddQ4bKt16M7Y+YzXRWly2Mf1JZPTdW+4z+dFg2T+ZAMxhffD1ige9yh
+# B92K0hFq2CercULdzOObIrD0Mz4MQ7csEtaDSsCFHin3d6c5M3wsALYu1U130E+J
+# cexq2AznUsXv2Q/nUG/k/+MSeBFUSq0FwzRYJqaU5TaxoMIBwhIbDRvulpWvgEhl
+# zQoiVZrSCP3M64MgUv0hDR7mizmdp+d46c4Zr2m+5iIfFSRq+e1eVZQC9Dbm+TlT
+# sckj+y1boVg7DDrPn0g=
 # SIG # End signature block

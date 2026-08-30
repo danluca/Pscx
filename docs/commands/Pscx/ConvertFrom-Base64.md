@@ -113,6 +113,11 @@ Accepts a System.String[] value.
 
 ## OUTPUTS
 
+### System.Byte[]
+
+Returns decoded bytes when `-OutputPath` is not specified. File output is
+otherwise silent.
+
 ## NOTES
 
 If an OutputPath is not specified then an array of bytes is output.

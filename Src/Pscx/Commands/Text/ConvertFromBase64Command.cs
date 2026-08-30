@@ -15,6 +15,7 @@ using System.Text.RegularExpressions;
 
 namespace Pscx.Commands.Text
 {
+    [OutputType(typeof(byte[]))]
     [Cmdlet(VerbsData.ConvertFrom, PscxNouns.Base64)]
     [Description("Converts base64 encoded string to byte array.")]
     [RelatedLink(typeof(ConvertToBase64Command))]

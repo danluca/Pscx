@@ -4,7 +4,7 @@ external help file: Pscx.dll-Help.xml
 HelpUri: ''
 Locale: en-US
 Module Name: Pscx
-ms.date: 08/06/2026
+ms.date: 08/25/2026
 PlatyPS schema version: 2024-05-01
 title: ConvertTo-UnixLineEnding
 ---
@@ -20,30 +20,31 @@ PSCX Cmdlet: Converts the line endings in the specified file to Unix line ending
 ### Path (Default)
 
 ```
-ConvertTo-UnixLineEnding [-Path] <PscxPathInfo[]> [-Destination] <string>
- [[-Encoding] <StringEncodingParameter>] [-Force] [-NoClobber] [-WhatIf] [-Confirm]
- [<CommonParameters>]
+ConvertTo-UnixLineEnding [-Path] <PscxPathInfo[]> [[-Destination] <string>]
+ [[-Encoding] <StringEncodingParameter>] [-Force] [-NoClobber] [-FinalNewline <FinalNewlineMode>]
+ [-Check] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
 ### LiteralPath
 
 ```
-ConvertTo-UnixLineEnding [-LiteralPath] <PscxPathInfo[]> [-Destination] <string>
- [[-Encoding] <StringEncodingParameter>] [-Force] [-NoClobber] [-WhatIf] [-Confirm]
- [<CommonParameters>]
+ConvertTo-UnixLineEnding [-LiteralPath] <PscxPathInfo[]> [[-Destination] <string>]
+ [[-Encoding] <StringEncodingParameter>] [-Force] [-NoClobber] [-FinalNewline <FinalNewlineMode>]
+ [-Check] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
 ## ALIASES
 
 None
 
+
 ## DESCRIPTION
 
-Converts the line endings in the specified file to Unix line endings "\n".
- You can convert a single file to a new file name.
- Or you can convert multiple files and specify a destination directory.
- By default, this cmdlet will overwrite existing files unless you specify -NoClobber.
- If you want to force the overwrite of read only files use the -Force option.
+Converts CRLF, LF, and CR line endings to Unix LF (`\n`) line endings.
+By default, the command preserves the source encoding, byte-order mark, and
+whether the source ends with a newline. Use `-FinalNewline` to override the
+final-newline behavior, or `-Check` to report whether conversion is needed
+without writing a file.
 
 ## EXAMPLES
 
@@ -55,7 +56,49 @@ Get-Help ConvertTo-UnixLineEnding -Full
 
 Displays the complete installed help for this command.
 
+### Example 2 - Check files without changing them
+
+```powershell
+ConvertTo-UnixLineEnding -Path ./src/*.cs -Check |
+    Where-Object NeedsConversion
+```
+
+Returns a structured result for each matching file and filters the results to
+files that need Unix line endings. No files are written.
+
+### Example 3 - Convert a file and add a final newline
+
+```powershell
+ConvertTo-UnixLineEnding -LiteralPath ./input.txt -Destination ./output.txt -FinalNewline Add
+```
+
+Writes `output.txt` with LF line endings and exactly one final newline while
+preserving the source encoding and byte-order mark.
+
 ## PARAMETERS
+
+### -Check
+
+Reports whether conversion is needed without writing a file. `-Destination`
+is not required in check mode. The command returns a
+`Pscx.Commands.Text.LineEndingCheckResult` object for each input file.
+
+```yaml
+Type: System.Management.Automation.SwitchParameter
+DefaultValue: ''
+SupportsWildcards: false
+Aliases: []
+ParameterSets:
+- Name: (All)
+  Position: Named
+  IsRequired: false
+  ValueFromPipeline: false
+  ValueFromPipelineByPropertyName: false
+  ValueFromRemainingArguments: false
+DontShow: false
+AcceptedValues: []
+HelpMessage: ''
+```
 
 ### -Confirm
 
@@ -83,6 +126,7 @@ HelpMessage: ''
 
 Destination to write the converted file.
 If the destination is a directory, then the file is written to the directory using the same name.
+This parameter is required unless `-Check` is specified.
 
 ```yaml
 Type: System.String
@@ -92,7 +136,7 @@ Aliases: []
 ParameterSets:
 - Name: (All)
   Position: 1
-  IsRequired: true
+  IsRequired: false
   ValueFromPipeline: false
   ValueFromPipelineByPropertyName: false
   ValueFromRemainingArguments: false
@@ -105,7 +149,7 @@ HelpMessage: ''
 
 Encoding used to write the output file.
 By default the encoding of the input file is used.
- Valid values are: unicode, utf7, utf8, utf32, ascii and bigendianunicode
+Valid values are: unicode, utf7, utf8, utf32, ascii and bigendianunicode.
 
 ```yaml
 Type: Pscx.StringEncodingParameter
@@ -115,6 +159,30 @@ Aliases: []
 ParameterSets:
 - Name: (All)
   Position: 2
+  IsRequired: false
+  ValueFromPipeline: false
+  ValueFromPipelineByPropertyName: false
+  ValueFromRemainingArguments: false
+DontShow: false
+AcceptedValues: []
+HelpMessage: ''
+```
+
+### -FinalNewline
+
+Controls the final newline in the converted file. `Preserve` (the default)
+retains whether the input has a final newline, `Add` writes exactly one final
+newline when one is absent, and `Remove` removes all trailing line-ending
+characters.
+
+```yaml
+Type: Pscx.Commands.Text.FinalNewlineMode
+DefaultValue: ''
+SupportsWildcards: false
+Aliases: []
+ParameterSets:
+- Name: (All)
+  Position: Named
   IsRequired: false
   ValueFromPipeline: false
   ValueFromPipelineByPropertyName: false
@@ -251,17 +319,24 @@ Accepts a Pscx.Core.IO.PscxPathInfo[] value.
 
 ### Pscx.Core.IO.PscxPathInfo[]
 
-Accepts a Pscx.Core.IO.PscxPathInfo[] value.
+Accepts one or more file paths. `-Path` accepts pipeline input and both path
+parameters accept input by property name.
 
 ## OUTPUTS
 
+### Pscx.Commands.Text.LineEndingCheckResult
+
+With `-Check`, returns the source and destination paths, target line-ending and
+final-newline modes, current text-file information, and `NeedsConversion`.
+Without `-Check`, the command produces no success output.
+
 ## NOTES
 
-
-
+If the source encoding cannot be identified safely, specify `-Encoding` to
+decode and write the file explicitly. Specifying `-Encoding` writes the chosen
+encoding without adding a byte-order mark.
 
 ## RELATED LINKS
 
-- [Online Version]()
-- [ConvertTo-MacOs9LineEnding]()
+- [Get-TextFileInfo]()
 - [ConvertTo-WindowsLineEnding]()

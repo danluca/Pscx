@@ -120,6 +120,7 @@ jobs:
           }
 
       - name: Upload test results
+        id: upload-test-results
         if: ${{ always() }}
         timeout-minutes: 5
         uses: actions/upload-artifact@v7
@@ -128,6 +129,18 @@ jobs:
           path: artifacts/test-results/**
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Publish HTML dashboard link
+        if: ${{ always() }}
+        shell: pwsh
+        env:
+          TEST_RESULTS_ARTIFACT_URL: ${{ steps.upload-test-results.outputs.artifact-url }}
+        run: |
+          $dashboardPath = 'artifacts/test-results/Pscx.TestDashboard.html'
+          if (Test-Path -LiteralPath $dashboardPath) {
+            "### HTML test dashboard" >> $env:GITHUB_STEP_SUMMARY
+            "[Download the test-results artifact]($env:TEST_RESULTS_ARTIFACT_URL) and open ``Pscx.TestDashboard.html`` locally." >> $env:GITHUB_STEP_SUMMARY
+          }
 
   packaged-import:
     needs:

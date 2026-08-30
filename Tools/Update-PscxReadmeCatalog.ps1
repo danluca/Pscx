@@ -79,7 +79,7 @@ foreach ($childManifest in $childManifestFiles) {
     $isDefault = [bool]$defaultPreferences.ModulesToImport[$feature]
     foreach ($name in Get-ManifestExports -Path $childManifest.FullName) {
         $availabilityByName[$name] = if ($isDefault) { 'Default' } else { "Optional ($feature)" }
-        if ($feature -in 'DirectoryServices', 'Sudo', 'Vhd', 'Wmi') {
+        if ($feature -in 'DirectoryServices', 'Sudo') {
             $windowsCommandNames.Add($name) | Out-Null
         }
     }
@@ -94,6 +94,7 @@ foreach ($feature in $defaultPreferences.ModulesToImport.Keys) {
 $importWarnings = @()
 Import-Module $manifestPath -ArgumentList @{
     PageHelpUsingLess = $false
+    OverrideExistingAliases = $true
     ModulesToImport = $allFeatures
 } -Force -DisableNameChecking -WarningVariable importWarnings -ErrorAction Stop
 
@@ -200,11 +201,11 @@ $catalogAliases = @(
             else {
                 'All'
             }
-            $availability = if ($availabilityByResolvedName.ContainsKey($unqualifiedTarget)) {
-                $availabilityByResolvedName[$unqualifiedTarget]
+            $availability = if ($alias.Name -eq 'cd') {
+                'When CD module is enabled'
             }
             else {
-                'Default'
+                'Default unless collision (`OverrideExistingAliases`)'
             }
             [pscustomobject]@{
                 Name = $alias.Name

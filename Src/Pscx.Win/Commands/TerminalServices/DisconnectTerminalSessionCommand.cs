@@ -13,7 +13,7 @@ using System.Management.Automation;
 namespace Pscx.Win.Commands.TerminalServices
 {
     [Cmdlet(VerbsCommunications.Disconnect, PscxWinNouns.TerminalSession, SupportsShouldProcess = true)]
-    [Description("Disconnects a specific remote desktop session on a system running Terminal Services/Remote Desktop")]
+    [Description("Disconnects a remote desktop session while preserving its programs for later reconnection")]
     public class DisconnectTerminalSessionCommand : TerminalSessionCommandBase
     {
         protected override void ProcessSession(TerminalSession session)

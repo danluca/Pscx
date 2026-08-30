@@ -1,0 +1,145 @@
+@{
+    # This is the maintainer-approved Phase 5 command disposition. Module moves
+    # and removals remain implementation work and must follow the roadmap.
+    SchemaVersion = 1
+    Status = 'Approved'
+
+    RemovedCommands = @{
+        ModernMicrosoftAlternative = @(
+            'Dismount-PscxVHD'
+            'Get-DhcpServer'
+            'Get-DomainController'
+            'Get-PscxADObject'
+            'Get-SqlData'
+            'Get-SqlDataSet'
+            'Invoke-SqlCommand'
+            'Mount-PscxVHD'
+        )
+        LowValueDuplicate = @(
+            'ConvertTo-MacOs9LineEnding'
+            'Format-Hex'
+            'Get-LoremIpsum'
+            'Get-PscxUptime'
+            'Get-ScreenCss'
+            'Get-ScreenHtml'
+            'Invoke-GC'
+            'Join-PscxString'
+            'PscxHelp'
+            'Split-PscxString'
+        )
+        RetiredFeature = @(
+            'Pscx.Wmi'
+        )
+    }
+
+    Categories = @{
+        RetainCore = @(
+            'Add-DirectoryLength'
+            'Add-PathVariable'
+            'AddAccelerator'
+            'AddRegex'
+            'Convert-Xml'
+            'ConvertFrom-Base64'
+            'ConvertTo-Base64'
+            'ConvertTo-Unit'
+            'ConvertTo-UnixLineEnding'
+            'ConvertTo-WindowsLineEnding'
+            'Edit-File'
+            'Edit-HostProfile'
+            'Edit-Profile'
+            'Format-Byte'
+            'Format-Xml'
+            'Get-DriveInfo'
+            'Get-EnvironmentBlock'
+            'Get-ExecutionTime'
+            'Get-FileVersionInfo'
+            'Get-FileTail'
+            'Get-TextFileInfo'
+            'Get-Parameter'
+            'Get-PathVariable'
+            'Get-PEHeader'
+            'Get-PscxHash'
+            'Get-TypeName'
+            'Get-ViewDefinition'
+            'Invoke-Method'
+            'New-Hardlink'
+            'New-Symlink'
+            'Pop-EnvironmentBlock'
+            'Push-EnvironmentBlock'
+            'QuoteList'
+            'QuoteString'
+            'Remove-PathVariable'
+            'RemoveAccelerator'
+            'Resolve-ErrorRecord'
+            'Set-FileAttributes'
+            'Set-FileTime'
+            'Set-PathVariable'
+            'Set-PscxLocation'
+            'Set-ReadOnly'
+            'Set-Writable'
+            'Show-Tree'
+            'Skip-Object'
+            'Test-Assembly'
+            'Test-PscxInstallation'
+            'Test-Script'
+            'Test-Xml'
+        )
+
+        RetainWindowsCore = @(
+            'gsudo'
+            'Invoke-Gsudo'
+            'PscxLess'
+            'Test-IsAdminMember'
+            'Test-IsGsudoCacheAvailable'
+            'Test-IsProcessElevated'
+            'Get-MountPoint'
+            'Get-OpticalDriveInfo'
+            'Get-Privilege'
+            'Get-ReparsePoint'
+            'Get-RunningObject'
+            'Get-ShortPath'
+            'Get-TerminalSession'
+            'Import-VisualStudioVars'
+            'Invoke-Apartment'
+            'New-Junction'
+            'New-Shortcut'
+            'Remove-MountPoint'
+            'Remove-ReparsePoint'
+            'Resolve-HResult'
+            'Resolve-WindowsError'
+            'Set-ForegroundWindow'
+            'Set-Privilege'
+            'Set-VolumeLabel'
+            'Stop-RemoteProcess'
+            'Stop-TerminalSession'
+            'Disconnect-TerminalSession'
+            'Test-UserGroupMembership'
+        )
+
+        MoveToArchive = @(
+            'Expand-PscxArchive'
+            'Read-PscxArchive'
+            'Write-PscxArchive'
+        )
+
+        MoveToWinAdmin = @(
+            'Add-ShortPath'
+            'Get-AdoConnection'
+            'Get-AdoDataProvider'
+            'Get-ForegroundWindow'
+            'Get-OleDbData'
+            'Get-OleDbDataSet'
+            'Invoke-AdoCommand'
+            'Invoke-BatchFile'
+            'Invoke-OleDbCommand'
+        )
+
+        MoveToCrossPlatformCore = @(
+            'ConvertFrom-Yaml'
+            'ConvertTo-Yaml'
+        )
+
+        DeprecationCandidate = @()
+
+    }
+}

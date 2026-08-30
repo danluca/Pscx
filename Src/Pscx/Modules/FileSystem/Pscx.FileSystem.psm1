@@ -27,6 +27,7 @@ if (!$Pscx:Session['FileSystem_PrependedFormatData'])
 function Add-DirectoryLength
 {
     [CmdletBinding()]
+    [OutputType([System.IO.DirectoryInfo])]
     param(
         [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
         [AllowNull()]
@@ -67,45 +68,14 @@ function Add-DirectoryLength
     }
 }
 
-<#
-.SYNOPSIS
-    Adds the file or directory's short path as a "ShortPath" NoteProperty to each input object. 
-.DESCRIPTION
-    Adds the file or directory's short path as a "ShortPath" NoteProperty to each input object.
-    NOTE: This filter requires the PSCX cmdlet Get-ShortPath
-.PARAMETER InputObject
-    A DirectoryInfo or FileInfo object on which to add the ShortPath property
-.EXAMPLE
-    C:\PS> Get-ChildItem | Add-ShortPath | Format-Table ShortPath,FullName
-    This example shows how you can add the short path to each DirectoryInfo or FileInfo object in the pipeline.
-#>
-function Add-ShortPath
-{
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
-        [AllowNull()]
-        [PSObject]
-        $InputObject
-    )
-
-    Process {
-        if ($InputObject -is [System.IO.FileSystemInfo]) {
-            $shortPathInfo = Get-ShortPath -LiteralPath $_.Fullname 
-            Add-Member NoteProperty ShortPath $shortPathInfo.ShortPath -InputObject $InputObject
-        }
-        $InputObject
-    }
-}
-
-Export-ModuleMember -Alias * -Function * -Cmdlet *
+Export-ModuleMember -Function Add-DirectoryLength
 
 
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCC+b7MdVID2tQAN
-# pthyp6E4OVquIO8i0Q6zXcNpAJjDn6CCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCfDLWyscV96122
+# mFbBv5WH2OBNPyDj4tNq5gTpdqlvRqCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -284,34 +254,34 @@ Export-ModuleMember -Alias * -Function * -Cmdlet *
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgekqLtqE21+Rld3SvowGm
-# 1JbzAKusFuQ5mwa0i9snBcswDQYJKoZIhvcNAQEBBQAEggIAmKC8Gjh2nXi2qQHN
-# GJgTkRWEnBqW84YRx3pMrYLSc4JHSgnzqdoJIVhoiqWlOW4voUdOX+/M0sc2s0gh
-# bmEL2JyVdroedLoMQ+q7qwzfn/C2BWqUK0t/1KN7ZJBapWmGLeywYyY74/DLlPFn
-# 4HuubVANv9LGG/xJbeos1fC+L3mbGDl08P/YMSgZLDgABtuasCQXdpWIVww5b4c7
-# v8UxNNoYWugQnPudMhd4CMgprF2xdbgDQA5rt00/p1nP+1knxgHY0upuddhfzO5m
-# v4Ruequk5R5jKluF7Z06RUfSH69Fx4F517oI1tTGy5zN/NKiQog5UlUnfxiICv55
-# TJWmHT5kojxUXjOlkoGY5cM0vgimwH6KU+Y0D0x9mUhwAaf1TjHXMGuqi38GExh1
-# 1WeJaJDEiDKfnni5qyh8/fapAbpIR4w4iifUm3QQDDr2s31nZXviG/SHLZzo9r2k
-# dK0DQ0jjGOGEaIoAI2UO9Jw65qQm9vryrU3viBkYmcWWCL02QTgKNwbSWOtdIKdd
-# 5ZQ7VmPX9uV1oEYsPds2FkLq5nxzB4D7rasMToYRHA4WoK+OQr3zeJMVRSrIKRtk
-# fDzBKzlL3WhC6yBnfnfRnrcEuEg6ql0RZJQThgbL/l0N3QrQUd4lYSNTaEejloC0
-# OOGOn1g3en+/m6ezFk/NXpweVyihggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgKPUma+588LNM6yrruFlX
+# +yuL2gTMmyAbKtWlwYWtK7kwDQYJKoZIhvcNAQEBBQAEggIAPzwHbmzNehxshe/k
+# 8mZjyj6KRY9q3SB/Fo5CvxQ1MOdKvhDB8VQ7UVitHiFt31xj3JmXCtha4jrMgObv
+# heBL2MJ7qWyzN8bC+Zkx6zg54W5g4hv73RAnbiA+4NV8VR9lSI+u+ZSMWai27g7J
+# vGkL4j3Qo/b2f+JQo3uy9yU7cUzPeVbaMfUX2rQsXz8UoQ0XBfMv4lxqmlijQc82
+# sYci07XuC3FcYry7RzlbiEcuX/C+Ki/gU0gOF9H4oiD/NjYvqSVxeIP7ZZQsKsWy
+# tG38RNb7wVrMYaG1plhTzVESGJQY5rbYBdJvCCirQNcQQB9bW6h33bb66wO7cDOp
+# zgZy9zXtgHcS459UjNwpEUVjIa+TtXZEWQBHsQQk6s18VS1ZqKoMpAfUI7Ay25Eu
+# 4/7K/321wjR4HD88C4SRoq7edgPX2r58AftP8JmOBXtzgqc9g0Klk47MZijkN1FC
+# GhUS4h5NHk5d0PaRi/M6iOOwtKnxoWmv63GAptA4XIA3ZBHSLpJWgC7gXNLAIT0A
+# z3fn+gXERpFGDFmXAQT54UGR4WZNPx7D7hRa5V6JUrHqRzHMMW0JKb3YFs3xGDdK
+# tW0HVdf2JgoipCJ3qpGtycVWI0bro32tBD67nfRZdUom4ynZHi4hjEv5By8oIc1L
+# pte4pZijYlWxwU1JOIzXbu/xtJWhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODA4MDQ0ODQyWjAvBgkqhkiG9w0BCQQxIgQgNY1VChDwXshQEBWQlg3rwANv3hEz
-# 84t8b186MBEhujMwDQYJKoZIhvcNAQEBBQAEggIAzkH7GJi0BoohkoeySSubKCYX
-# M+DY31ndCt36JX4T8h0copXxsdISmIYbvONZDHejrbEhnyIsv8lqJkRf5opCckbp
-# G8y1U7rKp5FizreBXEioHe8tvdkOdyMz5yW00OeGVCNvqhwGF3eEmH+EprPgGZ//
-# vgw8O/MUMWgl9HrdtAJ2wEC3DGO1Q49nMz4WDcoVOj/ozbll3yEEJ7LnUtTWnA1V
-# 4NYnQ7WruP4Ea/yZjRZaz5z/WqcZavZIUgVFrYDai/U3jc40OPKk/XAV6qrCJusq
-# AWMFthox91t6R6hRJ1tj9vXne0urQBH965JJwUYFNEF4o3WrGe4nx8uuiMAcwLGe
-# 0uXnXuVr/NhuGhR16VUxCfJGmDVM8yW3Bv1jEG+ZDC1jtBTVfiuXKkJml4xycWwj
-# YpYmpLeTsQVXpgxxua2P7eq6TQ8upQpfWWt2sE1It0f1cLb00hUw8iPnf/TTezhx
-# tMdRMalMjlf/ge9fK3l4RGOK1Ci6kxrCxxRQOx38szm6Z9c1NK2EeZ/XLup6IpNg
-# ey48BBG+rWKtffHYWytkRq9f/cpLYLdElhfCSWnH3vevT/zkd7DZk6ycWVfzXn2o
-# TpOEr1gF5Bd5AM3+DQWFZAUR0HYlUmVNkWCRS9YrhmTrTzzafDTnpa8oGtOPsZgZ
-# iBeOQTef2d7oyMAL4SY=
+# ODI5MDM1MzM2WjAvBgkqhkiG9w0BCQQxIgQgGoawADB3k51GAsGVh7Qo0UB9VqMt
+# +c/YgoSwwXG40KcwDQYJKoZIhvcNAQEBBQAEggIAHEYXKYenRjOvGoOz7XBy/QbP
+# YwctZh4xLZkGzjj7yxcJpX6uurfWgm37QoBWqrb7gQaAubx43X3TveVdvk3vK38i
+# hHey0ATneGhcfgzUM6ylMTgTQBVPVCeWfQx3XnCv6IKsWtA1cEEJzQd7rZxFIxpT
+# LKA9Q8tWSl7XC/jE6C0uhsDOWPCJ3slOpfQ3cfeUTkoqR3YVSmJM6LKe7cliFxVO
+# 9kM0Z8qCLpaMmDOpTQlagYshQtYQGt033gWflAju202kLdRvng+wA3TqCrA/uN4B
+# 5+nxSBW0iG0kAkQVlEpuNkqiAzs0szUlolvPTzlDpMVnUe6Wg8Zg0rWhPYwD6O1j
+# iB3MqqEKnVGiEdK8JNxfu2Z9t9XnqRu1NI1+JdKa77QMrg8QARtPoC9Bd9/9smgZ
+# iNx6uT8Sd7E8XG8d3w4vssaCD5LzxYF+aLXte/8+BHGMJIq5nJA1MhXKv94Ip5YS
+# HdU7RTj2WAWCt06+cHae8OIOlK4cxPIzBtMvt3kuCZ9Sllon6cCs9jcRkJU5xfS2
+# iT1XvgD8um+/nZAdRUy0xoN5joUiDfreZPBThmS89FbQgJoEU95kMOsJvI/uFafv
+# qwHqYW1SxuuQL4huGacQS9duRGzKXp3Sm8Kn8fdcaTr4r9VWgMALFZrM/suCU0me
+# jiXpQeXRx1Dxros+81Q=
 # SIG # End signature block

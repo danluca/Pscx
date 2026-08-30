@@ -4,6 +4,14 @@ param(
     [string] $ModulePath,
 
     [Parameter(Mandatory)]
+    [string] $ArchiveModulePath,
+
+    [Parameter(Mandatory)]
+    [string] $TimeModulePath,
+
+    [string] $WinAdminModulePath,
+
+    [Parameter(Mandatory)]
     [ValidateSet('Core', 'Full')]
     [string] $BuildScope,
 
@@ -39,9 +47,18 @@ if ((Get-Module Pester).Version -ne [version]$pesterVersion) {
 }
 
 $modulePath = (Resolve-Path -LiteralPath $ModulePath).Path
+$archiveModulePath = (Resolve-Path -LiteralPath $ArchiveModulePath).Path
+$timeModulePath = (Resolve-Path -LiteralPath $TimeModulePath).Path
+$winAdminModulePath = if ($BuildScope -eq 'Full') {
+    (Resolve-Path -LiteralPath $WinAdminModulePath).Path
+}
+else {
+    $null
+}
 $resultsPath = [System.IO.Path]::GetFullPath($ResultsPath)
 try {
-    $powerShellExecutable = (Get-Command -Name $PowerShellPath -CommandType Application -ErrorAction Stop).Source
+    $powerShellExecutable = Get-Command -Name $PowerShellPath -CommandType Application -ErrorAction Stop |
+        Select-Object -First 1 -ExpandProperty Source
 }
 catch {
     throw "Could not resolve the PowerShell executable '$PowerShellPath'."
@@ -49,18 +66,53 @@ catch {
 New-Item -ItemType Directory -Path $resultsPath -Force | Out-Null
 $testResultPath = Join-Path $resultsPath 'Pscx.Pester.xml'
 $coveragePath = Join-Path $resultsPath 'Pscx.PowerShell.coverage.xml'
+$coverageModulePaths = @($modulePath, $archiveModulePath, $timeModulePath)
+if ($winAdminModulePath) {
+    $coverageModulePaths += $winAdminModulePath
+}
 $coverageFiles = @(
-    Get-ChildItem -LiteralPath $modulePath -Recurse -File -Filter *.psm1 |
+    Get-ChildItem -LiteralPath $coverageModulePaths -Recurse -File -Filter *.psm1 |
         Select-Object -ExpandProperty FullName
 )
 
-$container = New-PesterContainer `
-    -Path (Join-Path $repositoryRoot 'Tests/Pscx.Package.Tests.ps1') `
-    -Data @{
-        ModulePath = $modulePath
-        BuildScope = $BuildScope
-        PowerShellPath = $powerShellExecutable
+$container = @(
+    New-PesterContainer `
+        -Path (Join-Path $repositoryRoot 'Tests/Pscx.StaticAnalysisRunner.Tests.ps1') `
+        -Data @{ PowerShellPath = $powerShellExecutable }
+    New-PesterContainer `
+        -Path (Join-Path $repositoryRoot 'Tests/Pscx.TestDashboard.Tests.ps1') `
+        -Data @{ DashboardScriptPath = (Join-Path $repositoryRoot 'Tools/New-PscxTestDashboard.ps1') }
+    New-PesterContainer `
+        -Path (Join-Path $repositoryRoot 'Tests/Pscx.Update.Tests.ps1') `
+        -Data @{ UpdateModulePath = (Join-Path $modulePath 'Pscx.Update.psm1') }
+    New-PesterContainer `
+        -Path (Join-Path $repositoryRoot 'Tests/Pscx.Package.Tests.ps1') `
+        -Data @{
+            ModulePath = $modulePath
+            ArchiveModulePath = $archiveModulePath
+            WinAdminModulePath = $winAdminModulePath
+            BuildScope = $BuildScope
+            PowerShellPath = $powerShellExecutable
+        }
+    New-PesterContainer `
+        -Path (Join-Path $repositoryRoot 'Tests/Pscx.Archive.Package.Tests.ps1') `
+        -Data @{ ArchiveModulePath = $archiveModulePath }
+    New-PesterContainer `
+        -Path (Join-Path $repositoryRoot 'Tests/Pscx.Time.Package.Tests.ps1') `
+        -Data @{
+            ModulePath = $modulePath
+            TimeModulePath = $timeModulePath
+            PowerShellPath = $powerShellExecutable
+        }
+    if ($BuildScope -eq 'Full') {
+        New-PesterContainer `
+            -Path (Join-Path $repositoryRoot 'Tests/Pscx.WinAdmin.Package.Tests.ps1') `
+            -Data @{
+                ModulePath = $modulePath
+                WinAdminModulePath = $winAdminModulePath
+            }
     }
+)
 $configuration = New-PesterConfiguration
 $configuration.Run.Container = $container
 $configuration.Run.PassThru = $true
@@ -99,12 +151,11 @@ if ($result.FailedCount -gt 0 -or $result.Result -ne 'Passed') {
 if ($result.CodeCoverage.CoveragePercent -lt [decimal]$policy.PowerShellCoverageMinimumPercent) {
     throw "PowerShell coverage $($result.CodeCoverage.CoveragePercent)% is below the $($policy.PowerShellCoverageMinimumPercent)% minimum."
 }
-
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDitYSlq6KDoU0u
-# z6SLUnCSp061uwEyaYYKc9gvpCkxUaCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCMx75fB7ucv92J
+# uHywIrwnp2RQYtjs6kl5gZtZPV7ObKCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -283,34 +334,34 @@ if ($result.CodeCoverage.CoveragePercent -lt [decimal]$policy.PowerShellCoverage
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQg5pinG6iggyB7b0fqf5Xg
-# IKYRlOf+C7qY9H8KTipARS8wDQYJKoZIhvcNAQEBBQAEggIApe20O+OXbBK00ciC
-# qzz1f9SpPs1UiRvOc4fxERV2SCo4jPVjelwZ/uqb2FiPDbF4iWrxJ+X6lI5ckpYF
-# 1nR9Z/dmiu7naElijVAI4vQehH185AGUN+LDKB8rAgFoCUKumTDJIr/gvEry3RMz
-# Fx4Jq3/GsnftqsUgtCfXujsyrwXYbGZKATI2UOo8uhUX4t9yN64KBa+lZnftKJNh
-# PFYl1zUkkWHCFFhwW+PPu4wpT30KzeAqX0u5iVJQqJx1MgeG/wkqyTIsj3aEHxek
-# SH3FG0FxQrAPNHGIIwvRIFKROdRVqbVO8X3JgvTupDggKRVgbVYNxdR0mwHQtNer
-# aaJd+slARkxGp9UWyCUoU1y2/EH/Ca0jEQ/tb5NmiCXGbcEqJOwOdcT5uuR+dJtm
-# qJo+wdEAQuHy7rXexgdrE+SLFsCbvvLlpZbbsK7GXm75o7igee8cQ0Ur32H/KuLo
-# 4eexpGKfxWOuDjcbbpAwOfYYPQnT6AlNyaUcb3s2zCgER3pQs3aTB+9PkVA+dAcz
-# FE+X2gH2DRHckF6WHkst4bT2fcYxxyq3JimBxjuLJ0rN+ssDde6p2X8bvYHOeHzw
-# ygyWSCm+5pPsDVcdLsAzZb8pZVGX+pXzTjJfTHxEGtxo1UFTXGtwd9sLKylW1UW5
-# +QToOAk9xbTyH7nX9nf9K33E4SChggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgiV2ufL9p7xJH3U1IjpBm
+# t5VPYHLV+hXKaOUfJZeeFZIwDQYJKoZIhvcNAQEBBQAEggIAFEc+NHh0WNuuP3ef
+# iQKMj7LnbBSmTs2x4g20vwnESxNbhIcquM/u9n1rfQ3DY5N1f0JO4coI8WSX9h8t
+# 5RxdUt12udtdVanhynD9TlbrVVx3CmPETUnnkytafpbSs5KmNbPkiMoepn7raiKu
+# 6/CXiqr8Zh/VW2qEg0dYANkSYWuiP/OIwxR1RZqgmRbD4p8kkO+xJMru0sZAphA7
+# Kz0FeueG0tduHx1Mew+LQix1ip9UGwbVX6+tm/UDGQRr1qQ/6i9d6iCxIT1w/8W2
+# 8NvxKSxvjXVZ0C1dyG4NNVZf8sSEja0NzAOudIqXoNkOP7EkYv56TXz1aw7ZaoF3
+# ox4ERzxntrC/Kx3JkhtVWgNSn6f/CGtjioHHWxtm/qCtw0gmkQ5H92qRYGzk1B+F
+# Qg18aUKDdhsJWiwTzctbD+YsXVShsycyKZjSrD3sM25jlHADGS13/XiWUzdmfAet
+# i8+TLnI8RzZa6KCIpCYefHNa3gx2XVioHDnTscPq27cLND6EC9H/Lo4CxceKHyVQ
+# t5HB9PX216qtGAmh2JYEKRnefjb70uL765NQR3RgztrC5BHalib3AjSZTYKLSYqZ
+# +bzccnOg0UidRLBNs7kq/0xqI9LBIY7DTUun1ysCqtvg1FUNKJ1tdo0v0CB1boCT
+# lgo0JIrsYG+9fbk6fkXH9j/C1HKhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODA4MDUwNTM2WjAvBgkqhkiG9w0BCQQxIgQgCUnG0MkVAtPQ1Xgio7BOEZspcVXn
-# S81wWKki93wj9hYwDQYJKoZIhvcNAQEBBQAEggIAv/lUTCeJJU8brGw8Zm97Vur/
-# 6h+t2J3dyxFEmyCea7QyBjeNAIcb5jkKRluTphzVFfHZjWwzUhvMMtV45QlAyWJe
-# xMP+8ZmSzZqG/tfWrOVfsf+pjP1FaeWNPCNv0nIDgL4QkKtRfuj68prGceV7QF3J
-# m9q6j/lu2usA8PM5PHNKYvdqiLrbnSZaNY17jy31JaILoATYfctvVK2BUT+W9b24
-# PPZyLCnBlhybtZKBpbItZaVQy0j5B/ZnIgs99TtblxCfShbYcktJIpECevKBhMrf
-# GQ9/1T7i12tzZDOwMSHfgyBNUBjkialSVhegzXobBxRCwRXESArFwze9InuCTnUH
-# 1XMbai1qA+mrR5hsx1sB16LGiB+ipoou0gnNqeLFV3TZUnNiBbIfNr2XhZJMBmVG
-# GmaYpIbMMgV9EKMd12xcNO+WgxZ13zEZKaWbCeBEr4xBgaKJDxe3NJqigdsavnuc
-# 9sncaZitn+Jf8MNh1ZuptPZQM3/BV0UK0iuHVGmnsE/xltIZQibbwHrxR5Esoi4/
-# kBAoqHgcCKxe/g/Sa9naaYhpfB3jrzqwo5GgJffSMqS+jrTCzE4yIXzVvJieYSk8
-# 4DHima16v6YX3maYHc0BHPAakT1CxmRwM6zbZg71yPGfzK1BWnS8l7ab4m2nX2HS
-# EtEShtWVjFsDJSU3yVM=
+# ODI4MTkyNjEwWjAvBgkqhkiG9w0BCQQxIgQgAShHz0+hqqdjvDDKrlgR5nyX/OXe
+# 09xNWynfjdSHN/gwDQYJKoZIhvcNAQEBBQAEggIAOiBL11qNN/gVuXzBPCusnDQF
+# sqlcMXx8bte0/2/vzCbW0ILo8WLKO5VRD4EWxhyiQmmJEThfpEmwOaQPKPrze+9o
+# 38Amthl6Z88uHyuID9TjeVtEZaYQaGdXKNB75URjZ5AwvJBcfcFVPTHBg3UN74J2
+# UdGW0TJh+X+AmA4HaKWrYbh5oyuhRDCzh6zb4e6GQ/HLKcCXUYFh8eChvrpYU9gO
+# PxLK0y1JswjLLsWndz/Jm/HAyL9i8XhBAJg0oHKANsxQ1yOsyqDHE0xoqWLC4GVu
+# 8uMJdxviEfkLI+rg6LU1TMUwLO4E4refwcHlrr0lK2jLdWdFmTJ+9a8346Fy+o8Z
+# a2hVy4RrE0+UKMhZQxDOI+uh4oz5b8KzRuLcrQuKe3t2JA0phEkuqcfWO9e2RsdR
+# U6dU66hX2+jWg9VJKTGMJhBkrELny+kgzaFixPiZWQ2Do4wGnuORjngHn3Mnepf8
+# Wm7rqnxCsksh9zOTnJzxjL9Pu/vttAJQ2Xccc0SRAsLcD3lavmyYjn4tS3HZv58g
+# Fuh6WcrH6aa0QYROoQRzWEqjOR6/j8of/fGX0WGExH8jCfMYEH4oPhhMnzM+qAqo
+# BQ0Y9PDN6eNVYAq5iGKQDt06CWKzx9aIiG2BVnA75P17BxlbDHeXv+fziE6j9SSe
+# 96x8rK4ifJTRai82FsM=
 # SIG # End signature block

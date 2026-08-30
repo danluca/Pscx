@@ -15,6 +15,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Pscx.Commands.IO {
+    [OutputType(typeof(FileInfo))]
     [Cmdlet(PscxVerbs.Edit, PscxNouns.File, DefaultParameterSetName = ParameterSetNoFile, SupportsShouldProcess = true)]
     [Description("Edit file with configured editor - VSCode, Notepad++/TextMate, default for OS")]
     [ProviderConstraint(typeof(FileSystemProvider))]

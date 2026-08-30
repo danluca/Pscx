@@ -9,8 +9,9 @@ using System.Runtime.InteropServices;
 
 namespace Pscx.Win.Commands.Com
 {
-    [Cmdlet(VerbsCommon.Get, PscxWinNouns.RunningObject), 
+    [Cmdlet(VerbsCommon.Get, PscxWinNouns.RunningObject),
      Description("Retrieves currently running COM object")]
+    [OutputType(typeof(PSObject))]
     public class GetRunningObjectCommand : PSCmdlet
     {
         private readonly List<object> _runningObjects = new();

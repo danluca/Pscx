@@ -10,61 +10,39 @@
     ModuleVersion      = '0.0.0'
     RequiredAssemblies = 'Pscx.Win.dll'
     RootModule         = 'PscxWin.psm1'
-    NestedModules      = @('Pscx.Win.dll', 'SevenZipSharp.dll')
-    AliasesToExport    = '*'
+    NestedModules      = @('Pscx.Win.dll')
+    AliasesToExport    = @('ln', 'rvhr', 'rvwer')
     CmdletsToExport    = @(
-        'Invoke-OleDbCommand',
         'Remove-ReparsePoint',
         'Get-RunningObject',
-        'Get-SqlData',
         'Test-UserGroupMembership',
-        'Get-DomainController',
-        'Get-AdoDataProvider',
-        'Get-OleDbData',
-        'Write-PscxArchive',
-        'Read-PscxArchive',
         'Get-ShortPath',
-        'Expand-PscxArchive',
-        'Get-AdoConnection',
-        'Get-PscxADObject',
         'Get-Privilege',
         'Remove-MountPoint',
         'Get-MountPoint',
-        'Invoke-AdoCommand',
         'New-Shortcut',
-        'Get-OleDbDataSet',
         'Set-VolumeLabel',
-        'New-Hardlink',
         'Get-OpticalDriveInfo',
         'Get-ReparsePoint',
         'Set-Privilege',
-        'Invoke-SqlCommand',
-        'New-Symlink',
-        'New-Junction',
-        'Get-PscxUptime',
-        'Get-SqlDataSet',
         'Invoke-Apartment',
         'Disconnect-TerminalSession',
         'Stop-TerminalSession',
-        'Get-TerminalSession',
-        'Get-DhcpServer',
-        'ConvertFrom-Yaml',
-        'ConvertTo-Yaml'
+        'Get-TerminalSession'
     )
     FunctionsToExport = @(
+        'New-Junction',
         'Resolve-HResult',
         'Resolve-WindowsError',
+        'Stop-RemoteProcess',
         'Import-VisualStudioVars'
     )
     FormatsToProcess   = @(
-        'FormatData\Pscx.Archive.Format.ps1xml',
         'FormatData\Pscx.Security.Format.ps1xml',
         'FormatData\Pscx.TerminalServices.Format.ps1xml'
     )
     TypesToProcess     = @(
-        'TypeData\Pscx.Archive.Type.ps1xml',
-        'TypeData\Pscx.TerminalServices.Type.ps1xml',
-        'TypeData\Pscx.Wmi.Type.ps1xml'
+        'TypeData\Pscx.TerminalServices.Type.ps1xml'
     )
 
     # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
@@ -73,7 +51,7 @@
         PSData = @{
 
             # Tags applied to this module. These help with module discovery in online galleries.
-            Tags = @('Utilities','Windows','PSCX','ActiveDirectory','WMI')
+            Tags = @('Utilities','Windows','PSCX','ActiveDirectory')
 
             # A URL to the license for this module.
             LicenseUri = 'https://github.com/danluca/Pscx/blob/master/LICENSE'
@@ -93,8 +71,8 @@
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBCYV7XFwoFzAv4
-# cRqet5yDLeLceXtUx5KIw0SXBgBso6CCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCB6Fz8Sz78JckqD
+# KupMNo1/jvfVMlHHt9K5uxZlGCPDGqCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -273,34 +251,34 @@
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQg9zKZnd52cghEQfCZytAx
-# T85NhqN875HijkeTBmrJMJwwDQYJKoZIhvcNAQEBBQAEggIADv5bor685UsQuTog
-# p+/lHYCblix18ZyWLynGflzeR6CPb9sP8SXYGDJKA665HuYBziCeHFi1+6LhNzQi
-# od4UBjiIIA+HHPRNTiPAe+oYD08Mppk6DJ9chXsBwxeV04dz9W3xuXT4mYkgkAkc
-# Tjjs0BeQq65QHti6FTgKzTucZRxl0rf4XU5nboMxeMj0E2ZlZMQwPJT32VcnO5N0
-# WcKoyDH6WzoXTunBDzTPyYYuV1TSDt+DgT0QMMhi3XucpLwlvO0E/v+K1CTuDgXb
-# TXXg3kXOIuYqAtIkMMSa9wFLiMKxZQZ9oukj0jnbZlgofKwwNYJBk51jCPHfq/Ym
-# kfFX7mYRbORBTndtfvDMasCr6AZDT0mOqbirGuUyr2yS2darI2K2mzjvNBGewUWt
-# ZLTGed8PYvu1uTjK3Vvz0TQgFY+CLToZtcM/yf9dnK9ZMJReK2mIlIk9VPiPG5kD
-# CG4WaMLFj6su3xFnpuC+XH4j2K72Qa8hStxG3QxUMC34Oyr/v7oqWDHIZE+6ngHW
-# efwBSCEtpwuRMbeuU1N2L+uz+qGiANx9ZCrwNySXB2dLDEiZWmbwMP7VP5kKtBYm
-# LyiTOyNs2N+AwY1j0p1Uw1aDwpx3ZS5eEr0Gm4FqhEh3Nr9EE2TFH8Er5zC8prKl
-# lxOUjFX6EzBU9kQx1Boxf4B/CK+hggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgO6qEgoZC/KLazRvTtkvt
+# Uu27P2+hzUIKY+z5F2QNlYwwDQYJKoZIhvcNAQEBBQAEggIAqIN/9F9/84g3+26+
+# pij0HKSu7qp2PJs9Li1KhLUwUWKDkFq2sjtW2ALewkoeo3ElykDVAOkxLlcusk+j
+# /3e9vcpmG1202SxFrjy78ZLKlEwlUu+sLpMlTYTg64dNeMHXwRawAqNe4KILTYEE
+# TMtXDpJxDg1HB9Sf4Q1TGA9AeJT4E8z2HJ5ZzTTIPnMi2gsa/kpBPXnK89lqGSzT
+# NJpWod7ACtOskdrDJrfJdGV5XE69d442W2qrC//Iw+TJxzIcQ/I46H4SGWDjuB8q
+# NcH74F+zH6pNyjF2lFsWAp8s4DwY5vThumurN8QE5POm5PzfdgLRMQUnQP1cYjlc
+# OCqZoIOtocLsunLCWcM1PtMTtxSM5X0M6jWpTif8Vw9ctfLxsQyK4dAAhToKqUlj
+# iC70BK7sLhYn12az6mSXD+JxTI1auQK6IlGfH/zBqQNGWKbZd/mSeNZ2WmUSlK16
+# s8QFr//KkfiCCw23I3BuIIiRJwH48YfS7TMox6utkoqEIxEGjh4ht8s1AW56aAyP
+# WLgnuufoQsI1PgUVWK+PPgflHLbGRObqKUPuqHWG9D0keysi1A/mUOo5boVo9iZU
+# hLbBedL4fHlMveiBVCYS07AUhsZFnaaa+BdY/pK5b7tDu5C4p9nQ8hO/4ii5SqJw
+# Ag0qMSH5IA0ewzGVfHjCz6vKH9WhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODA4MDQ0ODMxWjAvBgkqhkiG9w0BCQQxIgQgGs8qBuHyPGeW8T6s+e7R7NR0oyKw
-# 4zPwH3M7VtBgJ7IwDQYJKoZIhvcNAQEBBQAEggIAhQ1OM6CQN25Fhwtnj5wEuckx
-# mYSNOH2CBBeU3nm8ppfuaAWiJ0h8GXuoA2yikbvglboVjQ2QCAHJr0NnAfvSQQeG
-# 0vPMbh0xP28zn0KHaeSbDwr5T5ACjzZI6We6nPmPZRhPAilVJpDd+9NFiLbFojG+
-# EeL5fqjmKPSo0tZagdJE+fruSuLEHCG+2m4uu1Pd6q8/+KrZBVAeb/9CNjpLojro
-# po88t13QNj7X7SF04zxoR6OoqzYvB+SaWBdT73SbV72T3CDPrSpJrrQeaoSEQleV
-# HlarFLV3Ay0QmD7jHtVDZAq8WoGCjWRaeBg057u6i6LBBPzhNqSeGQUrY4yXADUx
-# qFd5zpz11Y97T+CON78waiCOZ1GC1+R2CAFjfsNcsSTq+tPRqtq8Ff7HBhlQoJch
-# fPOninbcsiESoEQLG/ALEijJy/Ja/ZeMVIrYZhj2uPx0Pfgl+gfUlkXnJmzGFnwJ
-# b2WAOkr0XEmcHfy5OdO3dpgXQgWX7Fg0cgtGeCtiteG7A2sUl+akZUH1vIbb89KH
-# loDvtzD5yOnIjX7vxMSsawU3h6CF8MReU5NcfYOXheDkimkFlZwRaSMVQ09Fu8Ce
-# g300K8elRg6lsU1H6Wg6P59RGrmh1Rfg+YqDFpRBli2pJ3dgZEmJPmi2dJesZwsS
-# 2t/BPai+S6PH3aYIaCs=
+# ODI5MDM1MzMzWjAvBgkqhkiG9w0BCQQxIgQgFPeZcH7gNFLLiHzfObRNNj14fNyA
+# u/1ABKDdaGa+9sUwDQYJKoZIhvcNAQEBBQAEggIAB3dRQ6b9XnKBO26G81adu5BK
+# t39k/ZkY+iqYKUu0wFHuiNSmuV2WcMvnnka8ZaOkj8xgDa7Zkbhhgjcld0MFxfXt
+# 6QOgaGp8gk9yw/m76WeSnUfxtmgrBYFYAOgVzK2MMuu7FFsePtWotOp9nYNpPlxu
+# HW0vFTiIvmnCcfXaDrRsJY0ZZQc0yUvaU/2zL+Ofx368Cw4dy26GBKa6tlACBRTT
+# tDoeCJUdxkN6ct70/vqmu/UfzWLPPpGl0EFgWQ9YffKxqTYXeknnCdkudky85OaA
+# cRJqTKVK88bEQxAeHJLamQlryYOcESr5LFZK9sQceEuGtsJmx8kehGJxLwnR2gjg
+# owQIHhm5IYGyMQY20eZe4e0JUCm5SPn1sdDiKg8/KHmcCm2qJsWHaQvaohd7TkzA
+# 1OLA8MspUZpkawoOExGJ++emqlU4MzHXsXEKCXEAXeEfhEvnJuGNTPBfOU6q4/8x
+# AO1Inux7alnH0qj3anDP9Qa1EGvkgqYFMMWe7EMDG1Mu9w55vVu2u1p9fjQ/NGcN
+# rcjEoN/yf0K/3/v/S267AUCgu3E2gMCOBqcmj/Z+vkj4e1tExK0w329jS8eDKBlQ
+# DzsWUHkXvteOBHCNdgT/RbnHNsbNw40wB3Jr48/2Zg/HL6bI9+fsN6veidSjUGjh
+# 3iGDWg7MZXPIQhTm7Zw=
 # SIG # End signature block

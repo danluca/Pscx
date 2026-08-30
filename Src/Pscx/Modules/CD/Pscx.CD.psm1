@@ -12,18 +12,6 @@ Set-StrictMode -Version Latest
 $backwardStack = new-object System.Collections.ArrayList
 $forewardStack = new-object System.Collections.ArrayList
 
-# When the module removed, set the cd alias back to something reasonable.
-# We could use the original cd alias but most of the time it's going to be set to Set-Location.
-# And you may have loaded another module in between stashing the "original" cd alias that
-# modifies the cd alias.  So setting it back to the "original" may not be the right thing to
-# do anyway.
-$ExecutionContext.SessionState.Module.OnRemove = {
-    Set-Alias cd Set-Location -Scope Global -Option AllScope -Force
-}.GetNewClosure()
-
-# We are going to replace the PowerShell default "cd" alias with the CD function defined below.
-Set-Alias cd Pscx\Set-PscxLocation -Force -Scope Global -Option AllScope -Description "PSCX: Enhanced set-location cmdlet with history stack"
-
 <#
 .SYNOPSIS
     Set-PscxLocation function that tracks location history allowing easy navigation to previous locations.
@@ -86,6 +74,10 @@ Set-Alias cd Pscx\Set-PscxLocation -Force -Scope Global -Option AllScope -Descri
 .EXAMPLE
     C:\PS> set-alias cd Set-PscxLocation -Option AllScope; $profile | cd
     This example will change location to the parent location of $profile.
+.OUTPUTS
+    System.Management.Automation.PathInfo when -PassThru is used while changing
+    location. Invoking the command without a path emits formatted stack entries.
+    CD_GetChildItem can additionally enable child-item output after navigation.
 .NOTES
     This is a PSCX function.
 #>
@@ -401,11 +393,12 @@ function Set-PscxLocation {
     }
 }
 
+Export-ModuleMember -Function Set-PscxLocation -Alias @()
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAEGVuhMA7c8ZiN
-# V4AHMFE2TS/bg21iQ38fwOljPoovv6CCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCfPe2Q0+D3bw1r
+# tmuDNb5QixNK86U/3MCZ/H+sSLtepaCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -584,34 +577,34 @@ function Set-PscxLocation {
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQghisyJiFjUE6lBJbzxYDw
-# I4dpk+Ekoh8kbcAXojGefiEwDQYJKoZIhvcNAQEBBQAEggIAN3zZTfyTNeUlN9My
-# IW1bvFF4SqoGC3JTU/jl33NCYKZSfZsAWMNqwVpN4bxrkgJFowchRqdklf5XtoX7
-# 6aOZrmQe/gvpOnl0UqaeZlEeBx24CLllBvxNCNnXqXsI6utsQDLKDvOXCDKIOLXs
-# xW+f1nwj8SmzGcfsi8BwTq1pDsG6ogXFmxrgJNvdyRkQZ5w+0YP5asTzE+daY8o9
-# drYZN2zBBMDg4zxDgKTLN6S/lt4XuZshYLVjvwwoy4nkQpIzH0P4zC3Oha9w7Pzf
-# Roe982Ehvz4bzGzNVzy280ZGCFdetvPxeR9bo52ckCGnsk0KXEwpenQyk5ksUhtP
-# 3grO1Xc5icIuuw9fOC5kFaOyEUQKls+iyCAk6x5GZ/VgI2J7i1oKxmqbG9vRFnNU
-# HLZebUNsdFeCoI3i1XJr3harRgooMnwW2awpoGLKEzmC3mJmnSPlK1Ndh5/+Sb/G
-# Q6yhC2utzNLzGQkQUS7gf+iWhrfU9g+yaH2BgQqS0C1sXTe8RoQUED70KQcD1obp
-# nGscfYANTQRZ7P6H2u9DoKE0rxaJYKf5z70KmtvcslsLdzpJLzlKZr5E+asjPiiP
-# CNfWs7Z8F9nrd0wpkdnv1Sdf1uyG/8rYRxEaGfeiWr2cJhrIfvYmtcR5ipwHFtck
-# uJcbr6oHstM9ecivjItC67QqzQihggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgvBqHXnZ59YSiK1w9LNxw
+# PWKWyq7CYI0bt7LGsai6Od8wDQYJKoZIhvcNAQEBBQAEggIAjvGwghM8Nn/vBPwj
+# xRfq0uppaVvdLiMucTj5rCROP8ptV3mxpGAytyMIb2Vdx3DzngQc8J49iLLdvhFT
+# 6q/QpWQmqaUIcNu4jPEY1zEvsmu8GgWuwTzZ7l+aJhza2Q3vJqfwI7sbUJyKBGrM
+# RQY9lQup+NFfJr7rzm69GfcuTdI/Myb9a36GZy7LkT9t9VCov/sWLxeEsZRfjyXC
+# OsN6wugDXdDNjeLPQT893uvfVm0EYVc5xxMKfK0Bl9KsPolzKfDPIGfdD1yjACCW
+# I56xAqFHuWYEVAzBMYZFKV/ME5xif8VLtGeYdnKTF7LUH7IpWrRVTjtvvWMRYDo7
+# p2g5gB3oHIrlF7eXI7iXPgxjyB4sseRULRm8cj7upvIc2VANt4OcYpJTppUkgIwy
+# YE7eCQ+TOSn6/pICSZOF+xe7f0fFIARWXryjd1lQ8HPUWN0oR8/GpySxqbj11EPN
+# 8jw09O1t4JAAjkGHP5UvPuy4RLE0Kq4Yt6JIMcBp49HgXajzO6CYFm57qq5w3UtV
+# P/ysnQ/ghQAlx0MpRn9d5yp+xUrBlKe+WLp5vB2gIE0QI1/H5SUf9djx9MWSAxdA
+# lsG4Ep5++Htf+3tYwpXCAdR1dxvozqtQCIbvowAttwGpVPMZ9Rgx/3lTyI6Nsf4t
+# PnR29/J6koc6DSGTqhNkrOvfSpmhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODA4MDQ0ODQxWjAvBgkqhkiG9w0BCQQxIgQgAOwfviiQd4ScC2NhEiJUh4r9ou9v
-# UAjfuwVV6sVs5c0wDQYJKoZIhvcNAQEBBQAEggIAvtC2Dr22GzjSnrEBourqMitr
-# Cz7ZtnKr/niXx30qV7yWbJ9HOWMa8Hy/AfvB3fnn8fG0g/8FoOoMBQgnAuYpS3va
-# WulyBzMVyri1hIjPgxUXm4642Tq/jKNuNCoRE+3fFoUBvczxhBmkc1myq/q5Rn4+
-# WfLDQDI9GXYDtTSw1tdKgBWKgeb2ZcxklQR9YbgKe7S8NqJ1vpo9klO4QSUJ8owD
-# HLI9ylAH8Buq7KtmakxdyYJpweQA94M4bfBGOuYK6Yu7Qew/Tc7F2yNYUitfKTCt
-# in7Ds0HIryE3p829escM4yMz3whOldVEvrAolj16Vz24+v9prpTrnJSFAOgDAosH
-# B+HQ2lXSpbuuTNyg9M3QdVmLalPd7sTjZhPBoYvxFIQQpb5CpsbpqvFGb1vvjR/M
-# aXiTJYTuL6f04X8G4yQHXYiRG5ncilUvJO90XRqBngAIqPxaRi9fV1UjKc0K0Wsx
-# 9eEKs7CXXkEfYDjlQlEdIwa9C6cjfOL7wHJ4p09gOmH94gl26dIfN6qy9K3kld0i
-# j+W5BhBBOKZXsdw6JS7Vyl/EtSBz3Ns0Gb+MLOAwOvJrCBKz/BCsr6IfQnWhQQHk
-# DygUvBJrBjIWak7V9xbm1CqSNH0yBsekgW3cOJuBD0ppiR199Uo/M7WnFCeieMzN
-# mtRchGppzmQvunVFyjg=
+# ODI5MDM1MzM1WjAvBgkqhkiG9w0BCQQxIgQg3iijfwAkh7RclWNhUkMAqF4vrFOQ
+# KoFzZuuHFf/ktOcwDQYJKoZIhvcNAQEBBQAEggIADHQaH13aqajV8xNneM3C8M4W
+# BBKTh7UGXOvzAOfvZj8MwTKr2KXXQhmA8xEr1jrnHEj/2t3Qy126KPUQ9BMFlXes
+# P/LjGLuIPfz88s+Xv08E1zMUCta9Y6E7IiCUUHuzgUnCDejaInULpSgih7+YgKpK
+# jd2ibDc0T+dgle1k9syZGKkZAPm+hUoWqxn7h2kI75bF8gsFOzzZ+MBjID/37O2E
+# N0my1PLZ22MuOxszU6XAGnWmn5HT8k6xA+TQCZlhmUSKHTT+fm74Qh5axmd1BjGH
+# 6uShqMGMCw+M29hWeeMfNWfT8gRpGPDg0agxJJCXFqEIFF5fU4FFCCwUsIwHetSL
+# gc/Oj/nETl2CBgU4HLhFEUM6yjGR2U+8RdbHMGCpHGhezhqTQQvMO+4tcsGFFMv1
+# R25OlgMKC0Ct3e26e2pCS8EQ5moByc2HsZ37M4HB8VFpamZN+gDpPFxWa1OvMVa0
+# FSRe77hoNeupYYKXlbrpbSIz2r45XRIo9enGth2c62OApzAJA91tzUNcH2v4PWJ6
+# l7aHnPNCFLXTSSl2RvEj/w/n6pvVep6fVMqRXjN9BEc/JI5WMtrWSH6tEUH8uSY8
+# DhN2sCYxUfPALVlsAA7qNsw5z1dg7Q87aCFzawdFwi9PMuqwSZmeqhq1/G0ihjjd
+# VaCfgFdRmO5Ynh6H/Rw=
 # SIG # End signature block

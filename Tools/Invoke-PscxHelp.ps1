@@ -8,7 +8,10 @@ param(
 
     [Parameter(Mandatory)]
     [ValidateSet('Core', 'Full')]
-    [string] $BuildScope
+    [string] $BuildScope,
+
+    [ValidateSet('Pscx', 'Pscx.Archive', 'Pscx.Time', 'Pscx.WinAdmin')]
+    [string] $PackageName = 'Pscx'
 )
 
 Set-StrictMode -Version Latest
@@ -39,14 +42,49 @@ if ((Get-Module Microsoft.PowerShell.PlatyPS).Version -ne [version]$platyPSVersi
 $modulePath = (Resolve-Path -LiteralPath $ModulePath).Path
 $outputPath = [IO.Path]::GetFullPath($OutputPath)
 $commandDocsRoot = Join-Path $repositoryRoot 'docs/commands'
-$packageNames = @('Pscx')
-if ($BuildScope -eq 'Full') {
+$packageNames = @($PackageName)
+if ($PackageName -eq 'Pscx' -and $BuildScope -eq 'Full') {
     $packageNames += 'Pscx.Win'
 }
 
+if ($PackageName -eq 'Pscx.Time') {
+    $manifestPath = Join-Path $modulePath 'Pscx.Time.psd1'
+    $manifestData = Import-PowerShellDataFile -LiteralPath $manifestPath
+    if (@($manifestData.CmdletsToExport).Count -ne 0 -or
+        @($manifestData.FunctionsToExport).Count -ne 0) {
+        throw 'Pscx.Time is an accelerator-only module and must not export commands.'
+    }
+
+    New-Item -ItemType Directory -Path $outputPath -Force | Out-Null
+    $aboutMarkdownPath = Join-Path $repositoryRoot 'docs/about/about_Pscx.Time.md'
+    $aboutOutputPath = Join-Path $outputPath 'about_Pscx.Time.help.txt'
+    $aboutLines = [Collections.Generic.List[string]]::new()
+    $aboutLines.Add('TOPIC')
+    $aboutLines.Add("    about_Pscx.Time (version $($manifestData.ModuleVersion))")
+    $inCodeBlock = $false
+    foreach ($line in Get-Content -LiteralPath $aboutMarkdownPath) {
+        if ($line -match '^# about_Pscx\.Time\s*$') { continue }
+        if ($line -match '^## (?<heading>.+)$') {
+            $aboutLines.Add('')
+            $aboutLines.Add($Matches.heading.ToUpperInvariant())
+            continue
+        }
+        if ($line -match '^```') {
+            $inCodeBlock = -not $inCodeBlock
+            continue
+        }
+        $plainLine = $line -replace '`([^`]+)`', '$1' -replace '\*\*([^*]+)\*\*', '$1'
+        $indent = if ($inCodeBlock) { '        ' } else { '    ' }
+        $aboutLines.Add("$indent$plainLine".TrimEnd())
+    }
+    $aboutLines | Set-Content -LiteralPath $aboutOutputPath -Encoding utf8
+    Write-Host "Generated accelerator-module help in $outputPath."
+    return
+}
+
 $markdownFiles = @(
-    foreach ($packageName in $packageNames) {
-        $packageDocsPath = Join-Path $commandDocsRoot $packageName
+    foreach ($docPackageName in $packageNames) {
+        $packageDocsPath = Join-Path $commandDocsRoot $docPackageName
         if (-not (Test-Path -LiteralPath $packageDocsPath -PathType Container)) {
             throw "Command help directory is missing: $packageDocsPath"
         }
@@ -79,8 +117,18 @@ $commandHelp = @(
 )
 
 try {
-    Import-Module (Join-Path $modulePath 'Pscx.psd1') -Force -ErrorAction Stop
-    $commands = @(Get-Command -Module Pscx -CommandType Cmdlet | Sort-Object Name)
+    $manifestName = "$PackageName.psd1"
+    Import-Module (Join-Path $modulePath $manifestName) -Force -ErrorAction Stop
+    $commands = if ($PackageName -eq 'Pscx.WinAdmin') {
+        @(
+            Get-Module $PackageName -All |
+                ForEach-Object { $_.ExportedCmdlets.Values } |
+                Sort-Object Name -Unique
+        )
+    }
+    else {
+        @(Get-Command -Module $PackageName -CommandType Cmdlet | Sort-Object Name)
+    }
     $documentedNames = @($commandHelp.Title | Sort-Object)
     $commandNames = @($commands.Name | Sort-Object)
     $missingTopics = @($commandNames | Where-Object { $_ -notin $documentedNames })
@@ -95,7 +143,7 @@ try {
         'ProgressAction', 'Verbose', 'WarningAction', 'WarningVariable'
     )
     foreach ($help in $commandHelp) {
-        $command = Get-Command -Name $help.Title -Module Pscx
+        $command = $commands | Where-Object Name -EQ $help.Title | Select-Object -First 1
         $actualParameters = @(
             $command.Parameters.Keys |
                 Where-Object { $_ -notin $commonParameterNames } |
@@ -127,14 +175,14 @@ try {
     }
 }
 finally {
-    Remove-Module Pscx -Force -ErrorAction SilentlyContinue
+    Remove-Module $PackageName -Force -ErrorAction SilentlyContinue
 }
 
 New-Item -ItemType Directory -Path $outputPath -Force | Out-Null
-foreach ($packageName in $packageNames) {
-    $packageHelp = @($commandHelp | Where-Object ModuleName -EQ $packageName)
+foreach ($docPackageName in $packageNames) {
+    $packageHelp = @($commandHelp | Where-Object ModuleName -EQ $docPackageName)
     if ($packageHelp.Count -eq 0) {
-        throw "No command help was found for package $packageName."
+        throw "No command help was found for package $docPackageName."
     }
     $generatedMaml = @(
         $packageHelp | Export-MamlCommandHelp -OutputFolder $outputPath -Encoding utf8 -Force
@@ -142,40 +190,40 @@ foreach ($packageName in $packageNames) {
     foreach ($file in $generatedMaml) {
         Copy-Item -LiteralPath $file.FullName -Destination (Join-Path $outputPath $file.Name) -Force
     }
-    $nestedOutputPath = Join-Path $outputPath $packageName
+    $nestedOutputPath = Join-Path $outputPath $docPackageName
     if (Test-Path -LiteralPath $nestedOutputPath) {
         Remove-Item -LiteralPath $nestedOutputPath -Recurse -Force
     }
 }
 
-$aboutMarkdownPath = Join-Path $repositoryRoot 'docs/about/about_Pscx.md'
-$aboutOutputPath = Join-Path $outputPath 'about_Pscx.help.txt'
-$manifest = Import-PowerShellDataFile -LiteralPath (Join-Path $modulePath 'Pscx.psd1')
-$aboutLines = [Collections.Generic.List[string]]::new()
-$aboutLines.Add('TOPIC')
-$aboutLines.Add("    about_Pscx (version $($manifest.ModuleVersion))")
-$inCodeBlock = $false
-foreach ($line in Get-Content -LiteralPath $aboutMarkdownPath) {
-    if ($line -match '^# about_Pscx\s*$') {
-        continue
+if ($PackageName -eq 'Pscx') {
+    $aboutMarkdownPath = Join-Path $repositoryRoot 'docs/about/about_Pscx.md'
+    $aboutOutputPath = Join-Path $outputPath 'about_Pscx.help.txt'
+    $manifest = Import-PowerShellDataFile -LiteralPath (Join-Path $modulePath 'Pscx.psd1')
+    $aboutLines = [Collections.Generic.List[string]]::new()
+    $aboutLines.Add('TOPIC')
+    $aboutLines.Add("    about_Pscx (version $($manifest.ModuleVersion))")
+    $inCodeBlock = $false
+    foreach ($line in Get-Content -LiteralPath $aboutMarkdownPath) {
+        if ($line -match '^# about_Pscx\s*$') { continue }
+        if ($line -match '^## (?<heading>.+)$') {
+            $aboutLines.Add('')
+            $aboutLines.Add($Matches.heading.ToUpperInvariant())
+            continue
+        }
+        if ($line -match '^```') {
+            $inCodeBlock = -not $inCodeBlock
+            continue
+        }
+        $plainLine = $line -replace '`([^`]+)`', '$1' -replace '\*\*([^*]+)\*\*', '$1'
+        $indent = if ($inCodeBlock) { '        ' } else { '    ' }
+        $aboutLines.Add("$indent$plainLine".TrimEnd())
     }
-    if ($line -match '^## (?<heading>.+)$') {
-        $aboutLines.Add('')
-        $aboutLines.Add($Matches.heading.ToUpperInvariant())
-        continue
-    }
-    if ($line -match '^```') {
-        $inCodeBlock = -not $inCodeBlock
-        continue
-    }
-
-    $plainLine = $line -replace '`([^`]+)`', '$1' -replace '\*\*([^*]+)\*\*', '$1'
-    $indent = if ($inCodeBlock) { '        ' } else { '    ' }
-    $aboutLines.Add("$indent$plainLine".TrimEnd())
+    $aboutLines | Set-Content -LiteralPath $aboutOutputPath -Encoding utf8
 }
-$aboutLines | Set-Content -LiteralPath $aboutOutputPath -Encoding utf8
 
-$expectedFiles = @($packageNames | ForEach-Object { "$_.dll-Help.xml" }) + 'about_Pscx.help.txt'
+$expectedFiles = @($packageNames | ForEach-Object { "$_.dll-Help.xml" })
+if ($PackageName -eq 'Pscx') { $expectedFiles += 'about_Pscx.help.txt' }
 $missingOutputs = @($expectedFiles | Where-Object { -not (Test-Path -LiteralPath (Join-Path $outputPath $_)) })
 if ($missingOutputs.Count -gt 0) {
     throw "Generated help output is missing: $($missingOutputs -join ', ')."

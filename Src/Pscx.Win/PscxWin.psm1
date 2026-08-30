@@ -1,9 +1,133 @@
-﻿# -----------------------------------------------------------------------
+# -----------------------------------------------------------------------
 # Desc: This is the PscxWin initialization module script. This module is
 # not meant to be used standalone, only as a companion module for PSCX
 # when running on Windows OS
 # -----------------------------------------------------------------------
 Set-StrictMode -Version Latest
+
+<#
+.SYNOPSIS
+    Creates a Windows directory junction.
+.DESCRIPTION
+    Provides the familiar PSCX command name while delegating to New-Item with
+    ItemType Junction.
+.PARAMETER LiteralPath
+    Specifies the path of the junction to create.
+.PARAMETER TargetPath
+    Specifies the existing directory that the junction references.
+.EXAMPLE
+    New-Junction -LiteralPath C:\Work\Current -TargetPath D:\Releases\Current
+#>
+function New-Junction {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    [OutputType([System.IO.DirectoryInfo])]
+    param(
+        [Parameter(Mandatory = $true, Position = 0, ValueFromPipelineByPropertyName = $true)]
+        [Alias('Path')]
+        [ValidateNotNullOrEmpty()]
+        [string] $LiteralPath,
+
+        [Parameter(Mandatory = $true, Position = 1, ValueFromPipelineByPropertyName = $true)]
+        [Alias('Target', 'PSPath')]
+        [ValidateNotNullOrEmpty()]
+        [string] $TargetPath
+    )
+
+    process {
+        if ($PSCmdlet.ShouldProcess($LiteralPath, "Create directory junction to '$TargetPath'")) {
+            New-Item -ItemType Junction -Path $LiteralPath -Target $TargetPath -Confirm:$false
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+    Stops a process on a remote Windows machine.
+.DESCRIPTION
+    Stops a process on a remote Windows machine through a DCOM CIM session.
+.PARAMETER ComputerName
+    The name of the remote computer that the process is executing on.
+.PARAMETER Name
+    The process name of the remote process to terminate.
+.PARAMETER Id
+    The process id of the remote process to terminate.
+.PARAMETER Credential
+    Specifies a user account that has permission to perform this action.
+.EXAMPLE
+    Stop-RemoteProcess server1 notepad.exe
+    Stops all processes named notepad.exe on the remote computer server1.
+.EXAMPLE
+    Stop-RemoteProcess server1 3478
+    Stops the process with process id 3478 on the remote computer server1.
+.EXAMPLE
+    3478,4005 | Stop-RemoteProcess server1
+    Stops the processes with process ids 3478 and 4005 on the remote computer server1.
+#>
+function Stop-RemoteProcess {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter(Position = 0, Mandatory = $true)]
+        [string] $ComputerName,
+
+        [Parameter(Position = 1, Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = 'Name')]
+        [string[]] $Name,
+
+        [Parameter(Position = 1, Mandatory = $true, ValueFromPipeline = $true,
+            ValueFromPipelineByPropertyName = $true, ParameterSetName = 'Id')]
+        [int[]] $Id,
+
+        [System.Management.Automation.PSCredential] $Credential
+    )
+
+    process {
+        $sessionParameters = @{
+            ComputerName  = $ComputerName
+            SessionOption = New-CimSessionOption -Protocol Dcom
+        }
+        if ($Credential) {
+            $sessionParameters.Credential = $Credential
+        }
+
+        $cimSession = $null
+        try {
+            $items = if ($PSCmdlet.ParameterSetName -eq 'Name') { $Name } else { $Id }
+            foreach ($item in $items) {
+                $target = if ($PSCmdlet.ParameterSetName -eq 'Name') {
+                    "process $item on computer $ComputerName"
+                }
+                else {
+                    "process id $item on computer $ComputerName"
+                }
+                if (!$PSCmdlet.ShouldProcess($target)) {
+                    continue
+                }
+
+                if (!$cimSession) {
+                    $cimSession = New-CimSession @sessionParameters
+                }
+
+                $filter = if ($PSCmdlet.ParameterSetName -eq 'Name') {
+                    "Name = '$($item.Replace("'", "''"))'"
+                }
+                else {
+                    "ProcessId = $item"
+                }
+                Get-CimInstance -ClassName Win32_Process -Filter $filter -CimSession $cimSession |
+                    ForEach-Object {
+                        $result = Invoke-CimMethod -InputObject $_ -MethodName Terminate
+                        if ($result.ReturnValue -ne 0) {
+                            Write-Error "Failed to stop $target (return value $($result.ReturnValue))."
+                        }
+                    }
+            }
+        }
+        finally {
+            if ($cimSession) {
+                Remove-CimSession -CimSession $cimSession
+            }
+        }
+    }
+}
 
 <#
 .SYNOPSIS
@@ -19,6 +143,8 @@ Set-StrictMode -Version Latest
     Aliases:  rvhr
 #>
 function Resolve-HResult {
+    [CmdletBinding()]
+    [OutputType([string])]
     param(
         [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true)]
         [long[]]
@@ -54,6 +180,8 @@ function Resolve-HResult {
     Aliases:  rvwer
 #>
 function Resolve-WindowsError {
+    [CmdletBinding()]
+    [OutputType([string])]
     param(
         [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true)]
         [int[]]
@@ -138,6 +266,27 @@ function Import-VisualStudioVars {
     )
 
     begin {
+        function Invoke-PscxBatchFile([string] $Path, [string] $Parameters) {
+            $tempFile = [IO.Path]::GetTempFileName()
+            try {
+                cmd.exe /d /c " `"$Path`" $Parameters && set " > $tempFile
+                if ($LASTEXITCODE -ne 0) {
+                throw "Batch file exited with code ${LASTEXITCODE}: $Path"
+                }
+                Get-Content -LiteralPath $tempFile | ForEach-Object {
+                    if ($_ -match '^(.*?)=(.*)$') {
+                        Set-Content -LiteralPath "env:\$($Matches[1])" -Value $Matches[2]
+                    }
+                    else {
+                        $_
+                    }
+                }
+            }
+            finally {
+                Remove-Item -LiteralPath $tempFile -Force -ErrorAction SilentlyContinue
+            }
+        }
+
         $ArchSpecified = $true
         if (!$Architecture) {
             $ArchSpecified = $false
@@ -198,7 +347,7 @@ function Import-VisualStudioVars {
                     "Invoking '$batchFilePath'"
                 }
 
-                Invoke-BatchFile $batchFilePath
+                Invoke-PscxBatchFile $batchFilePath
             }
             else {
                 if ($IsAppxInstall) {
@@ -213,7 +362,7 @@ function Import-VisualStudioVars {
                     "Invoking '$batchFilePath' $Architecture"
                 }
 
-                Invoke-BatchFile $batchFilePath $Architecture
+                Invoke-PscxBatchFile $batchFilePath $Architecture
             }
         }
     }
@@ -223,13 +372,13 @@ function Import-VisualStudioVars {
             '90|2008' {
                 Push-EnvironmentBlock -Description "Before importing VS 2008 $Architecture environment variables"
                 Write-Verbose "Invoking ${env:VS90COMNTOOLS}..\..\VC\vcvarsall.bat $Architecture"
-                Invoke-BatchFile "${env:VS90COMNTOOLS}..\..\VC\vcvarsall.bat" $Architecture
+                Invoke-PscxBatchFile "${env:VS90COMNTOOLS}..\..\VC\vcvarsall.bat" $Architecture
             }
 
             '100|2010' {
                 Push-EnvironmentBlock -Description "Before importing VS 2010 $Architecture environment variables"
                 Write-Verbose "Invoking ${env:VS100COMNTOOLS}..\..\VC\vcvarsall.bat $Architecture"
-                Invoke-BatchFile "${env:VS100COMNTOOLS}..\..\VC\vcvarsall.bat" $Architecture
+                Invoke-PscxBatchFile "${env:VS100COMNTOOLS}..\..\VC\vcvarsall.bat" $Architecture
             }
 
             '110|2012' {
@@ -302,40 +451,46 @@ function Import-VisualStudioVars {
 }
 
 
-# set the 7zip library path
-[SevenZip.SevenZipBase]::SetLibraryPath([System.IO.Path]::Join([Pscx.Core.PscxContext]::Instance.AppsDir, "7z.dll"))
-
-# aliases
-Set-Alias rvhr  Pscx\Resolve-HResult        -Description "PSCX alias"
-Set-Alias rvwer Pscx\Resolve-WindowsError   -Description "PSCX alias"
-Set-Alias ln    Pscx\New-HardLink           -Description "PSCX alias"
-
-$acceleratorsType = [psobject].Assembly.GetType('System.Management.Automation.TypeAccelerators')
-
-# If these accelerators have already been defined, don't override (and don't error)
-function AddPscxWinAccelerator($name, $type)
-{
-    if (!$acceleratorsType::Get.ContainsKey($name))
-    {
-        $acceleratorsType::Add($name, $type)
+$aliasesToExport = @()
+$pscxAliases = [ordered]@{
+    rvhr = 'Resolve-HResult'
+    rvwer = 'Resolve-WindowsError'
+    ln = 'New-HardLink'
+}
+$previousAutoLoadingPreference = Get-Variable -Name PSModuleAutoLoadingPreference `
+    -Scope Global -ErrorAction SilentlyContinue
+# Avoid recursively auto-loading the parent PSCX package while checking aliases
+# that the package manifest already advertises.
+$global:PSModuleAutoLoadingPreference = 'None'
+try {
+    foreach ($aliasName in $pscxAliases.Keys) {
+        $commands = @(Get-Command -Name $aliasName -ErrorAction SilentlyContinue)
+        $existingCommand = if ($commands.Count -gt 0) { $commands[0] } else { $null }
+        if ($Pscx:Preferences.OverrideExistingAliases -or $null -eq $existingCommand) {
+            Set-Alias -Name $aliasName -Value $pscxAliases[$aliasName] -Scope Local `
+                -Description 'PSCX compatibility alias'
+            $aliasesToExport += $aliasName
+        }
+    }
+}
+finally {
+    if ($null -ne $previousAutoLoadingPreference) {
+        $global:PSModuleAutoLoadingPreference = $previousAutoLoadingPreference.Value
+    }
+    else {
+        Remove-Variable -Name PSModuleAutoLoadingPreference -Scope Global
     }
 }
 
-AddPscxWinAccelerator "yaml" ([Pscx.Win.Fwk.TypeAccelerators.Yaml])
-AddPscxWinAccelerator "yml"  ([Pscx.Win.Fwk.TypeAccelerators.Yaml])
-
-
-# -----------------------------------------------------------------------
-# Cmdlet aliases
-# -----------------------------------------------------------------------
-
-Export-ModuleMember -Alias * -Function * -Cmdlet *
+$publicContract = Import-PowerShellDataFile -LiteralPath (Join-Path $PSScriptRoot 'PscxWin.psd1')
+Export-ModuleMember -Alias $aliasesToExport -Function $publicContract.FunctionsToExport `
+    -Cmdlet $publicContract.CmdletsToExport
 
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCIYM07/oeeBeGv
-# r1y8Gx+oS6P2E4JsSJI1PqxpQMtmx6CCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBNdjYun4jUYaE5
+# D5ymjTIMDLfWXwXDm7G/Yhm0r9m6OqCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -514,34 +669,34 @@ Export-ModuleMember -Alias * -Function * -Cmdlet *
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgbt/zz2py0Qn8tUnUWxaS
-# C4jrKlizojjZNFumkvLy0fAwDQYJKoZIhvcNAQEBBQAEggIAm5QR/+SF0f7xYbBD
-# zEc7dE9j/x1dilASWdBj76uzx4hFsa1fBO1nZ/OpCg2wp0XRk5Lu0a21IxpgkcSL
-# 9l0Ra+ljMVcbRmjZhw7MMRH/aRKD/YqM/YDCCPHFxRY6tThdSvFQ1d5Ek2akveUj
-# h/t/YUYcg8GA1WWXVF0m4PsypAcx8pPRwNRto3LBAR3aFVpf5LAGW/7THo/5j3nf
-# kFAnF+E7PL9NIbW2GHiimysHqr3FBhskcQvFcFCQKDBMkAlJkOIGw6zppsKqB3Rd
-# aoa6T/DGqDKRd+Pld+mplC9LYjN/cw6htHH+ne43/0C5q4bzdrnch06fksBoUfoQ
-# aaPK7T/Gk+T8YeYGk30BHOop6VLvVH/D+IBKuHHSQa0KUSrLo2UU8Wg04YWV7cRJ
-# /MNjjej+tDSto0oJxqtWOIKucFaOzN4DGtPSxqCAeJ7P+Y3Tvfy07x4dZLqscIHa
-# j4XkdXpo4wz8wEPrXcF/Zlx2ZNaK90cOUdClntpKJwe2n0nhwVHbmyzHC5g4ynI1
-# b8Y1GVfgqR+0PC0gaWPcdkj2Pvz9JGjeUsxc+X4nI6CD/e9o3+pHBYmonhwx7BP6
-# g26F20ypQNoLpUqS89wXGyZvQaOIhYHSuqOm4wkI5rm8bnLKTcdLBveCQIfancT3
-# AORxiSoLypDuYB+YTuuWQYdjrgehggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQggu4Vlip3KNjhLhqjBhfu
+# d2mY5+avWKMawOKxQ7JPblAwDQYJKoZIhvcNAQEBBQAEggIArBWB6JWUsP6I8omg
+# Ywu0W5CHVQZ9uE64uGSUgq67ashI5ehYNvcaf/frm4sczEbuh5dY9b+4/o2MX98F
+# sJ6JBeGZW8Jx8EJI/vBIiYQ+o9F4GDaIRTLGT2KERcw/OQSFJndtGTPaHV2IVqG7
+# eeBuYVj1xiAZAIPW0B0pXpGWslHaAZD/AIiA2v2A5s0iujzrmgnehbVdE9sEjkbz
+# j0cfTPIPY3KC2XFJnen7S7mqfhftM6xH8wBVSurtHNn59kQMbf4vk2sUMwEc195w
+# TFcdFENl2Hv8R1haILHE5TRXissS2CdeCU4gi1Kq6pe9BycTWFe/yeY7jbU2Is9W
+# cZwRMFtBO5oRlBj8r+GW+u6dVUxitH0CpfFP6bJ9tmtre04rGnD8Th6md8ELILC7
+# 1obybjE/r0MGCJqVZXAxGBkXs5uCKfWChrw9Ur3yXKzx4K5FxiaoAeL3SCXDhIb4
+# F9fVf5s4mYLDtvy/I/K36rbjpzch4qFBPpJI760O4syh37qgar67BJK8ocGRy21g
+# M9vgsPbtpuILpoZcS6KJM344MfvjQst8xZYprER6sc+MjihINzckvneLaKJNw0WP
+# RrJtOs7FOgqSPzZByv6W5h1uyUerqsq4vo1xpwXWpRjyJAb87iKUkvjvzlexD10W
+# Pk1LkLRsEQo7K0jPYi3GjrOFHJuhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODA4MDQ0ODMxWjAvBgkqhkiG9w0BCQQxIgQgc/VKzcPJjseG1/0gpDCi/d7x7uq9
-# CQJyJgCGM5OVMhYwDQYJKoZIhvcNAQEBBQAEggIAtjEsXIEYjdL6bHabtYwBhxGO
-# KLFbAR4MiLithHvqkaKTsvsbZ1Sdc03giFHwoeCgltGJyPcOJLY5pEDTfZAhfmwj
-# jxtvg9zwzCa34LgKHDBXYqVT0lOWO1XaJFKY9qsAyEPEiekI4njkZv2WMWWPWk4d
-# 1rrEKkhCznuxzSR7oNnNY+QWoebxWyY4/eyoBrh3LzKmHsIgPgMntCSigz2TPkre
-# nqMfb2m3G0US4MuZSvvPCaCYO3Yi6JFArgwQgLXrVsW3wE8uE+e8r3eapxOsx8Kq
-# oPqnzdubeVdEyJvNDSQV02GjFSia/vkd2gZhqZ2x23eBAlaCv9Hco2XFwsEENTj1
-# ZqS0BArCJzX14Vnit7pdSSCwUDnpj9pqwZtdvAMnmGJjxbqWoEH1Hwk+FWzYzmrx
-# CXtnvRzK2fiuNe8gc1cLa7M7gXpciz8iWs/6GhfBBG8b6Au64f4Gk73LV9x6IcBu
-# apA2F42JQNHtn9y9PFXqaCWr9nnwUHp2eADxE0IXkndL9VKOFptjqCGaEdYE2th/
-# RytkkiTjEBarux0omAj4iZEmUnekqrhB7l5QEo43d7Nu8x7MOQCf410k/5vxdZMR
-# h1U2MhgtXGMwxobo9rRm33vtM4uQmAsdRmTzuHvbbGdwwsNGMYMqBnjMqG55mn4v
-# QYFGq+zlQ9RpzQv/Cm0=
+# ODI5MDQyMTMyWjAvBgkqhkiG9w0BCQQxIgQgz+UHc042b7mtZPjfzD8EjUzXtn9G
+# o+DmjfT7W44g4TQwDQYJKoZIhvcNAQEBBQAEggIAx/FESMKTonT+AjKlTzychr2m
+# ij/eX34yvtNJbp/OutYtD1gNIiVGqupHIHEsAICk/9ybTYu9zHkkfZa8gy1KfGWQ
+# T8HwxZ/Bwq+7N75g+rlVsUXNtIkkPMdTXvJ57SasUhfmsfwvcFNGE2qIBRixyIwh
+# TOPBo1pSwNUqDgvCcfFpUBBsQqyYK41AtkflT75n6Sgr9cV4BxeVVlFgdnPLSICj
+# CU9xP6MH7ta83OdF7MeLX6QXNOfg0uADkIhjy90G7CZj/Yp/mHI0u+9ST24c5D5t
+# l5ShSZxg6QvNAKnZAntPQLBLm0ku5wjMP5dwHOwmTUrfdT4Iu7W8Au/jeExIN4/E
+# TBzuTziJrsXXo+B+YP4CwCDOTugez8aJ8yYSe7fZ4imN9/g6OXG/O7QyUJC56oH6
+# UXmRCkO41nVcbOZqnwjxwP961MDbrvFSAaXiaUUQYPzPR/KJvu3PiWZ6fYlhj0OD
+# cQql6I5FuJ+trtV9ch+wKysZMnY/teL1AOpnrk+yZU54edsrqhDmTns9xBdYljdb
+# a2CSUqVfvKN25Rea++d9X8MxALAqZhtf+AxMGcfDgaeNXgwLcI7hyw71Nxd57Vy2
+# L5pj0m2toB6rw8DR243U4slslxTIjK8PxzeQun/JagYSjlWDx3h9h1OsF0fYigZS
+# wbBQVq5cm91TFld+vZU=
 # SIG # End signature block

@@ -45,6 +45,7 @@ Converts byte array or specified file contents to base64 string.
  By default, this cmdlet inserts line breaks every 76 characters and outputs the result in a single string.
 For very large files, you may run into OutOfMemoryExceptions.
 In this case, use the -Stream parameter which will generate multiple string outputs that, combined together, result in the equivalent base 64 text.
+File-processing progress is written only to the verbose stream.
 
 ## EXAMPLES
 
@@ -211,6 +212,11 @@ Accepts a System.Management.Automation.PSObject value.
 Accepts a Pscx.Core.IO.PscxPathInfo[] value.
 
 ## OUTPUTS
+
+### System.String
+
+Returns one Base64 string by default. `-Stream` can return multiple string
+segments for file input.
 
 ## NOTES
 

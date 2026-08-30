@@ -13,6 +13,9 @@ param(
     [Parameter(Mandatory)]
     [version] $ExpectedVersion,
 
+    [ValidateSet('Pscx', 'Pscx.Archive', 'Pscx.Time', 'Pscx.WinAdmin')]
+    [string] $ModuleName = 'Pscx',
+
     [string] $PowerShellPath = 'pwsh',
 
     [Parameter(DontShow)]
@@ -25,11 +28,28 @@ $PSStyle.OutputRendering = [Management.Automation.OutputRendering]::PlainText
 
 if ($InstalledModuleRoot) {
     $env:PSModulePath = $InstalledModuleRoot
+    Import-Module $ModuleName -RequiredVersion 0.0.1 -Force -ErrorAction Stop
+    $olderModule = Get-Module $ModuleName -ErrorAction Stop
+    if ($olderModule.Version -ne [version]'0.0.1' -or
+        -not $olderModule.Path.StartsWith($InstalledModuleRoot, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "PowerShell did not import the side-by-side $ModuleName 0.0.1 test version."
+    }
+    Remove-Module $ModuleName -Force -ErrorAction Stop
+
     $warnings = @()
-    Import-Module Pscx -Force -ErrorAction Stop -WarningVariable warnings
-    $module = Get-Module Pscx -ErrorAction Stop
-    $commands = @(Get-Command -Module Pscx*)
-    $aboutHelp = Get-Help about_Pscx -ErrorAction Stop
+    Import-Module $ModuleName -RequiredVersion $ExpectedVersion -Force -ErrorAction Stop `
+        -WarningVariable warnings
+    $module = Get-Module $ModuleName -ErrorAction Stop
+    $commands = @(
+        if ($ModuleName -eq 'Pscx.WinAdmin') {
+            Get-Module $ModuleName -All |
+                ForEach-Object { $_.ExportedCommands.Values } |
+                Sort-Object Name -Unique
+        }
+        else {
+            Get-Command -Module $ModuleName
+        }
+    )
 
     if (-not $module.Path.StartsWith($InstalledModuleRoot, [StringComparison]::OrdinalIgnoreCase)) {
         throw "PowerShell imported PSCX from an unexpected location: $($module.Path)"
@@ -37,23 +57,57 @@ if ($InstalledModuleRoot) {
     if ($module.Version -ne $ExpectedVersion) {
         throw "Installed PSCX version '$($module.Version)' does not match '$ExpectedVersion'."
     }
-    if ($commands.Count -eq 0) {
+    if ($ModuleName -ne 'Pscx.Time' -and $commands.Count -eq 0) {
         throw 'The installed package exported no commands.'
     }
-    if (-not $aboutHelp) {
-        throw 'The installed package did not expose about_Pscx help.'
+    if ($ModuleName -eq 'Pscx') {
+        $loadedNestedModules = @(Get-Module -All)
+        foreach ($requiredNestedModule in 'Pscx.CD', 'Pscx.Utility') {
+            if ($requiredNestedModule -notin $loadedNestedModules.Name) {
+                throw "The installed package did not load required nested module '$requiredNestedModule'."
+            }
+        }
+        if (-not (Get-Help about_Pscx -ErrorAction Stop)) {
+            throw 'The installed package did not expose about_Pscx help.'
+        }
+        $windowsAssemblyPath = Join-Path (Split-Path -Parent $module.Path) 'Pscx.Win.dll'
+        $windowsCommand = Get-Command Get-Privilege -ErrorAction SilentlyContinue
+        if ($ExpectedBuildScope -eq 'Full' -and (
+            -not (Test-Path -LiteralPath $windowsAssemblyPath) -or -not $windowsCommand
+        )) {
+            throw 'The installed Full package did not expose its Windows companion payload.'
+        }
+        if ($ExpectedBuildScope -eq 'Full' -and $IsWindows -and
+            'PscxWin' -notin $loadedNestedModules.Name) {
+            throw "The installed Full package did not load nested module 'PscxWin'."
+        }
+        if ($ExpectedBuildScope -eq 'Core' -and (
+            (Test-Path -LiteralPath $windowsAssemblyPath) -or $windowsCommand
+        )) {
+            throw 'The installed Core package unexpectedly exposed a Windows companion payload.'
+        }
     }
-    $windowsAssemblyPath = Join-Path (Split-Path -Parent $module.Path) 'Pscx.Win.dll'
-    $windowsCommand = Get-Command Get-Privilege -ErrorAction SilentlyContinue
-    if ($ExpectedBuildScope -eq 'Full' -and (
-        -not (Test-Path -LiteralPath $windowsAssemblyPath) -or -not $windowsCommand
-    )) {
-        throw 'The installed Full package did not expose its Windows companion payload.'
+    elseif ($ModuleName -eq 'Pscx.Archive' -and $commands.Count -ne 3) {
+        throw "The installed Pscx.Archive package exported $($commands.Count) commands; expected 3."
     }
-    if ($ExpectedBuildScope -eq 'Core' -and (
-        (Test-Path -LiteralPath $windowsAssemblyPath) -or $windowsCommand
-    )) {
-        throw 'The installed Core package unexpectedly exposed a Windows companion payload.'
+    elseif ($ModuleName -eq 'Pscx.Time') {
+        if ($commands.Count -ne 0) {
+            throw "The installed Pscx.Time package exported $($commands.Count) commands; expected none."
+        }
+        $accelerators = [psobject].Assembly.GetType(
+            'System.Management.Automation.TypeAccelerators'
+        )::Get
+        foreach ($name in 'isodate', 'zonedtime', 'offsettime', 'localtime', 'tz', 'tzi') {
+            if (-not $accelerators.ContainsKey($name)) {
+                throw "The installed Pscx.Time package did not register '$name'."
+            }
+        }
+        if (-not (Get-Help about_Pscx.Time -ErrorAction Stop)) {
+            throw 'The installed package did not expose about_Pscx.Time help.'
+        }
+    }
+    elseif ($ModuleName -eq 'Pscx.WinAdmin' -and $commands.Count -ne 9) {
+        throw "The installed Pscx.WinAdmin package exported $($commands.Count) commands; expected 9."
     }
 
     [ordered]@{
@@ -75,10 +129,23 @@ try {
     New-Item -ItemType Directory -Path $modulePath -Force | Out-Null
     Expand-Archive -LiteralPath $resolvedPackagePath -DestinationPath $modulePath
 
-    $manifestPath = Join-Path $modulePath 'Pscx/Pscx.psd1'
+    $manifestPath = Join-Path $modulePath "$ModuleName/$ExpectedVersion/$ModuleName.psd1"
     if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
-        throw 'The release archive does not contain Pscx/Pscx.psd1 at its installation root.'
+        throw "The release archive does not contain $ModuleName/$ExpectedVersion/$ModuleName.psd1."
     }
+
+    $olderVersionRoot = Join-Path $modulePath "$ModuleName/0.0.1"
+    New-Item -ItemType Directory -Path $olderVersionRoot -Force | Out-Null
+    "# Side-by-side discovery fixture for $ModuleName" |
+        Set-Content -LiteralPath (Join-Path $olderVersionRoot "$ModuleName.psm1") -Encoding utf8
+    @"
+@{
+    RootModule = '$ModuleName.psm1'
+    ModuleVersion = '0.0.1'
+    GUID = '$([guid]::NewGuid())'
+    PowerShellVersion = '7.6'
+}
+"@ | Set-Content -LiteralPath (Join-Path $olderVersionRoot "$ModuleName.psd1") -Encoding utf8
 
     $arguments = @(
         '-NoLogo',
@@ -92,6 +159,8 @@ try {
         $ExpectedBuildScope,
         '-ExpectedVersion',
         $ExpectedVersion.ToString(),
+        '-ModuleName',
+        $ModuleName,
         '-InstalledModuleRoot',
         $modulePath
     )
@@ -109,8 +178,8 @@ finally {
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCB5c+M4NSA75QsZ
-# 8dnV9Ox107BtH9Qz+2w/dhh4SUEyhaCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCA8+jI7L8VR0FH9
+# IJ/effYpuhaEIVTY52eazLxZ/p1icaCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -289,34 +358,34 @@ finally {
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgEp0Mnti/Yn5FonmrcP5K
-# 2Maj7Dh9WN6xc0BWMc/9bI0wDQYJKoZIhvcNAQEBBQAEggIADkaLzSmiIHrq9QoR
-# QjE5Zhsl3wCrJSZbIccvwyySS3SI16r4ZTx4RyQiSnsejQMp7p3izF4hviA0FJlv
-# d/D63n2GFAJJVQ+l9km2uno8HvXMIz+CwqLM5A0kukpv7gsJXyuvCSMs8nC+8wq3
-# J0xeNDgAm/CSLkJ5J6KE5gHTYMDCMwRdGa1TSqdfqDZHLv2iNp7AQ5vTdUOQwrF+
-# 6X4AmDZMDN2E4u+e68NWmLdBVBuFWyuPGNFol9WF7W1myW0Uoac+dr8PIpvPFe1f
-# ox+regKUoe4x3+LukxBfTqG9px+vL0LQXTOLjOJ5N2jlnXK3hI5QC+fKSYxHQYEc
-# ffFOFWus3XKLG3UIvVR67lywl6n2Y7oUSWA0p8RoyfskUm+WYT/Q6hEV85C9m/1y
-# BfXsNyg0NBB6PEG5vT/gx25O6/iOzlX/cEwuS70yCzf5yXy2D6G2D9lSr4wtsijb
-# tSvI23mT0bWwfe0cSk9uUuA0e/pc+rbgJfwduMh5noMEDhxE2MXt9ZXqmesDtOY0
-# 5f/viGjuxKeVUafPcQit4rWZQaH9pHRlZi2yWZckwZYd9vPehWxWwby1s1bZT8fv
-# lYu4QUokkvzDm+fmfcNYQgKg3Cu+to/mFR2cTolB0FYNmR5cD1qd6ciH5ZNFjVHp
-# C/QudjkJpuQahpslf8eLknhB4p6hggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQg5A/7fqlGDQYSPxMVWXJL
+# RL5VQtUdpHfjBLmUnKXxJsEwDQYJKoZIhvcNAQEBBQAEggIAqYbVBA5nModN/jEX
+# 0BqEmLjQqqBQWqOu+JAbdChZy08xUhp72waGcXSAW4QPjFQX3OhAcSvFLed/t0Kt
+# toth6eXyZK31nmiEpFin14KPW5UySjySWXvFCRa5L+Ob9Pee5AxZOTyXybNKttsG
+# 8YvhI8i4YL6SIV0H97Uql4jk3yrMi8WSie3X4W77kEADR+qpxCNnIWg2wZAFlhP5
+# fCj52g8vaT3yT1m5cJIs4AoRvwDcPbgqCumAWALQIiWOmX38pVqQz+YEDtJP2ymq
+# CfWVdTpudkAC3iFuGms0TBxEo6bpUp49Ab2Ba72U/iGCFrKLEjLxzgxoXQ7U9dIW
+# 33IS61wOIBlt3xPc9xcpOCYUFB0oUBzouY+vL+dcLZOzFdElq6Dzdn/oVAtlj19W
+# yEKU5atQXPQnYOOBHiogwNKV6xbwawQUtb5lFLvoclXze9Du7GaHMwEMn/AvcMft
+# WHgQSciceEJh1JJ/LM4LfdHvFFp5jXIKpAsCIs0tyukrNt9CHbLM6u6qK3yO7qe0
+# oMv9kVovaZlR+YuAeDERZjBRxti6l3WbCJ4AHddscM5hxR0innob2MM5GF2GKX6s
+# 8asVGC0jmyFANf9+mSn+vdMgHIrlIMKda/03XmLSlaKO7nCqfV3Cdh03zbCZ9WGA
+# cXg8B0PxgFdHudsC6Bp7URUtE7WhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODA4MDUwNTM3WjAvBgkqhkiG9w0BCQQxIgQgbR97FOy6V01Tt9mnKcQmWPf9FO0v
-# yCX2zZtsu1Ygw0owDQYJKoZIhvcNAQEBBQAEggIAB7GVJNslRDqgeK5QF+mPiNdB
-# dhoVmps8Qi3a9ErcdQDjkgPtVmQlhma/msU1GuVRdxOnndAJxIFiD2ZaspkhzxHQ
-# Gyy0WbdT0q4VgJHgfEuee1s4FxKVMulNmFq0Vp3A3QUQKD2Dy5zY0fziJfFO0Xsv
-# 7nawjHIP69SD5v14fi9zA/AoCFVbm+m1RvcA1n8eIMDFHJQj1tx705lqbPZpb35P
-# 6n/a1bCpBXlow11h2/CVFLSvaZwD9RfiE8RPnvMkWXSjdGyH1W0XfVZXlTaRnUSV
-# LlKIu8NrdeGxlF94kRMfe9cS5aSR1oERai7YSabMHkkJTdkTmw/aaHnLKmWjGR9m
-# C2p1QJREmjn3o1Ub8rxyx7xn9kMNC1OnKUlvkpgHlQVu2euu7nuKD2f7EcokNCZe
-# HVCWrcf5vYd2f2OuxrLlwqZj6RGXpPsWpWgqcAe+DEWAZiUKhW6qd0IB9NwBub10
-# Bd0cuq/F18DR6UM5/puJ0zgIYPBK2PSw6exiyvxYM1kJoSuSJPhNQOyjjuEQPXez
-# e1e0smxPiUExdOjQfQ3FWBLGcXXx2mNgDiG2Tpr4/2KtD5EZK71ZqxFoA6YJWORN
-# jHbhcgf3WOgLigiE06VdDqGFJMU8YS89PQYfUBbYQZo+3SddiKO4jDSWyRSrQwCY
-# jzMBuuj2UIiAEGbI/Oo=
+# ODI4MjEwNTM2WjAvBgkqhkiG9w0BCQQxIgQgdm7WhfIOV0BM6ELUr+Tgu6dcbJiS
+# fXfC124hS2XlelAwDQYJKoZIhvcNAQEBBQAEggIAMnrSqOZaJaAztLlOnu1VFtev
+# VcGvU1BD3dOMaWUUQHpj6Ug8KIsWUyCRm3vWT0YaI0dVIo095bddaR68UENQazgv
+# jq8dxyZw9V0Oebfk6rRXFC426cvzsd6SsUj0cJuLvGL7qPYecYthMvDHrKio6njt
+# fMautKN83AcT+UiR3l6KhBCw+wZdBotfN8swDEQeiJym2Z+gqoak9CKhOY07N9X6
+# 1e3D601dTs6Cv+k4Wz15Endx19RzLUtsnHBKccXc/dMDMKqgjJmLZK8PMJYmt1X/
+# hzONNNIqSfQq1ZuJUGXQCyb9z7+UG+pHAlY/8EIOE3DAZSzVusUPD512d1Jgglgz
+# ZK1tJEq1wEqWGKTo1vn9E78oG5Wd2qXkxAI3AfTsv7D4zwf5v+23ihWnWljbNHZe
+# ePaoULEc7INGhUm1yNq5XVnszBsnRPERQKthoWAtExau4PXx45CkSTE+zCpDYzBY
+# WoBiAXTf2b7+IzLSyXrPzU6cY6cfUKU7NcaG1WzT8mTjbyLB4XWveaqDvXGbITUf
+# vsd8C6rtzInHvJWf8M66Krv5DLBm7m/KGyVE+HgIegnf5C4DSGajfG252F93znZ5
+# lFjY5l5llN2J9q3qTsdehUWfIXaFwPR67kaR7JsWiMRHjImaioO1HbK8cn5x1Dv7
+# 2ay4tF3MNyYxhs1XEMA=
 # SIG # End signature block

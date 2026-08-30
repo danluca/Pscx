@@ -17,7 +17,10 @@
     AddAccelerator -name uri -type ([System.Uri])
     Registers `[uri]` as an accelerator for System.Uri when that name is available.
 #>
-function AddAccelerator($name, $type) {
+function AddAccelerator {
+    [CmdletBinding()]
+    param($name, $type)
+
     if (!$acceleratorsType::Get.ContainsKey($name)) {
         $acceleratorsType::Add($name, $type)
     } else {
@@ -34,7 +37,10 @@ function AddAccelerator($name, $type) {
     RemoveAccelerator -name uri
     Removes the `uri` accelerator when it is registered.
 #>
-function RemoveAccelerator($name) {
+function RemoveAccelerator {
+    [CmdletBinding()]
+    param($name)
+
     if ($acceleratorsType::Get.ContainsKey($name)) {
         $acceleratorsType::Remove($name)
     } else {
@@ -71,135 +77,6 @@ filter New-HashObject {
 
 <#
 .SYNOPSIS
-    Displays PowerShell help using PSCX pager behavior.
-.DESCRIPTION
-    Forwards to Get-Help and displays detailed help through the configured PSCX
-    paging behavior.
-.FORWARDHELPTARGETNAME Get-Help
-.FORWARDHELPCATEGORY Cmdlet
-#>
-function PscxHelp
-{
-    [CmdletBinding(DefaultParameterSetName='AllUsersView', HelpUri='https://go.microsoft.com/fwlink/?LinkID=113316')]
-    param(
-        [Parameter(Position=0, ValueFromPipelineByPropertyName=$true)]
-        [string]
-        ${Name},
-
-        [string]
-        ${Path},
-
-        [ValidateSet('Alias','Cmdlet','Provider','General','FAQ','Glossary','HelpFile','ScriptCommand','Function','Filter','ExternalScript','All','DefaultHelp','DscResource','Class','Configuration')]
-        [string[]]
-        ${Category},
-
-        [Parameter(ParameterSetName='DetailedView', Mandatory=$true)]
-        [switch]
-        ${Detailed},
-
-        [Parameter(ParameterSetName='AllUsersView')]
-        [switch]
-        ${Full},
-
-        [Parameter(ParameterSetName='Examples', Mandatory=$true)]
-        [switch]
-        ${Examples},
-
-        [Parameter(ParameterSetName='Parameters', Mandatory=$true)]
-        [string[]]
-        ${Parameter},
-
-        [string[]]
-        ${Component},
-
-        [string[]]
-        ${Functionality},
-
-        [string[]]
-        ${Role},
-
-        [Parameter(ParameterSetName='Online', Mandatory=$true)]
-        [switch]
-        ${Online},
-
-        [Parameter(ParameterSetName='ShowWindow', Mandatory=$true)]
-        [switch]
-        ${ShowWindow}
-     )
-
-    # Display the full help topic by default but only for the AllUsersView parameter set.
-    if (($psCmdlet.ParameterSetName -eq 'AllUsersView') -and !$Full) {
-        $PSBoundParameters['Full'] = $true
-    }
-
-    # Nano needs to use Unicode, but Windows and Linux need the default
-    $OutputEncoding = [System.Console]::OutputEncoding
-
-    $help = Get-Help @PSBoundParameters
-
-    # If a list of help is returned or AliasHelpInfo (because it is small), don't pipe to more
-    $psTypeNames = ($help | Select-Object -First 1).PSTypeNames
-    if ($psTypeNames -Contains 'HelpInfoShort' -Or $psTypeNames -Contains 'AliasHelpInfo') {
-        $help
-    }
-    elseif ($null -ne $help) {
-        # Preference goes to using 'less', if not available then use 'more' if on Windows, otherwise do not use pager
-        $pagerCommand = Get-Command less -Type Application -ErrorAction Ignore
-        $pagerArgs = $null
-        if (!$pagerCommand -and $IsWindows) {
-            $pagerCommand = Get-Command more -Type Application -ErrorAction Ignore
-        }
-
-        # Respect PAGER environment variable which allows user to specify a custom pager.
-        # Ignore a pure whitespace PAGER value as that would cause the tokenizer to return 0 tokens.
-        if (![string]::IsNullOrWhitespace($env:PAGER)) {
-            $pagerCommand = Get-Command $env:PAGER -ErrorAction Ignore
-            if (!$pagerCommand) {
-                # PAGER value is not a valid command, check if PAGER command and arguments have been specified.
-                # Tokenize the specified $env:PAGER value. Ignore tokenizing errors since any errors may be valid
-                # argument syntax for the paging utility.
-                $errs = $null
-                $tokens = [System.Management.Automation.PSParser]::Tokenize($env:PAGER, [ref]$errs)
-
-                $customPagerCommand = $tokens[0].Content
-                $pagerCommand = Get-Command $customPagerCommand -ErrorAction Ignore
-                if ($pagerCommand) {
-                    # This approach will preserve all the pagers args.
-                    $pagerArgs = if ($tokens.Count -gt 1) {$env:PAGER.Substring($tokens[1].Start)} else {$null}
-                } else {
-                    # Custom pager command is invalid, issue a warning.
-                    Write-Warning "Custom-paging utility command not found. Ignoring command specified in `$env:PAGER: $env:PAGER"
-                }
-            }
-        }
-
-        if ($null -eq $pagerCommand) {
-            $help
-        } elseif ($pagerCommand.CommandType -eq [System.Management.Automation.CommandTypes]::Application) {
-            if ($pagerCommand.Name -match '^less') {
-                # if using less - add the LESS environment variable for custom arguments - see https://man7.org/linux/man-pages/man1/less.1.html#ENVIRONMENT_VARIABLES
-                $env:LESS = "-FRsPPage %db?B of %D:.\. h for help, q to quit\."
-            }
-            # If the pager is an application, format the output width before sending to the app.
-            #$consoleWidth = [System.Math]::Max([System.Console]::WindowWidth, 20)
-            #$help | Out-String -Stream -Width ($consoleWidth - 1)
-
-            if ($pagerArgs) {
-                # Supply pager arguments to an application without any PowerShell parsing of the arguments.
-                # Leave environment variable to help user debug arguments supplied in $env:PAGER.
-                $env:PAGER_ARGS = $pagerArgs
-            }
-
-            $help | & $pagerCommand.Name
-        } else {
-            # The pager command is a PowerShell function, script or alias, so pipe directly into it.
-            $help | & $pagerCommand $pagerArgs
-        }
-    }
-}
-
-<#
-.SYNOPSIS
     PscxLess provides better paging of output from cmdlets.
 .DESCRIPTION
     PscxLess provides better paging of output from cmdlets.
@@ -218,21 +95,21 @@ function PscxHelp
 .PARAMETER Path
     The path to the file to view.  Wildcards are accepted.
 .EXAMPLE
-    C:\PS> man about_profiles -full
-    This sends the help output of the about_profiles topic to the help function which pages the output.
-    Man is an alias for the "help" function. PSCX overrides the help function to page help using either
-    the built-in PowerShell "more" function or the PSCX "less" function depending on the value of the
-    PageHelpUsingLess preference variable.
+    C:\PS> Get-Help about_profiles -Full | PscxLess
+    Sends full help for about_profiles to the PSCX pager explicitly. PSCX does
+    not replace PowerShell's built-in help function.
 .EXAMPLE
     C:\PS> PscxLess *.txt
     Opens each text file in less.exe in succession.  Pressing ':n' moves to the next file.
 .NOTES
-    This function is just a passthru in all other hosts except for the PowerShell.exe console host.
+    This function is a pass-through outside ConsoleHost.
 .LINK
     http://en.wikipedia.org/wiki/Less_(Unix)
 #>
 function PscxLess
 {
+    [CmdletBinding()]
+    [OutputType([object])]
     param([string[]]$Path, [string[]]$LiteralPath)
 
     if ($host.Name -ne 'ConsoleHost') {
@@ -287,6 +164,9 @@ function PscxLess
     Author:   Keith Hill
 #>
 function Edit-Profile {
+    [CmdletBinding()]
+    param()
+
     Edit-File $Profile.CurrentUserAllHosts
 }
 
@@ -303,6 +183,9 @@ function Edit-Profile {
     Author:   Keith Hill
 #>
 function Edit-HostProfile {
+    [CmdletBinding()]
+    param()
+
     Edit-File $Profile.CurrentUserCurrentHost
 }
 
@@ -317,24 +200,38 @@ function Edit-HostProfile {
 .PARAMETER ErrorRecord
     The ErrorRecord to resolve into a useful error report. The default value
     is $Error[0] - the last error that occurred.
+.PARAMETER AsText
+    Emits the PSCX 3.x formatted text representation instead of the structured
+    Pscx.ErrorRecordDetail object.
 .EXAMPLE
     C:\PS> Resolve-ErrorRecord
-    Resolves the most recent PowerShell error code to a textual description of the error.
+    Resolves the most recent PowerShell error into a structured detail object.
+.EXAMPLE
+    C:\PS> Resolve-ErrorRecord -AsText
+    Emits the PSCX 3.x formatted text representation for the most recent error.
+.OUTPUTS
+    Pscx.ErrorRecordDetail by default. System.String when -AsText is specified.
 .NOTES
     Aliases:  rver
 #>
 function Resolve-ErrorRecord {
+    [OutputType('Pscx.ErrorRecordDetail')]
+    [OutputType([string])]
     param(
         [Parameter(Position=0, ValueFromPipeline=$true)]
         [ValidateNotNull()]
         [System.Management.Automation.ErrorRecord[]]
-        $ErrorRecord
+        $ErrorRecord,
+
+        [Parameter()]
+        [switch]
+        $AsText
     )
 
     Process {
         if (!$ErrorRecord) {
             if ($global:Error.Count -eq 0) {
-                Write-Host "The `$Error collection is empty."
+                Write-Verbose "The `$Error collection is empty."
                 return
             }
             else {
@@ -342,23 +239,50 @@ function Resolve-ErrorRecord {
             }
         }
         foreach ($record in $ErrorRecord) {
-            $txt = @($record | Format-List * -Force | Out-String -Stream)
-            $txt += @($record.InvocationInfo | Format-List * | Out-String -Stream)
-            $Exception = $record.Exception
-            for ($i = 0; $Exception; $i++, ($Exception = $Exception.InnerException)) {
-               $txt += "Exception at nesting level $i ---------------------------------------------------"
-               $txt += @($Exception | Format-List * -Force | Out-String -Stream)
+            if ($AsText) {
+                $txt = @($record | Format-List * -Force | Out-String -Stream)
+                $txt += @($record.InvocationInfo | Format-List * | Out-String -Stream)
+                $exception = $record.Exception
+                for ($i = 0; $exception; $i++, ($exception = $exception.InnerException)) {
+                    $txt += "Exception at nesting level $i ---------------------------------------------------"
+                    $txt += @($exception | Format-List * -Force | Out-String -Stream)
+                }
+
+                $txt | ForEach-Object {$prevBlank=$false} {
+                           if ($_.Trim().Length -gt 0) {
+                               $_
+                               $prevBlank = $false
+                           } elseif (!$prevBlank) {
+                               $_
+                               $prevBlank = $true
+                           }
+                       }
+                continue
             }
 
-            $txt | ForEach-Object {$prevBlank=$false} {
-                       if ($_.Trim().Length -gt 0) {
-                           $_
-                           $prevBlank = $false
-                       } elseif (!$prevBlank) {
-                           $_
-                           $prevBlank = $true
-                       }
-                   }
+            $exceptionChain = @()
+            $exception = $record.Exception
+            for ($i = 0; $exception; $i++, ($exception = $exception.InnerException)) {
+                $exceptionChain += [pscustomobject]@{
+                    PSTypeName = 'Pscx.ExceptionDetail'
+                    Level = $i
+                    TypeName = $exception.GetType().FullName
+                    Message = $exception.Message
+                    HResult = $exception.HResult
+                    StackTrace = $exception.StackTrace
+                    Exception = $exception
+                }
+            }
+            [pscustomobject]@{
+                PSTypeName = 'Pscx.ErrorRecordDetail'
+                ErrorRecord = $record
+                FullyQualifiedErrorId = $record.FullyQualifiedErrorId
+                CategoryInfo = $record.CategoryInfo
+                InvocationInfo = $record.InvocationInfo
+                PositionMessage = $record.InvocationInfo.PositionMessage
+                ScriptStackTrace = $record.ScriptStackTrace
+                ExceptionChain = $exceptionChain
+            }
         }
     }
 }
@@ -398,68 +322,6 @@ function QuoteString { "$args" }
 
 <#
 .SYNOPSIS
-    Invokes the .NET garbage collector to clean up garbage objects.
-.DESCRIPTION
-    Invokes the .NET garbage collector to clean up garbage objects. Invoking
-    a garbage collection can be useful when .NET objects haven't been disposed
-    and is causing a file system handle to not be released.
-.EXAMPLE
-    C:\PS> Invoke-GC
-    Invokes a garbage collection to free up resources and memory.
-#>
-function Invoke-GC {
-    [System.GC]::Collect()
-}
-
-<#
-.SYNOPSIS
-    Invokes the specified batch file and retains any environment variable changes it makes.
-.DESCRIPTION
-    Invoke the specified batch file (and parameters), but also propagate any
-    environment variable changes back to the PowerShell environment that
-    called it.
-.PARAMETER Path
-    Path to a .bat or .cmd file.
-.PARAMETER Parameters
-    Parameters to pass to the batch file.
-.EXAMPLE
-    C:\PS> Invoke-BatchFile "$env:ProgramFiles\Microsoft Visual Studio 9.0\VC\vcvarsall.bat"
-    Invokes the vcvarsall.bat file.  All environment variable changes it makes will be
-    propagated to the current PowerShell session.
-.NOTES
-    Author: Lee Holmes
-#>
-function Invoke-BatchFile {
-    param([string]$Path, [string]$Parameters)
-
-    $tempFile = [IO.Path]::GetTempFileName()
-
-    if ($IsWindows) {
-        ## Store the output of cmd.exe.  We also ask cmd.exe to output
-        ## the environment table after the batch file completes
-        cmd.exe /c " `"$Path`" $Parameters && set " > $tempFile
-    } else {
-        $shell = $env:SHELL ?? '/bin/bash'
-        $cmd = "$shell -c '$Path ; env'"
-        Invoke-Expression $cmd > $tempFile
-    }
-
-    ## Go through the environment variables in the temp file.
-    ## For each of them, set the variable in our local environment.
-    Get-Content $tempFile | Foreach-Object {
-        if ($_ -match "^(.*?)=(.*)$") {
-            Set-Content "env:\$($matches[1])" $matches[2]
-        }
-        else {
-            $_
-        }
-    }
-
-    Remove-Item $tempFile
-}
-
-<#
-.SYNOPSIS
     Gets the possible alternate views for the specified object.
 .DESCRIPTION
     Gets the possible alternate views for the specified object.
@@ -468,7 +330,10 @@ function Invoke-BatchFile {
 .PARAMETER Path
     Path to a specific format data PS1XML file.  Wildcards are accepted.  The default
     value is an empty array which will load the default .ps1xml files and exported
-    format files from modules loaded in the current session
+    format files from modules loaded in the current session.
+.PARAMETER LiteralPath
+    Literal path to one or more format data PS1XML files. Wildcard characters are
+    treated as ordinary characters.
 .PARAMETER IncludeSnapInFormatting
     Include the exported format information from v1 PSSnapins.
 .EXAMPLE
@@ -481,13 +346,17 @@ function Invoke-BatchFile {
     C:\PS> Get-Process | Get-ViewDefinition | ft Name,Style -groupby SelectedBy
     Retrieves all view definitions for the .NET type System.Diagnostics.Process.
 .EXAMPLE
-    C:\PS> Get-ViewDefinition Pscx.Commands.Net.PingHostStatistics $Pscx:Home\Modules\Net\Pscx.Net.Format.ps1xml
-    Retrieves all view definitions for the .NET type Pscx.Commands.Net.PingHostStatistics.
+    C:\PS> Get-ViewDefinition -LiteralPath .\MyModule.Format.ps1xml
+    Retrieves every view definition from the specified format file without expanding
+    wildcard characters in its path.
+.OUTPUTS
+    Pscx.Commands.Modules.Utility.ViewDefinition
 .NOTES
     Author: Joris van Lier and Keith Hill
 #>
 function Get-ViewDefinition {
     [CmdletBinding(DefaultParameterSetName = "Name")]
+    [OutputType('Pscx.Commands.Modules.Utility.ViewDefinition')]
     param(
         [Parameter(Position=0, ParameterSetName="Name")]
         [string]
@@ -501,19 +370,38 @@ function Get-ViewDefinition {
         [string[]]
         $Path = @(),
 
+        [Alias('PSPath')]
+        [Parameter()]
+        [string[]]
+        $LiteralPath = @(),
+
         [Parameter(Position=2)]
         [switch]
         $IncludeSnapInFormatting
     )
 
     Begin {
+        if ($PSBoundParameters.ContainsKey('Path') -and
+            $PSBoundParameters.ContainsKey('LiteralPath')) {
+            throw 'Path and LiteralPath cannot be used together.'
+        }
+
         # Setup arrays to hold Format XMLDocument objects and the paths to them
         $arrFormatFiles = @()
         $arrFormatFilePaths = @()
         # If a specific Path is specified, use that, otherwise load all defaults
         # which consist of the default formatting files, and exported format files
         # from modules
-        if ($Path.count -eq 0) {
+        $useLiteralPath = $PSBoundParameters.ContainsKey('LiteralPath')
+        $formatPaths = @(
+            if ($useLiteralPath) {
+                $LiteralPath
+            }
+            else {
+                $Path
+            }
+        )
+        if ($formatPaths.Count -eq 0) {
             # Populate the arrays with the standard ps1xml format file information
             Get-ChildItem $PsHome *.format.ps1xml | ForEach-Object {
                 if (Test-Path $_.fullname) {
@@ -557,12 +445,18 @@ function Get-ViewDefinition {
             }
         }
         else {
-            foreach ($p in $path) {
-                $x = New-Object xml.xmldocument
-                if (Test-Path $p) {
-                    $x.load($p)
+            foreach ($p in $formatPaths) {
+                $resolvedPaths = if ($useLiteralPath) {
+                    @(Resolve-Path -LiteralPath $p -ErrorAction Stop)
+                }
+                else {
+                    @(Resolve-Path -Path $p -ErrorAction Stop)
+                }
+                foreach ($resolvedPath in $resolvedPaths) {
+                    $x = New-Object xml.xmldocument
+                    $x.load($resolvedPath.ProviderPath)
                     $arrFormatFiles += $x
-                    $arrFormatFilePaths += $p
+                    $arrFormatFilePaths += $resolvedPath.Path
                 }
             }
         }
@@ -619,6 +513,10 @@ function Get-ViewDefinition {
                 Add-Member NoteProperty Style 'Unknown' -Input $ViewDefinition
             }
 
+            $ViewDefinition.PSTypeNames.Insert(
+                0,
+                'Pscx.Commands.Modules.Utility.ViewDefinition'
+            )
             $ViewDefinition
         }
 
@@ -659,238 +557,6 @@ function Get-ViewDefinition {
 
 <#
 .SYNOPSIS
-    Stops a process on a remote machine.
-.DESCRIPTION
-    Stops a process on a remote machine.
-    This command uses WMI to terminate the remote process.
-.PARAMETER ComputerName
-    The name of the remote computer that the process is executing on.
-    Type the NetBIOS name, an IP address, or a fully qualified domain name of the remote computer.
-.PARAMETER Name
-    The process name of the remote process to terminate.
-.PARAMETER Id
-    The process id of the remote process to terminate.
-.PARAMETER Credential
-    Specifies a user account that has permission to perform this action. The default is the current user.
-    Type a user name, such as "User01", "Domain01\User01", or User@Contoso.com. Or, enter a PSCredential
-    object, such as an object that is returned by the Get-Credential cmdlet. When you type a user name,
-    you will be prompted for a password.
-.EXAMPLE
-    C:\PS> Stop-RemoteProcess server1 notepad.exe
-    Stops all processes named notepad.exe on the remote computer server1.
-.EXAMPLE
-    C:\PS> Stop-RemoteProcess server1 3478
-    Stops the process with process id 3478 on the remote computer server1.
-.EXAMPLE
-    C:\PS> 3478,4005 | Stop-RemoteProcess server1
-    Stops the processes with process ids 3478 and 4005 on the remote computer server1.
-.NOTES
-    Author: Jachym Kouba and Keith Hill
-#>
-function Stop-RemoteProcess
-{
-    [CmdletBinding(SupportsShouldProcess=$true)]
-    param(
-        [Parameter(Position=0, Mandatory=$true)]
-        [string]
-        $ComputerName,
-
-        [Parameter(Position=1, Mandatory=$true, ValueFromPipeline=$true, ParameterSetName="Name")]
-        [string[]]
-        $Name,
-
-        [Parameter(Position=1, Mandatory=$true, ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true, ParameterSetName="Id")]
-        [int[]]
-        $Id,
-
-        [System.Management.Automation.PSCredential]
-        $Credential
-    )
-
-    Process
-    {
-        $params = @{
-            Class = 'Win32_Process'
-            ComputerName = $ComputerName
-        }
-
-        if ($Credential)
-        {
-            $params.Credential = $Credential
-        }
-
-        if ($pscmdlet.ParameterSetName -eq 'Name')
-        {
-            foreach ($item in $Name)
-            {
-                if (!$pscmdlet.ShouldProcess("process $item on computer $ComputerName"))
-                {
-                    continue
-                }
-                $params.Filter = "Name LIKE '%$item%'"
-                Get-WmiObject @params | ForEach-Object {
-                    if ($_.Terminate().ReturnValue -ne 0) {
-                        Write-Error "Failed to stop process $item on $ComputerName."
-                    }
-                }
-            }
-        }
-        else
-        {
-            foreach ($item in $Id)
-            {
-                if (!$pscmdlet.ShouldProcess("process id $item on computer $ComputerName"))
-                {
-                    continue
-                }
-                $params.Filter = "ProcessId = $item"
-                Get-WmiObject @params | ForEach-Object {
-                    if ($_.Terminate().ReturnValue -ne 0) {
-                        Write-Error "Failed to stop process id $item on $ComputerName."
-                    }
-                }
-            }
-        }
-    }
-}
-
-<#
-.SYNOPSIS
-    Generate CSS header for HTML "screen shot" of the host buffer.
-.DESCRIPTION
-    Generate CSS header for HTML "screen shot" of the host buffer.
-.EXAMPLE
-    C:\PS> $css = Get-ScreenCss
-    Gets the color info of the host's screen into CSS form.
-.NOTES
-    Author: Jachym Kouba
-#>
-function Get-ScreenCss
-{
-    param()
-
-    Process
-    {
-        '<style>'
-        [Enum]::GetValues([ConsoleColor]) | ForEach-Object {
-            "  .F$_ { color: $_; }"
-            "  .B$_ { background-color: $_; }"
-        }
-        '</style>'
-    }
-}
-
-<#
-.SYNOPSIS
-    Functions to generate HTML "screen shot" of the host buffer.
-.DESCRIPTION
-    Functions to generate HTML "screen shot" of the host buffer.
-.PARAMETER Count
-    The number of lines of the host buffer to create a screen shot from.
-.EXAMPLE
-    C:\PS> Get-ScreenHtml > screen.html
-    Generates an HTML representation of the host's screen buffer and saves it to file.
-.EXAMPLE
-    C:\PS> Get-ScreenHtml 25 > screen.html
-    Generates an HTML representation of the first 25 lines of the host's screen buffer and saves it to file.
-.NOTES
-    Author: Jachym Kouba
-#>
-function Get-ScreenHtml
-{
-    param($Count = $Host.UI.RawUI.WindowSize.Height)
-
-    Begin
-    {
-        # Required by HttpUtility
-        Add-Type -Assembly System.Web
-
-        $raw = $Host.UI.RawUI
-        $buffsz = $raw.BufferSize
-
-        function BuildHtml($out, $buff)
-        {
-            function OpenElement($out, $fore, $back)
-            {
-                & {
-                    $out.Append('<span class="F').Append($fore)
-                    $out.Append(' B').Append($back).Append('">')
-                } | out-null
-            }
-
-            function CloseElement($out) {
-                $out.Append('</span>') | out-null
-            }
-
-            $height = $buff.GetUpperBound(0)
-            $width  = $buff.GetUpperBound(1)
-
-            $prev = $null
-            $whitespaceCount = 0
-
-            $out.Append("<pre class=`"B$($Host.UI.RawUI.BackgroundColor)`">") | out-null
-
-            for ($y = 0; $y -lt $height; $y++)
-            {
-                for ($x = 0; $x -lt $width; $x++)
-                {
-                    $current = $buff[$y, $x]
-
-                    if ($current.Character -eq ' ')
-                    {
-                        $whitespaceCount++
-                        write-debug "whitespaceCount: $whitespaceCount"
-                    }
-                    else
-                    {
-                        if ($whitespaceCount)
-                        {
-                            write-debug "appended $whitespaceCount spaces, whitespaceCount: 0"
-                            $out.Append((new-object string ' ', $whitespaceCount)) | out-null
-                            $whitespaceCount = 0
-                        }
-
-                        if ((-not $prev) -or
-                            ($prev.ForegroundColor -ne $current.ForegroundColor) -or
-                            ($prev.BackgroundColor -ne $current.BackgroundColor))
-                        {
-                            if ($prev) { CloseElement $out }
-
-                            OpenElement $out $current.ForegroundColor $current.BackgroundColor
-                        }
-
-                        $char = [System.Web.HttpUtility]::HtmlEncode($current.Character)
-                        $out.Append($char) | out-null
-                        $prev =    $current
-                    }
-                }
-
-                $out.Append("`n") | out-null
-                $whitespaceCount = 0
-            }
-
-            if($prev) { CloseElement $out }
-
-            $out.Append('</pre>') | out-null
-        }
-    }
-
-    Process
-    {
-        $cursor = $raw.CursorPosition
-
-        $rect = new-object Management.Automation.Host.Rectangle 0, ($cursor.Y - $Count), $buffsz.Width, $cursor.Y
-        $buff = $raw.GetBufferContents($rect)
-
-        $out = new-object Text.StringBuilder
-        BuildHtml $out $buff
-        $out.ToString()
-    }
-}
-
-<#
-.SYNOPSIS
     Calls a single method on an incoming stream of piped objects.
 .DESCRIPTION
     Utility to call a single method on an incoming stream of piped objects. Methods can be static or instance and
@@ -914,6 +580,7 @@ function Get-ScreenHtml
 #>
 function Invoke-Method {
     [CmdletBinding()]
+    [OutputType([object])]
     param(
         [parameter(valuefrompipeline=$true, mandatory=$true)]
         [allownull()]
@@ -994,6 +661,7 @@ function Invoke-Method {
 function Set-Writable
 {
     [CmdletBinding(DefaultParameterSetName="Path", SupportsShouldProcess=$true)]
+    [OutputType([System.IO.FileSystemInfo])]
     param(
         [Parameter(Position=0, Mandatory=$true, ValueFromPipeline=$true, ParameterSetName="Path")]
         [ValidateNotNullOrEmpty()]
@@ -1076,6 +744,7 @@ function Set-Writable
 #>
 function Set-FileAttributes {
     [CmdletBinding(DefaultParameterSetName = "Path", SupportsShouldProcess = $true)]
+    [OutputType([System.IO.FileSystemInfo])]
     param(
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Path")]
         [ValidateNotNullOrEmpty()]
@@ -1175,6 +844,7 @@ function Set-FileAttributes {
 #>
 function Set-ReadOnly {
     [CmdletBinding(DefaultParameterSetName = "Path", SupportsShouldProcess = $true)]
+    [OutputType([System.IO.FileSystemInfo])]
     param(
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = "Path")]
         [ValidateNotNullOrEmpty()]
@@ -1270,6 +940,7 @@ function Set-ReadOnly {
 #>
 function Show-Tree {
     [CmdletBinding(DefaultParameterSetName = "Path")]
+    [OutputType([string])]
     param(
         [Parameter(Position = 0,
             ParameterSetName = "Path",
@@ -1548,6 +1219,7 @@ function Show-Tree {
 #>
 function Get-Parameter {
    [CmdletBinding(DefaultParameterSetName="ParameterName")]
+   [OutputType('System.Management.Automation.ParameterMetadataEx')]
    param(
       [Parameter(Position = 1, Mandatory = $true, ValueFromPipelineByPropertyName = $true)]
       [Alias("Name")]
@@ -1783,6 +1455,8 @@ function Get-Parameter {
     Gets the execution time for all commands in the session history.
 #>
 function Get-ExecutionTime {
+    [CmdletBinding()]
+    [OutputType('Pscx.Commands.Modules.Utility.ExecutionTimeInfo')]
     param(
         [Parameter(Position = 0)]
         [ValidateScript({$_ -ge 1})]
@@ -1807,17 +1481,43 @@ function Get-ExecutionTime {
 ## Main - Module load
 #######################################
 
-Set-Alias e     Pscx\Edit-File              -Description "PSCX alias"
-Set-Alias ehp   Pscx\Edit-HostProfile       -Description "PSCX alias"
-Set-Alias ep    Pscx\Edit-Profile           -Description "PSCX alias"
-Set-Alias gpar  Pscx\Get-Parameter          -Description "PSCX alias"
-Set-Alias igc   Pscx\Invoke-GC              -Description "PSCX alias"
-Set-Alias call  Pscx\Invoke-Method          -Description "PSCX alias"
-Set-Alias ql    Pscx\QuoteList              -Description "PSCX alias"
-Set-Alias qs    Pscx\QuoteString            -Description "PSCX alias"
-Set-Alias rver  Pscx\Resolve-ErrorRecord    -Description "PSCX alias"
-Set-Alias sro   Pscx\Set-ReadOnly           -Description "PSCX alias"
-Set-Alias swr   Pscx\Set-Writable           -Description "PSCX alias"
+$aliasesToExport = @()
+$pscxAliases = [ordered]@{
+    e    = 'Pscx\Edit-File'
+    ehp  = 'Edit-HostProfile'
+    ep   = 'Edit-Profile'
+    gpar = 'Get-Parameter'
+    call = 'Invoke-Method'
+    ql   = 'QuoteList'
+    qs   = 'QuoteString'
+    rver = 'Resolve-ErrorRecord'
+    sro  = 'Set-ReadOnly'
+    swr  = 'Set-Writable'
+}
+$previousAutoLoadingPreference = Get-Variable -Name PSModuleAutoLoadingPreference `
+    -Scope Global -ErrorAction SilentlyContinue
+# Avoid recursively auto-loading the parent PSCX package while checking aliases
+# that the package manifest already advertises.
+$global:PSModuleAutoLoadingPreference = 'None'
+try {
+    foreach ($aliasName in $pscxAliases.Keys) {
+        $commands = @(Get-Command -Name $aliasName -ErrorAction SilentlyContinue)
+        $existingCommand = if ($commands.Count -gt 0) { $commands[0] } else { $null }
+        if ($Pscx:Preferences.OverrideExistingAliases -or $null -eq $existingCommand) {
+            Set-Alias -Name $aliasName -Value $pscxAliases[$aliasName] -Scope Local `
+                -Description 'PSCX compatibility alias'
+            $aliasesToExport += $aliasName
+        }
+    }
+}
+finally {
+    if ($null -ne $previousAutoLoadingPreference) {
+        $global:PSModuleAutoLoadingPreference = $previousAutoLoadingPreference.Value
+    }
+    else {
+        Remove-Variable -Name PSModuleAutoLoadingPreference -Scope Global
+    }
+}
 
 <#
 .SYNOPSIS
@@ -1832,7 +1532,10 @@ Set-Alias swr   Pscx\Set-Writable           -Description "PSCX alias"
     AddRegex -name SemanticVersion -regex '^\d+\.\d+\.\d+$'
     Adds a pattern available as `$Pscx:RegexLib.SemanticVersion`.
 #>
-function AddRegex($name, $regex) {
+function AddRegex {
+    [CmdletBinding()]
+    param($name, $regex)
+
     Add-Member -InputObject $Pscx:RegexLib -MemberType NoteProperty -Name $name -Value $regex
 }
 
@@ -1888,24 +1591,38 @@ if ($IsWindows) {
 
 AddAccelerator "accelerators" $acceleratorsType
 AddAccelerator "json"  ([Pscx.TypeAccelerators.Json])
+AddAccelerator "yaml"  ([Pscx.TypeAccelerators.Yaml])
+AddAccelerator "yml"  ([Pscx.TypeAccelerators.Yaml])
 AddAccelerator "hex"  ([Pscx.TypeAccelerators.Hex])
 AddAccelerator "base64"  ([Pscx.TypeAccelerators.Base64])
 AddAccelerator "b64"  ([Pscx.TypeAccelerators.Base64])
-AddAccelerator "isodate"  ([Pscx.TypeAccelerators.IsoDateTime])
-AddAccelerator "zonedtime"  ([Pscx.Time.ZonedDateTime])
-AddAccelerator "offsettime"  ([Pscx.Time.OffsetDateTime])
-AddAccelerator "localtime"  ([Pscx.Time.LocalDateTime])
-AddAccelerator "tz"  ([NodaTime.DateTimeZone])
-AddAccelerator "tzi"  ([System.TimeZoneInfo])
 
 
-Export-ModuleMember -Alias * -Function * -Cmdlet *
+Export-ModuleMember -Alias $aliasesToExport -Function @(
+    'AddAccelerator',
+    'RemoveAccelerator',
+    'PscxLess',
+    'Edit-Profile',
+    'Edit-HostProfile',
+    'Resolve-ErrorRecord',
+    'QuoteList',
+    'QuoteString',
+    'Get-ViewDefinition',
+    'Invoke-Method',
+    'Set-Writable',
+    'Set-FileAttributes',
+    'Set-ReadOnly',
+    'Show-Tree',
+    'Get-Parameter',
+    'Get-ExecutionTime',
+    'AddRegex'
+)
 
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCDEam/ZbPWlEAu
-# y9oCv9hyLfK5KCByv+mNN7AaVDPOHqCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDPY/H+LaldbQz9
+# 1OQvMmPQh02hvj+9h8Haj/SmSpY5gaCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -2084,34 +1801,34 @@ Export-ModuleMember -Alias * -Function * -Cmdlet *
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQg9v7OQNMomaFIilvGpFZg
-# zpZWohegCPpafy9UDOazlNIwDQYJKoZIhvcNAQEBBQAEggIAm0haMcUuFNWgayTc
-# ULg3fjth7SBNwdEaoB6bEBDWsFrrTAZOeNh35yhqMteAFn3xrshYNXu8D276FXCt
-# blkWn8fc1/l/sWwbObEYutVLwINwS5JpHuvPyTDzutveixw1SwE9OyPdZ9UKG9D6
-# 4rklv8SDHbfOsjKPImIvzBmZM8YWEcsgatiwbsDiOaRVzilyOeygbXkFqTbiwwPH
-# uCl2d8Ey1LRJa7NMICyboJ3gBOS31e2vnLqr9Tr5ccRD5cyyixwqx8ZEGeVJAjIf
-# pfPlFYUTlLiQZ8mSKxkJBs8UZatyC7JojtcowDOm3EfMUR3jtXltv8/+fkz05V1I
-# 869pWt6IU25CEs4PhTmB9ppM6JIoihzOg9QZDxUIFrwJqz7HkhwZhSRoZw3skJFn
-# hPTChKkr2joL/4eAvmPwG1D41lz1BV2y4g1988CBkibbiqi1aCO5oupa4dCf209e
-# K55zEs3Fp/fYPaQxaPnS56dd5sv+JGpPkEOe6lw5BmKbZs9PPfLJKW1+M0o9h8jm
-# lvAF2x251NcpXCeWdrs42m7KSZKgmeLeTdWjmN+09lEniECYm55pNbVyNBsDEl0x
-# vu+jQAWSJAZgNgp948PPqTgCTFCYN8COWqtjsenZkd9oz41vBf55gP4OpWzZEjPr
-# lbQyMI+cNkT9m6Y2A/1Xx6M5lwShggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgshSnA0fPPYzqgsXiK39+
+# YLxAoLJs1qic+RiPm7rEUwIwDQYJKoZIhvcNAQEBBQAEggIAOlK/m+xpvY+iTdtU
+# 6nCpV7Z4zBGoxFPWF02ujo2BrOzn8eO9gUGw4vVS2IK868cHgBjD7eu8hTb+m+Ap
+# TtXa+45fKOx65Gt2s/Q9uPmdBlALZVKZMtfly22SX+epcynAkSicbSaXt5FyxEBr
+# /o9kpIQB5O9/xWs2V/gGXTHDYX0rOu9KXWPaJHzO4s+DXYwJAvX2/xDKlqgqhRRV
+# Rzgi3Y6MT3uejoSsstnQwdVWYpA5F84AyRMNDYv3AUWGOMp3XPKpmyU3mOREaVWE
+# EsgOm2xdWlrvLLsYEN8jlrWJshoXI8cJKgJChKAvzvOasWXyHuy/cAtG7Lozt9YA
+# 23G8Rb68ZB52wMCVnibsjVR/uOzUbxhzP388R/ayoP+dkYO0GsNYez155Fxt+hBS
+# UfgZpwZrTKYodhKiKa/ytNw+kOAYV6C9jl8J9RoQaEKW2t0UYVS+rtudrwo2kC0M
+# JOqL4gi5jhbfMXDCWY7+RMoQXJp8hY0lD867ianQVN4D+CgkELISy/Y1r2CbzcEv
+# HX71KqiMMpJMmeGlPX4VxTCaM+5IqG3Tp5H8RYCG87KrmdcyPh2smIPUkjQvGPch
+# WKaFkI5QuZZvyUM1ktJhCSVZ3H6FRj8ef66MT+V7QvCgPea/DIObrA3Un+iEtahK
+# +4N/+Td+pJkCJY1B4R3fKD5D1N+hggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODA4MDQ0ODQ0WjAvBgkqhkiG9w0BCQQxIgQgEn3Q7B6SlRUVE598m0bTgoIWK+Xr
-# OskmRGjsKpYbR8AwDQYJKoZIhvcNAQEBBQAEggIAQWaBgsWB8HGj3ENhXTCdVifd
-# 8HmCis26CVC/9/IDgRtRyfu4LM9VB9GmltoVTa3lFL7EeW97Qn7BTn4BCEbFc9Pz
-# TWchk9sqNvQpIYIh8Bhlisbs+70kKKeGzljXll6ydk3b65+n0LAU01cjUZSD2FW/
-# falCM2aUgwOBugE9K9kZzTmbBywtthB0MpbTOggwzsOjgAXLou9zhRkwkegQlGqD
-# 0FGsE0Cc9zUFxGFVey+mGNgtniooZRKfcdGpxSWfnZbKCaKCxJolIXiPqNY/nGEN
-# hE9zDMmsnsIUS9GlSz0CPDHp8kLSAgGCE7Ez6gFmJlAY+gYYzzVzE6vmA/aqdNfW
-# rNmzJ1jmnXs5mD5rzlGQhM71su9ZC73mJktWg6hejwWTquZeKr2pp2W3BK6pRrN6
-# pwX+kg+FXn90ZEqCe3MvlkwtOXJjQ7/MgBzu4mvToXzzV26VrznFSiYb16YQAqJn
-# fqv9Tj47rFKPQsU1QnYLfkcUyK9wiJFqhXlajSWcFyAD+y904ukuWqgbb5PjFCKN
-# tyfWGu2JKniNJo6GVcinPqcWeqNc+DysOW98p0vhdV88zoEDRssqlZjVCVUmASO6
-# 9nCYkCtwhzVrdF4BsgVr5ZW82m1ZmM422i09UsRwZPeKrWaLytJ6EzW2Db4Ga9m0
-# Te/nWjIl5ZTsqVgzI00=
+# ODI5MDM1MzM3WjAvBgkqhkiG9w0BCQQxIgQgLlOcsSj/WX6j0w5JWLFENvKWl07q
+# y0FdVUTaaPgeTr0wDQYJKoZIhvcNAQEBBQAEggIAy5LM6eW/kWGewUDnoVQP96Mh
+# nXSWIir3ohpPcDwc54xSc2G982l9aN1akQ2IUQambuB2lbXB9ttm/zdHVLJOBZGs
+# rIIECjk32z3DRcs7VAI39VEPFtY+nJeVeznT0qNlY3CKowKgJTGJSZUqlCL3tCuj
+# K1Et2ZK+Ofjue8Lt9s1+IoyxIFLy8/1EFwA2HgRMEqDHFFRA5j+jfJPKuIKhw6Ax
+# UWOunmN7yYkbigDxwty9QoPCU2DuzKzA6t1TIqDhPKabH3xfFbKA2M8K2HEEjCK6
+# UTd2fsdkInZny5axOceB9fBGLkC2Vg+UhZle/wUfciE8MhAIl5XkLW66EDiSofvt
+# CjYmCHfy9XDcEIv57HjGIyig5x9SfZ5z4zDVkO58RS625IwP45117cWYdYWpwrHn
+# cdAJuwPqOXFFrodCcwmNt7rEO81qyGtBbgBNQMhOefyj79SgiFh096tmP53A8K5q
+# b9gWzkfDMvw4fBdKQ1SIPam2VFtM80M6KMkozDoZijG5lyobOZl/+6nnh0dtMe46
+# ObY6OGoIYT6slh5n5e8NVRviyYoFgPzrfGpXzw3lmEMMkXwZhC+fFE5wabucv/R6
+# gAarNwFRgk7sJQJSzOubQQ3rlIUhtHxOeyqGkdNj4UhSVi7zpzWJh0JEoZq1YngE
+# yvwFZGb83+7oN8xs64g=
 # SIG # End signature block

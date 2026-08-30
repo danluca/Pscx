@@ -1,6 +1,7 @@
 @{
-    # The root and Utility manifests still use wildcard alias exports. Keep the
-    # small alias/provider baseline here until Phase 4 makes those exports explicit.
+    # PSCX aliases are created when their names are available. Existing commands
+    # are preserved unless OverrideExistingAliases is enabled; Pscx.CD always
+    # replaces cd when that submodule is selected.
     Aliases = @{
         Core = @(
             'call',
@@ -9,12 +10,9 @@
             'e',
             'ehp',
             'ep',
-            'fhex',
             'fxml',
             'gpar',
             'gtn',
-            'igc',
-            'lorem',
             'ql',
             'qs',
             'rver',
@@ -31,13 +29,9 @@
         Full = @('AssemblyCache', 'DirectoryServices')
     }
     Platforms = @{
-        # Script functions cannot carry SupportedOSPlatformAttribute metadata.
-        # Keep the exceptional Windows-only functions here until their module
-        # placement makes the platform boundary self-describing.
-        WindowsOnlyCommands = @(
-            'Invoke-BatchFile',
-            'Stop-RemoteProcess'
-        )
+        # Windows-only commands now live in platform-specific modules or carry
+        # SupportedOSPlatformAttribute metadata, so no catalog exception remains.
+        WindowsOnlyCommands = @()
     }
     OptionalFeatures = @{
         Core = @(
@@ -49,9 +43,7 @@
         )
         Full = @(
             @{ Name = 'DirectoryServices'; ModuleName = 'Pscx.DirectoryServices' },
-            @{ Name = 'Sudo'; ModuleName = 'Pscx.Sudo' },
-            @{ Name = 'Vhd'; ModuleName = 'Pscx.Vhd' },
-            @{ Name = 'Wmi'; ModuleName = 'Pscx.Wmi' }
+            @{ Name = 'Sudo'; ModuleName = 'Pscx.Sudo' }
         )
     }
 }

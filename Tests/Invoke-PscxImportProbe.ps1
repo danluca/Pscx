@@ -13,6 +13,10 @@ param(
 
     [switch] $EnableAllOptionalFeatures,
 
+    [switch] $OverrideExistingAliases,
+
+    [string] $CollisionAliasName,
+
     [string] $PowerShellPath = 'pwsh',
 
     [Parameter(DontShow)]
@@ -21,7 +25,8 @@ param(
 
 $probePath = Join-Path ([IO.Path]::GetTempPath()) ('Pscx.ImportProbe.{0}.json' -f [guid]::NewGuid().ToString('N'))
 try {
-    $pwshPath = (Get-Command -Name $PowerShellPath -CommandType Application -ErrorAction Stop).Source
+    $pwshPath = Get-Command -Name $PowerShellPath -CommandType Application -ErrorAction Stop |
+        Select-Object -First 1 -ExpandProperty Source
 }
 catch {
     throw "Could not resolve the PowerShell executable '$PowerShellPath'."
@@ -50,6 +55,12 @@ if ($DisableOptionalFeatures) {
 }
 if ($EnableAllOptionalFeatures) {
     $arguments += '-EnableAllOptionalFeatures'
+}
+if ($OverrideExistingAliases) {
+    $arguments += '-OverrideExistingAliases'
+}
+if ($CollisionAliasName) {
+    $arguments += @('-CollisionAliasName', $CollisionAliasName)
 }
 
 if (-not $env:PSCX_IMPORT_PROBE_CHILD) {
@@ -80,8 +91,6 @@ if ($DisableOptionalFeatures) {
             TranscribeSession = $false
             Utility = $false
             Sudo = $false
-            Vhd = $false
-            Wmi = $false
         }
     }
 }
@@ -95,17 +104,48 @@ elseif ($EnableAllOptionalFeatures) {
             TranscribeSession = $true
             Utility = $true
             Sudo = $true
-            Vhd = $true
-            Wmi = $true
         }
     }
 }
 elseif ($Feature) {
     $preferences = @{ ModulesToImport = @{ $Feature = $true } }
 }
+if ($OverrideExistingAliases) {
+    if ($null -eq $preferences) {
+        $preferences = @{}
+    }
+    $preferences.OverrideExistingAliases = $true
+}
 
 $warnings = @()
-$cdAliasBefore = (Get-Alias cd -ErrorAction SilentlyContinue).Definition
+if ($CollisionAliasName) {
+    Set-Alias -Name $CollisionAliasName -Value Get-Date -Scope Global -Force
+}
+$aliasesBefore = @{}
+Get-Alias | ForEach-Object { $aliasesBefore[$_.Name] = $_.Definition }
+$contract = Import-PowerShellDataFile -LiteralPath (Join-Path $PSScriptRoot 'Pscx.PublicContract.psd1')
+$documentedAliases = @($contract.Aliases.Core)
+if ($BuildScope -eq 'Full') {
+    $documentedAliases += $contract.Aliases.Full
+}
+$commandsBeforeImport = @()
+if ($CollisionAliasName -or $DisableOptionalFeatures) {
+    # Describe the clean child session without auto-importing an installed PSCX
+    # version before the packaged module is loaded. Restore normal auto-loading
+    # before import so optional modules can resolve built-in commands.
+    $previousModuleAutoLoadingPreference = $PSModuleAutoLoadingPreference
+    try {
+        $PSModuleAutoLoadingPreference = 'None'
+        $commandsBeforeImport = @(
+            Get-Command -Name $documentedAliases -ErrorAction SilentlyContinue |
+                ForEach-Object Name |
+                Sort-Object -Unique
+        )
+    }
+    finally {
+        $PSModuleAutoLoadingPreference = $previousModuleAutoLoadingPreference
+    }
+}
 try {
     if ($null -eq $preferences) {
         Import-Module $manifestPath -Force -ErrorAction Stop -WarningVariable warnings
@@ -123,19 +163,42 @@ try {
                 ForEach-Object Name |
                 Sort-Object -Unique
         )
+        ExportedAliases = @(
+            (Get-Module Pscx).ExportedAliases.Keys | Sort-Object -Unique
+        )
+        ChangedAliases = @(
+            Get-Alias | Where-Object {
+                -not $aliasesBefore.ContainsKey($_.Name) -or
+                $aliasesBefore[$_.Name] -ne $_.Definition
+            } | ForEach-Object Name | Sort-Object -Unique
+        )
+        PreexistingCommandNames = $commandsBeforeImport
+        CdAliasDefinition = (Get-Alias -Name cd -ErrorAction SilentlyContinue).Definition
+        CollisionAliasDefinition = if ($CollisionAliasName) {
+            (Get-Alias -Name $CollisionAliasName -ErrorAction SilentlyContinue).Definition
+        }
         Warnings = @($warnings | ForEach-Object ToString)
-        CdAliasBefore = $cdAliasBefore
-        CdAliasAfter = (Get-Alias cd -ErrorAction SilentlyContinue).Definition
     }
+    Remove-Module Pscx -Force -ErrorAction Stop
+    $result['ChangedAliasesAfterRemoval'] = @(
+        Get-Alias | Where-Object {
+            -not $aliasesBefore.ContainsKey($_.Name) -or
+            $aliasesBefore[$_.Name] -ne $_.Definition
+        } | ForEach-Object Name | Sort-Object -Unique
+    )
 }
 catch {
     $result = [ordered]@{
         Imported = $false
         LoadedModules = @()
         ExportedCommands = @()
+        ExportedAliases = @()
+        ChangedAliases = @()
+        ChangedAliasesAfterRemoval = @()
+        PreexistingCommandNames = $commandsBeforeImport
+        CdAliasDefinition = $null
+        CollisionAliasDefinition = $null
         Warnings = @($warnings | ForEach-Object ToString)
-        CdAliasBefore = $cdAliasBefore
-        CdAliasAfter = (Get-Alias cd -ErrorAction SilentlyContinue).Definition
         Error = $_.ToString()
     }
 }

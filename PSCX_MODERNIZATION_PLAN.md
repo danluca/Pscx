@@ -30,12 +30,13 @@ The proposed package family is:
 | Package | Purpose | Typical contents |
 | --- | --- | --- |
 | `Pscx` | Platform-aware CLI essentials | PATH/environment tools, file metadata, editor integration, XML tools, units, reflection/PE inspection, error helpers; gsudo and less in the default Windows payload |
-| `Pscx.Archive` | Optional archive support beginning with PSCX 4.0; exact platform contract to be proven | Read, create, and expand archives; 7-Zip integration or another selected backend |
-| `Pscx.WindowsAdmin` | Optional Windows administration | AD, DHCP, SQL/OLE DB, privileges, terminal services, VHD, COM, shortcuts, mount/reparse-point operations |
+| `Pscx.Archive` | Optional, cross-platform archive support beginning with PSCX 4.0 | Read, create, and safely expand archives through the managed SharpCompress backend |
+| `Pscx.WinAdmin` | Optional Windows administration | Generic ADO/OLE DB access, batch environment import, short-path annotation, and foreground-window inspection |
 | `Pscx.Time` | Optional date/time helpers beginning with PSCX 4.0 | NodaTime-backed types and accelerators with a documented supported API |
 
-`Pscx.Time` will be packaged separately so consumers explicitly choose whether
-to install and import its NodaTime-backed API.
+`Pscx.Time` is packaged as a separate sibling module in the unified ZIP so
+consumers explicitly choose whether to install and import its NodaTime-backed
+API.
 
 ## Release strategy
 
@@ -108,9 +109,9 @@ must agree:
 **Tracking:** [#17 Fix and test NodaTime arithmetic defects](https://github.com/danluca/Pscx/issues/17)
 
 - [x] Fix `PlusSeconds()` in:
-  - `Src/Pscx/Time/LocalDateTime.cs`;
-  - `Src/Pscx/Time/OffsetDateTime.cs`;
-  - `Src/Pscx/Time/ZonedDateTime.cs`.
+  - `Src/Pscx.Time/Time/LocalDateTime.cs`;
+  - `Src/Pscx.Time/Time/OffsetDateTime.cs`;
+  - `Src/Pscx.Time/Time/ZonedDateTime.cs`.
 - [x] Fix `PlusMilliseconds()` in the same three classes.
 - [x] Add tests covering positive, zero, negative, boundary, and daylight-saving-time cases where applicable.
 - [x] Review all adjacent date/time forwarding methods for copy/paste errors; no additional unit-forwarding defects were found.
@@ -446,7 +447,7 @@ PowerShell can infer command syntax and parameter metadata from a loaded command
 
 ---
 
-## Release gate: PSCX 3.8.0 and transition to 4.0 development
+## Release gate: PSCX 3.8.0 and transition to 4.0 development — complete
 
 **Tracking:** [#28 Validate and release PSCX 3.8.0](https://github.com/danluca/Pscx/issues/28)
 
@@ -459,19 +460,19 @@ development line.
   operating system. The Windows, Linux, and macOS CI matrix is green, and a
   local stable-version `PublishPrep` rehearsal validated the ZIP installation,
   SPDX SBOM, and SHA-256 release assets on August 8, 2026.
-- [ ] Have [pull request #23](https://github.com/danluca/Pscx/pull/23) ready for
+- [x] Have [pull request #23](https://github.com/danluca/Pscx/pull/23) ready for
   review and ask the maintainer to merge it.
-- [ ] Merge pull request #23 into `master`, then update the local `master` branch
+- [x] Merge pull request #23 into `master`, then update the local `master` branch
   to the resulting release commit.
-- [ ] Create and push the annotated `v3.8.0` tag from that exact release commit.
-- [ ] Verify the tag-triggered release workflow rebuilds 3.8.0 and creates a
+- [x] Create and push the annotated `v3.8.0` tag from that exact release commit.
+- [x] Verify the tag-triggered release workflow rebuilds 3.8.0 and creates a
   draft GitHub Release containing the ZIP, SPDX SBOM, and SHA-256 checksum.
-- [ ] Review the generated notes and attached assets, then publish the draft
+- [x] Review the generated notes and attached assets, then publish the draft
   GitHub Release.
-- [ ] Perform a local install/upgrade of PSCX from the published GitHub Release.
-- [ ] After `v3.8.0` is released, create a `dev/29-rel40`.
-- [ ] In the first 4.0 development commit, change the authoritative `PscxVersionPrefix` in `Directory.Build.props` from `3.8.0` to `4.0.0-preview.1` and start the 4.0 changelog section.
-- [ ] Begin Phase 4 only on the 4.0 development line.
+- [x] Perform a local install/upgrade of PSCX from the published GitHub Release.
+- [x] After `v3.8.0` is released, create a `dev/29-rel40`.
+- [x] In the first 4.0 development commit, change the authoritative `PscxVersionPrefix` in `Directory.Build.props` from `3.8.0` to `4.0.0-preview.1` and start the 4.0 changelog section.
+- [x] Establish the 4.0 development line before beginning Phase 4 work.
 
 ---
 
@@ -481,160 +482,217 @@ development line.
 
 ### Tasks
 
-- [ ] Replace `AliasesToExport = '*'` with an explicit alias list.
-- [ ] Replace all `Export-ModuleMember -Alias * -Function * -Cmdlet *` calls with explicit exports.
-- [ ] Ensure each child module explicitly exports its own API.
-- [ ] Generate or validate the parent manifest's aggregate exports.
-- [ ] Add `Remove-PathVariable` to the public API and documentation, or explicitly mark it private.
-- [ ] Review every alias for cross-platform collisions:
+- [x] Replace `AliasesToExport = '*'` with an explicit alias list.
+- [x] Replace all `Export-ModuleMember -Alias * -Function * -Cmdlet *` calls with explicit exports.
+- [x] Ensure each child module explicitly exports its own API.
+- [x] Generate or validate the parent manifest's aggregate exports.
+- [x] Add `Remove-PathVariable` to the public API and documentation, or explicitly mark it private.
+- [x] Review every alias for cross-platform collisions:
   - `tail`;
   - `touch`;
   - `skip`;
   - `ln`;
   - `help`;
   - all other short aliases.
-- [ ] Move convenience aliases into an opt-in preference or separate `Pscx.LegacyAliases` module.
-- [ ] Never replace the global `help` command during a default import.
-- [ ] Add module-qualified examples where a PSCX command intentionally resembles a built-in.
-- [ ] Give every public command a stable output type where structured output is expected.
-- [ ] Document compatibility aliases and their planned removal date.
+- [x] Preserve existing commands by default and allow deliberate alias collisions through
+  `OverrideExistingAliases`; always replace `cd` when the CD submodule is enabled.
+- [x] Never replace the global `help` command during a default import.
+- [x] Add module-qualified examples where a PSCX command intentionally resembles a built-in.
+- [x] Document the alias collision policy and retain the convenience aliases as supported API.
 
 ### Exit criteria
 
-- [ ] Default import has no wildcard exports.
-- [ ] Default import does not mutate global aliases.
-- [ ] An automated test catches every accidental API addition or removal.
+- [x] Default import has no wildcard exports.
+- [x] Default import does not replace existing commands except for the documented `cd`
+  behavior selected by enabling the CD submodule.
+- [x] An automated test catches every accidental API addition or removal.
 
 ---
 
-## Phase 5: Classify the existing feature set
+## Phase 5: Classify the existing feature set — complete
 
 **Goal:** Decide what belongs in the modern core, what moves to an optional package, and what is deprecated.
+
+- [x] Create a machine-validated proposed disposition for every public command in
+  [`PSCX_COMMAND_DISPOSITION.psd1`](PSCX_COMMAND_DISPOSITION.psd1), with review
+  findings in [`PSCX_COMMAND_DISPOSITION.md`](PSCX_COMMAND_DISPOSITION.md).
+- [x] Review and approve each proposed disposition before implementing removals or
+  package moves.
 
 ### 5.1 Retain and invest in the core
 
 These areas are distinctive enough to keep, subject to normal API and quality review:
 
-- [ ] PATH/environment-variable editing:
+- [x] PATH/environment-variable editing:
   - `Get-PathVariable`;
   - `Add-PathVariable`;
   - `Remove-PathVariable`;
   - `Set-PathVariable`.
-- [ ] Environment-frame management:
+- [x] Environment-frame management:
   - `Get-EnvironmentBlock`;
   - `Push-EnvironmentBlock`;
   - `Pop-EnvironmentBlock`.
-- [ ] Assembly and PE inspection:
+- [x] Assembly and PE inspection:
   - `Test-Assembly`;
   - `Get-PEHeader`.
-- [ ] XML tooling:
+- [x] XML tooling:
   - `Test-Xml`;
   - `Format-Xml`;
   - `Convert-Xml`.
-- [ ] Unit and byte formatting:
+- [x] Unit and byte formatting:
   - `ConvertTo-Unit`;
   - `Format-Byte`.
-- [ ] File/editor utilities:
+- [x] File/editor utilities:
   - `Edit-File`;
   - `Set-FileTime`.
-- [ ] Error inspection:
-  - `Resolve-ErrorRecord`;
-  - platform-neutral portions of native error handling.
-- [ ] Enhanced location-stack behavior, if usage and tests support it.
-- [ ] Base64 conversion if its pipeline, file, and encoding behavior is meaningfully better than direct .NET calls.
-- [ ] `Test-Script` if it exposes useful parser diagnostics as structured objects.
+- [x] Error inspection:
+  - [x] retain `Resolve-ErrorRecord` with structured output by default and an
+    explicit `-AsText` compatibility mode;
+  - [x] retain Windows-native error decoding in the default Windows core.
+- [x] Retain enhanced location-stack behavior and document `PathInfo` as the stable
+  `-PassThru` output contract.
+- [x] Retain Base64 conversion and route file progress through the verbose stream.
+- [x] Retain `Test-Script` with its Boolean default and a `-PassThru` structured
+  parser-result mode.
 
 For every retained command:
 
-- [ ] Write a concise differentiation statement.
-- [ ] Ensure output is structured rather than display-only where practical.
-- [ ] Review approved verbs and naming.
-- [ ] Support standard common parameters and expected path semantics.
-- [ ] Provide at least one realistic example.
+- [x] Write a concise differentiation statement in
+  [`PSCX_RETAINED_COMMAND_AUDIT.psd1`](PSCX_RETAINED_COMMAND_AUDIT.psd1).
+- [x] Audit and document its output contract; provide a stable output type wherever
+  structured output is expected.
+- [x] Ensure output is structured rather than display-only where practical.
+- [x] Review approved verbs and naming, documenting compatibility exceptions.
+- [x] Support standard common parameters and expected path semantics, documenting
+  the few intentional exceptions.
+- [x] Provide at least one realistic example and enforce example coverage for
+  default-loaded retained commands in packaged tests.
 
 ### 5.2 Move to `Pscx.Archive`
 
-Backend selection and the supported-platform contract are intentionally
-deferred until this module is designed. Cross-platform support must be
-demonstrated rather than assumed.
+`Pscx.Archive` is a separately imported, managed-only sibling module using
+SharpCompress 0.50.4 and distributed in the unified PSCX release ZIP. It
+supports PowerShell 7.6/.NET 10 on Windows, Linux, and macOS without loading
+archive dependencies during the default `Pscx` import. PSCX 4.0 creates ZIP,
+7z, TAR, TAR.GZ/TGZ, and TAR.BZ2/TBZ2 archives;
+listing and extraction use SharpCompress's detected read formats. Extraction
+is intentionally unencrypted and rejects rooted paths, parent traversal, and
+symbolic-link entries before writing. File timestamps are preserved when
+available; ACL and Unix-mode preservation are not part of the portable 4.0
+contract.
 
-- [ ] `Write-PscxArchive`.
-- [ ] `Read-PscxArchive`.
-- [ ] `Expand-PscxArchive`.
-- [ ] Select and document the archive backend.
-- [ ] Define the supported-platform contract from demonstrated backend behavior.
+- [x] `Write-PscxArchive`.
+- [x] `Read-PscxArchive`.
+- [x] `Expand-PscxArchive`.
+- [x] Select and document the archive backend.
+- [x] Define the supported-platform contract from demonstrated backend behavior.
 - [ ] Verify archive creation, listing, and extraction on every claimed platform.
-- [ ] Add zip-slip/path-traversal tests.
-- [ ] Add symbolic-link and permission-handling tests.
-- [ ] Decide whether encrypted archives are supported and test password handling without exposing secrets.
-- [ ] Package only required architecture-specific binaries.
-- [ ] Avoid storing duplicate source archives, NuGet packages, framework builds, and runtime binaries in the main repository.
+- [x] Add zip-slip/path-traversal tests.
+- [x] Add symbolic-link and permission-handling tests.
+- [x] Decide that encrypted archive extraction is unsupported in 4.0 and reject it explicitly without accepting or exposing passwords.
+- [x] Eliminate architecture-specific archive binaries by using the managed-only backend.
+- [x] Avoid storing duplicate source archives, NuGet packages, framework builds, and runtime binaries in the main repository.
 
-### 5.3 Move to `Pscx.WindowsAdmin`
+### 5.3 Move to `Pscx.WinAdmin`
 
-Candidate groups:
+Implemented disposition:
 
-- [ ] Active Directory and DHCP.
-- [ ] SQL Server, ADO, and OLE DB.
-- [ ] Privileges and user/group membership.
-- [ ] Terminal Services/Remote Desktop sessions.
-- [ ] VHD operations.
-- [ ] COM running-object access.
-- [ ] Shortcuts and short paths.
-- [ ] Mount points, reparse points, and volume labels.
-- [ ] Windows foreground-window APIs.
-- [ ] Windows-native error decoding.
-- [ ] Visual Studio environment import.
+- [x] Remove PSCX Active Directory and DHCP commands in favor of the Windows
+  ActiveDirectory and DhcpServer modules; document their installation and
+  command replacements.
+- [x] Remove the SQL Server-specific PSCX commands in favor of Microsoft's
+  SqlServer module; retain the provider-neutral ADO and OLE DB commands in
+  `Pscx.WinAdmin`.
+- [x] Retain privileges and user/group membership in the default Windows core.
+- [x] Retain Terminal Services/Remote Desktop sessions in the default Windows core.
+- [x] Remove PSCX VHD operations in favor of the Hyper-V module's `Mount-VHD`
+  and `Dismount-VHD` commands.
+- [x] Retain COM running-object access in the default Windows core.
+- [x] Move `Add-ShortPath` to WinAdmin; retain shortcut creation and short-path lookup in Windows core.
+- [x] Retain mount points, reparse points, and volume labels in the default Windows core.
+- [x] Move `Get-ForegroundWindow` to WinAdmin; retain `Set-ForegroundWindow` in Windows core.
+- [x] Retain Windows-native error decoding in the default Windows core.
+- [x] Retain Visual Studio environment import in the default Windows core.
 - [x] Keep elevation/gsudo integration in the default Windows core rather than moving it into this optional module.
+- [x] Keep `Disconnect-TerminalSession` with its Terminal Services companions:
+  unlike `Stop-TerminalSession`, it preserves the session and its programs for
+  later reconnection.
+- [x] Move `Invoke-BatchFile` to WinAdmin because its arbitrary batch-file
+  environment capture remains broader than Visual Studio's developer shells.
 
 For each group:
 
-- [ ] Identify maintained Microsoft or community modules that already cover it.
-- [ ] Retain PSCX only when it offers simpler installation, better pipeline behavior, or otherwise distinctive value.
-- [ ] Avoid importing heavy dependencies until a related command is invoked.
-- [ ] Add `[SupportedOSPlatform("windows")]` consistently.
+- [x] Identify maintained Microsoft or community modules that already cover it.
+- [x] Retain PSCX only when it offers simpler installation, better pipeline behavior, or otherwise distinctive value.
+- [x] Avoid importing heavy dependencies until a related command is invoked.
+- [x] Add `[SupportedOSPlatform("windows")]` consistently.
+- [x] Package `Pscx.WinAdmin` as a separately imported sibling root in the
+  unified Full Windows ZIP and validate its nine-command public contract.
 
 ### 5.4 Move platform-neutral features out of the Windows assembly
 
-- [ ] Move `ConvertFrom-Yaml` and `ConvertTo-Yaml` into the cross-platform core or a small optional data-format package.
-- [ ] Review archive commands for cross-platform placement.
-- [ ] Move `Get-ForegroundWindow` and `Set-ForegroundWindow` out of the cross-platform project and into `Pscx.WindowsAdmin`.
-- [ ] Audit every source file against its project's platform contract.
+- [x] Move `ConvertFrom-Yaml` and `ConvertTo-Yaml`, their type accelerators, and
+  YamlDotNet into the cross-platform core.
+- [x] Review archive commands for cross-platform placement; they ship in the optional cross-platform `Pscx.Archive` module.
+- [x] Move `Get-ForegroundWindow` out of the cross-platform project and into `Pscx.WinAdmin`; retain `Set-ForegroundWindow` in Windows core.
+- [x] Audit every source file against its project's platform contract; move
+  `Stop-RemoteProcess` into `PscxWin`, guard the shared OEM-encoding interop,
+  and enforce the reviewed boundaries in static validation. See the
+  [Phase 5.4 platform-source audit](PSCX_COMMAND_DISPOSITION.md#phase-54-platform-source-audit).
 
 ### 5.5 Deprecate and remove low-value duplicates
 
-| Command/feature | Proposed action | Replacement or reason |
+| Command/feature | Resolution | Replacement or reason |
 | --- | --- | --- |
-| `ConvertTo-MacOs9LineEnding` | Remove | Obsolete line-ending format |
-| `Get-LoremIpsum` | Remove or move to examples | Outside the core CLI productivity scope |
-| `Get-FileTail` | Deprecate | `Get-Content -Tail -Wait` |
-| `Get-PscxHash` | Deprecate unless byte-array streaming is distinctive | `Get-FileHash` |
-| `Format-Hex` | Remove or rename with proven differentiation | Built-in `Format-Hex`; current name collides |
-| `Join-PscxString` | Deprecate unless behavior is distinctive | Built-in `Join-String` |
-| `Split-PscxString` | Review for removal | Native string splitting and `-split` |
-| `Get-PscxUptime` | Deprecate | Built-in `Get-Uptime` |
-| `New-Hardlink` | Deprecate | `New-Item -ItemType HardLink` |
-| `New-Symlink` | Deprecate | `New-Item -ItemType SymbolicLink` |
-| `New-Junction` | Deprecate | `New-Item -ItemType Junction` |
-| `Invoke-GC` | Remove | Manual garbage collection is rarely appropriate |
-| `PscxHelp` | Make optional or remove | Modern help and pager behavior |
-| `PscxLess` | Retain in the default Windows core; review its API and integration | The bundled pager is considered a valuable Windows CLI utility |
-| Screen CSS/HTML helpers | Review for removal | Narrow and unrelated surface |
-| WMI accelerator module | Review for removal | WMI-era compatibility surface needs a current use case |
+| `ConvertTo-MacOs9LineEnding` | Removed in 4.0 | Obsolete line-ending format |
+| `Get-LoremIpsum` | Removed in 4.0 | Outside the core CLI productivity scope |
+| `Get-FileTail` | Retained as a thin function | Delegates to `Get-Content -Tail` and optional `-Wait` |
+| `Get-PscxHash` | Retained | Its string and aggregated byte-array pipeline hashing remains distinctive from `Get-FileHash` |
+| `Format-Hex` | Removed in 4.0 | Use the built-in `Format-Hex`; the PSCX name collided |
+| `Join-PscxString` | Removed in 4.0 | Use the built-in `Join-String` |
+| `Split-PscxString` | Removed in 4.0 | Use native string splitting or `-split` |
+| `Get-PscxUptime` | Removed in 4.0 | Use the built-in `Get-Uptime` |
+| `New-Hardlink` | Retained as a thin function | Delegates to `New-Item -ItemType HardLink` on all supported platforms |
+| `New-Symlink` | Retained as a thin function | Delegates to `New-Item -ItemType SymbolicLink` on all supported platforms |
+| `New-Junction` | Retained as a thin Windows function | Delegates to `New-Item -ItemType Junction` |
+| `Invoke-GC` | Removed in 4.0 | Manual garbage collection is rarely appropriate |
+| `PscxHelp` | Removed in 4.0 | Use PowerShell's built-in `Get-Help` and `help`; retain `PscxLess` for explicit paging |
+| `PscxLess` | Retained in the default Windows core | The bundled pager remains a valuable Windows CLI utility |
+| Screen CSS/HTML helpers | Removed in 4.0 | Narrow, host-specific, and unrelated surface |
+| WMI accelerator module | Removed in 4.0 | Use modern CIM commands and native `DateTime`/`TimeSpan` values |
 
 ### Deprecation mechanics
 
-- [ ] Emit one actionable warning per session, not one warning per pipeline item.
-- [ ] Add replacement examples to help.
-- [ ] Publish a removal version and date.
-- [ ] Provide a compatibility module for users who cannot migrate immediately.
-- [ ] Measure feedback during 4.0 previews before final removal.
+- [x] Do not emit deprecation warnings from the retained convenience wrappers;
+  they are maintained PSCX APIs backed by modern built-ins.
+- [x] Document replacements for commands removed at the 4.0 breaking boundary.
+- [x] Publish 4.0.0 as the removal version; its release date remains controlled
+  by the maintainer's release decision.
+- [x] Do not ship a compatibility module for the low-value duplicates; the
+  retained file-tail and link wrappers cover the convenience use cases chosen
+  by the maintainer.
+- [x] Record the decisions in the roadmap and migration guidance rather than
+  delaying the already-approved 4.0 removals for a second preview cycle.
+
+### 5.6 Extract the optional time module
+
+- [x] Package the NodaTime-backed types and accelerators as the separately
+  imported `Pscx.Time` module approved in Phase 0.
+- [x] Remove NodaTime and the `isodate`, `zonedtime`, `offsettime`,
+  `localtime`, `tz`, and `tzi` accelerators from the default `Pscx`
+  import.
+- [x] Preserve the corrected arithmetic behavior and managed tests in the new
+  module boundary.
+- [x] Add packaged-module import, export, help, dependency-isolation, and
+  cross-platform tests for `Pscx.Time`.
+- [x] Document installation, explicit import, migration, and the unified ZIP
+  layout for the optional sibling module.
 
 ### Exit criteria
 
-- [ ] Every existing public command has a documented disposition.
-- [ ] The core module has a coherent scope.
-- [ ] Optional dependencies are not loaded by the default core import.
+- [x] Every existing public command has a documented disposition.
+- [x] The core module has a coherent scope.
+- [x] Optional dependencies are not loaded by the default core import.
 
 ---
 
@@ -644,24 +702,24 @@ For each group:
 
 ### Tasks
 
-- [ ] Inventory every copy of 7-Zip, gsudo, less, SevenZipSharp, PowerShell assemblies, and native support libraries.
-- [ ] Identify duplicate architectures, compressed source packages, NuGet packages, and extracted binaries.
-- [ ] Stop committing generated `Output` packages to the repository.
-- [ ] Prefer NuGet/package restore over committing third-party managed assemblies.
-- [ ] Do not redistribute PowerShell runtime assemblies unless there is a demonstrated runtime requirement.
+- [x] Inventory every copy of 7-Zip, gsudo, less, SevenZipSharp, PowerShell assemblies, and native support libraries.
+- [x] Identify duplicate architectures, compressed source packages, NuGet packages, and extracted binaries.
+- [x] Stop committing generated `Output` packages to the repository.
+- [x] Prefer NuGet/package restore over committing third-party managed assemblies.
+- [x] Do not redistribute PowerShell runtime assemblies unless there is a demonstrated runtime requirement.
 - [x] Retain bundled gsudo in the default Windows core package.
 - [x] Retain bundled less in the default Windows core package.
-- [ ] Determine whether the byte-identical `gsudo.exe` and `sudo.exe` files are both required for command-name compatibility or can share one payload safely.
-- [ ] Package only the archive binary for the user's operating system and architecture.
-- [ ] Add checksums and provenance records for every redistributed executable.
-- [ ] Automate third-party update detection.
-- [ ] Add malware/signature scanning to the release workflow where available.
+- [x] Determine whether the byte-identical `gsudo.exe` and `sudo.exe` files are both required for command-name compatibility or can share one payload safely.
+- [x] Package only the archive binary for the user's operating system and architecture. Superseded by the managed-only, cross-platform `Pscx.Archive` module; no native archive binary ships.
+- [x] Add checksums and provenance records for every redistributed executable.
+- [x] Automate third-party update detection.
+- [x] Add malware/signature scanning to the release workflow where available.
 
 ### Exit criteria
 
-- [ ] The default PSCX package contains no unrelated native executable.
-- [ ] Optional package size and contents are documented.
-- [ ] Every redistributed binary has version, license, source, checksum, and update ownership recorded.
+- [x] The default PSCX package contains no unrelated native executable.
+- [x] Optional package size and contents are documented.
+- [x] Every redistributed binary has version, license, source, checksum, and update ownership recorded.
 
 ---
 
@@ -671,26 +729,36 @@ For each group:
 
 ### 7.1 PATH management improvements
 
-- [ ] Add normalization and duplicate removal.
-- [ ] Add existence validation with an option to retain unavailable paths.
-- [ ] Support process, user, and machine scope where the OS permits it.
-- [ ] Preserve platform-specific path comparison behavior.
-- [ ] Provide `-PassThru` for commands that mutate PATH-like variables.
-- [ ] Add dry-run/`-WhatIf` support for persistent changes.
-- [ ] Provide structured output describing added, removed, retained, invalid, and duplicate entries.
+- [x] Add normalization and duplicate removal.
+- [x] Add existence validation with an option to retain unavailable paths.
+- [x] Support process, user, and machine scope where the OS permits it.
+- [x] Preserve platform-specific path comparison behavior, with an explicit
+  `-CaseInsensitive` override for Unix systems.
+- [x] Provide `-PassThru` for commands that mutate PATH-like variables.
+- [x] Add dry-run/`-WhatIf` support for persistent changes.
+- [x] Provide structured output describing added, removed, retained, invalid, and duplicate entries.
 
 ### 7.2 File text diagnostics
 
-- [ ] Add encoding and BOM detection.
-- [ ] Add line-ending detection, including mixed-line-ending reporting.
-- [ ] Consider one consolidated line-ending command instead of separate Windows, Unix, and legacy Mac commands.
-- [ ] Preserve final-newline behavior explicitly.
-- [ ] Support check-only operation for CI use.
+- [x] Add encoding and BOM detection through structured `Get-TextFileInfo` output.
+- [x] Add line-ending detection, including mixed-line-ending reporting and per-style counts.
+- [x] Evaluate consolidating the line-ending commands; retain the explicit
+  `ConvertTo-UnixLineEnding` and `ConvertTo-WindowsLineEnding` names because
+  they communicate intent clearly, while sharing one implementation and not
+  adding a legacy Mac-specific command.
+- [x] Preserve encoding, BOM, and final-newline state by default, with explicit
+  `-FinalNewline Preserve|Add|Remove` control.
+- [x] Support non-mutating `-Check` operation with structured
+  `NeedsConversion` output for CI use.
+- [x] Cover byte-level conversion behavior in managed tests and the shipped
+  command contract in packaged-module Pester tests.
 
 ### 7.3 Installation diagnostics
 
-- [ ] Add `Test-PscxInstallation` or equivalent.
-- [ ] Report:
+- [x] Add `Test-PscxInstallation` as an observational, cross-platform command
+  that does not import modules, execute tools, access the network, or mutate
+  the session.
+- [x] Report:
   - PSCX version;
   - PowerShell and .NET versions;
   - operating system and architecture;
@@ -699,20 +767,59 @@ For each group:
   - archive backend availability;
   - missing or incompatible native dependencies;
   - manifest/help/export validation status.
-- [ ] Return structured diagnostic objects and provide a concise default view.
+- [x] Return one `Pscx.InstallationDiagnostic` object per check, with category,
+  name, status, actual and expected values, message, and details, plus a concise
+  default table view.
+- [x] Treat unavailable or unloaded optional packages as informational,
+  unresolved user-facing tools as warnings, and broken loaded/package
+  contracts as failures.
+- [x] Cover the shipped command, output shape, default view, session
+  non-mutation, and degraded editor/pager resolution in packaged Pester tests.
 
 ### 7.4 Command discovery and documentation
 
-- [ ] Add examples organized by task rather than only alphabetically by noun.
-- [ ] Add “Why PSCX instead of the built-in?” notes for commands with nearby built-in functionality.
-- [ ] Add a platform/support table.
-- [ ] Add migration guidance from legacy PSCX and from PSCX Light 3.x.
+- [x] Add examples organized by task rather than only alphabetically by noun in
+  the [task-oriented command guide](docs/COMMAND_DISCOVERY.md), and surface
+  practical starting points in the installed `about_Pscx` help.
+- [x] Add “Why PSCX instead of the built-in?” notes for commands with nearby
+  built-in functionality, including guidance to prefer the built-in when the
+  PSCX convenience layer adds no needed behavior.
+- [x] Add a platform/support table covering the core, Windows companion,
+  explicit sibling modules, and platform-specific PATH behavior.
+- [x] Add a [PSCX 4.0 migration guide](docs/MIGRATING_TO_4.0.md) for both PSCX
+  Light 3.x and older full/upstream PSCX, including runtime, installation,
+  package-boundary, command-removal, alias, and output-contract changes.
+- [x] Validate the new guides' PowerShell example syntax, README links, removed
+  command coverage, and installed about-help discovery content in packaged
+  Pester tests.
+
+### 7.5 Guided update and installation
+
+- [x] Add an explicitly invoked PowerShell update script that discovers the
+  latest compatible stable PSCX release from GitHub Releases, compares it with
+  installed versions, and reports the available version and release-notes URL.
+  Allow prerelease discovery only through an explicit opt-in switch.
+- [x] Require interactive confirmation immediately before installation and
+  support `ShouldProcess`, including `-WhatIf`; do not check the network or
+  prompt automatically during module import or normal command execution.
+- [x] Download the release ZIP and checksum to a temporary location, verify the
+  SHA-256 checksum and package manifest/version, and reject unsafe archive paths
+  before modifying a module directory.
+- [x] Install atomically into the versioned `Pscx/<module-version>/...` layout,
+  retain existing versions for rollback, and report the installed path and the
+  command needed to import the new version. Keep removal of older versions a
+  separate, explicit operation.
+- [x] Handle offline, proxy, rate-limit, incompatible-runtime, permission, and
+  interrupted-install failures with actionable errors and no partial install.
+- [x] Test release selection, semantic-version comparison, confirmation,
+  `-WhatIf`, checksum failure, archive safety, side-by-side installation, and
+  recovery behavior without depending on the live GitHub service.
 
 ### Exit criteria
 
-- [ ] New features have cross-platform tests and full help.
-- [ ] Each feature directly supports the CLI-extension mission.
-- [ ] No new large mandatory dependency is introduced into the core.
+- [x] New features have cross-platform tests and full help.
+- [x] Each feature directly supports the CLI-extension mission.
+- [x] No new large mandatory dependency is introduced into the core.
 
 ---
 
@@ -722,6 +829,40 @@ For each group:
 
 ### Preview checklist
 
+- [x] Replace the flaky per-file/rule-batch parallel PSScriptAnalyzer subprocess
+  pattern with deterministic, bounded static-analysis orchestration.
+- [x] Preserve complete diagnostics for analyzer infrastructure failures,
+  including the file, rule batch, exit code, standard output, and standard
+  error; distinguish those failures from actual analyzer findings, and ensure
+  that any narrowly scoped transient retry still reports the initial failure
+  and never retries or hides a genuine finding.
+- [x] Add regression coverage for the static-analysis runner so a child-process
+  failure cannot lose its diagnostic context on Windows, Linux, or macOS.
+- [x] Bound each analyzer worker with a process-tree timeout, canonicalize and
+  deduplicate findings before applying the baseline, and always publish the
+  complete repository-relative diagnostic inventory with runtime/platform
+  metadata so environment-specific CI findings are actionable.
+- [x] Generate a portable HTML test dashboard from the existing managed-test
+  TRX, Pester NUnit XML, coverage, and static-validation JSON outputs. Present
+  overall and per-suite status, passed/failed/skipped counts, failure details,
+  duration, and the separate PowerShell and managed-code coverage results.
+- [x] Produce the same HTML dashboard from local and CI test runs and upload it
+  as a browsable CI artifact. Keep the XML, JSON, TRX, and coverage files as
+  the authoritative machine-readable results; the dashboard is a convenience
+  view and must not become a second source of test truth.
+- [x] Make the report self-contained and usable offline without CDN resources,
+  platform-specific browser automation, or exposing environment-sensitive
+  paths and data.
+- [x] Generate release ZIPs with the standard versioned module layout,
+  `Pscx/<module-version>/...`, deriving the directory name from the
+  authoritative module version rather than hard-coding it.
+- [x] Validate that extracting the ZIP directly into a directory on
+  `$env:PSModulePath` supports normal discovery, version-qualified import, and
+  side-by-side installation without rearranging package contents.
+- [x] Include the maintainer's public code-signing root certificate for
+  optional Windows Authenticode validation, document its expected identity and
+  broad trust implications, and require certificate-store or publisher-trust
+  changes to remain explicit manual user actions.
 - [ ] Publish at least one preview of each new package.
 - [ ] Publish a complete 3.x-to-4.0 migration guide.
 - [ ] Test clean install, upgrade, uninstall, and side-by-side scenarios.
@@ -785,7 +926,7 @@ The following issues are small enough to begin independently:
 18. Inventory and reduce bundled third-party binaries.
 19. Draft the 4.0 command deprecation and migration table.
 20. Prototype the `Pscx.Archive` package.
-21. Prototype the `Pscx.WindowsAdmin` package.
+21. Prototype the `Pscx.WinAdmin` package.
 22. Add PATH normalization and validation.
 23. Add `Test-PscxInstallation`.
 
@@ -794,13 +935,13 @@ The following issues are small enough to begin independently:
 | Phase | Status | Completion |
 | --- | --- | --- |
 | 0. Baseline and decisions | Complete | 100% |
-| 1. Correctness, security, builds | In progress | 25% |
-| 2. Tests and CI | In progress | 62% |
-| 3. Metadata, docs, releases | In progress | 50% |
-| 4. Explicit public API | Not started | 0% |
-| 5. Feature classification | Not started | 0% |
-| 6. Dependency and binary reduction | Not started | 0% |
-| 7. Cohesive improvements | Not started | 0% |
-| 8. PSCX 4.0 release | Not started | 0% |
+| 1. Correctness, security, builds | Complete | 100% |
+| 2. Tests and CI | Complete | 100% |
+| 3. Metadata, docs, releases | Complete | 100% |
+| 4. Explicit public API | Complete | 100% |
+| 5. Feature classification | Complete | 100% |
+| 6. Dependency and binary reduction | Complete | 100% |
+| 7. Cohesive improvements | Complete | 100% |
+| 8. PSCX 4.0 release | In progress | 33% |
 
 Update this table when a phase changes state. Detailed completion should remain in the checklists so the summary does not become a second source of truth.

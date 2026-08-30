@@ -19,9 +19,9 @@ namespace Pscx.Win.Commands.IO.Ntfs {
     [ProviderConstraint(typeof(FileSystemProvider))]
     [Cmdlet(VerbsCommon.Remove, PscxWinNouns.MountPoint, DefaultParameterSetName = ParameterSetPath),
      Description("Removes a mount point, dismounting the current media if any. If used against the root of a fixed drive, removes the drive letter assignment.")]
-    [RelatedLink(typeof(NewHardLinkCommand)), RelatedLink(typeof(NewJunctionCommand)),
+    [RelatedLink("New-Hardlink"), RelatedLink("New-Junction"),
      RelatedLink(typeof(GetMountPointCommand)), RelatedLink(typeof(GetReparsePointCommand)),
-     RelatedLink(typeof(RemoveReparsePointCommand)), RelatedLink(typeof(NewSymlinkCommand))]
+     RelatedLink(typeof(RemoveReparsePointCommand)), RelatedLink("New-Symlink")]
     public sealed class RemoveMountPointCommand : PscxPathCommandBase {
         protected override void OnValidateLiteralPath(IPscxPathSettings settings) {
             settings.PathType = PscxPathType.Container;
