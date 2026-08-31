@@ -145,6 +145,25 @@ Describe 'PSCX updater semantic version and release selection' {
 
         $selected.Version.Text | Should -Be @('4.2.0-preview.2', '4.1.0')
     }
+
+    It 'reads installed prerelease metadata from manifest hashtables' {
+        Mock -ModuleName Pscx.Update Get-Module {
+            @([pscustomobject]@{
+                    Name = 'Pscx'
+                    Version = [version]'4.0.0'
+                    Path = '/modules/Pscx/4.0.0/Pscx.psd1'
+                    PrivateData = @{
+                        PSData = @{ Prerelease = 'preview.1' }
+                    }
+                })
+        }
+
+        $installed = @(& $script:updateModule { Get-PscxInstalledVersion })
+
+        $installed | Should -HaveCount 1
+        $installed[0].Version.Text | Should -Be '4.0.0-preview.1'
+        $installed[0].Version.IsPrerelease | Should -BeTrue
+    }
 }
 
 Describe 'PSCX updater package security' {

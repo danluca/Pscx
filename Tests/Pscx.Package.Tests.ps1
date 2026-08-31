@@ -74,6 +74,37 @@ Describe 'Packaged PSCX module contract' {
             Should -BeNullOrEmpty
     }
 
+    It 'preserves the content hashes of packaged Authenticode signatures' {
+        if (-not $IsWindows) {
+            Set-ItResult -Skipped -Because 'Authenticode validation is available only on Windows.'
+            return
+        }
+
+        $signedFiles = @(
+            Get-ChildItem -LiteralPath $ModulePath -Recurse -File |
+                Where-Object Extension -In '.ps1', '.psm1', '.psd1', '.ps1xml' |
+                Where-Object {
+                    Select-String -LiteralPath $_.FullName `
+                        -SimpleMatch '# SIG # Begin signature block' -Quiet
+                }
+        )
+        $invalidSignatures = @(
+            foreach ($file in $signedFiles) {
+                $signature = Get-AuthenticodeSignature -LiteralPath $file.FullName
+                if ($signature.Status -in 'HashMismatch', 'NotSigned' -or
+                    $null -eq $signature.SignerCertificate) {
+                    '{0}: {1} ({2})' -f
+                        $file.FullName,
+                        $signature.Status,
+                        $signature.StatusMessage
+                }
+            }
+        )
+
+        $signedFiles | Should -Not -BeNullOrEmpty
+        $invalidSignatures | Should -BeNullOrEmpty
+    }
+
     It 'ships the expected public code-signing root certificate' {
         $certificatePath = Join-Path $ModulePath 'Certificates/Lucas-Code-Root-CA.cer'
         Test-Path -LiteralPath $certificatePath -PathType Leaf | Should -BeTrue
@@ -979,6 +1010,7 @@ Describe 'Optional feature imports' {
         $result = & (Join-Path $PSScriptRoot 'Invoke-PscxImportProbe.ps1') `
             -ModulePath $ModulePath -BuildScope $BuildScope -PowerShellPath $PowerShellPath
         $result.Imported | Should -BeTrue
+        $result.ImportErrors | Should -BeNullOrEmpty
         $result.Warnings | Should -BeNullOrEmpty
     }
 

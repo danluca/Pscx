@@ -67,11 +67,45 @@ if ($files.Count -eq 0) {
     throw 'No PowerShell files matched the requested paths and filters.'
 }
 
+function Remove-ExistingAuthenticodeSignatureBlock {
+    param([Parameter(Mandatory)][string] $LiteralPath)
+
+    $bytes = [IO.File]::ReadAllBytes($LiteralPath)
+    $marker = [Text.Encoding]::ASCII.GetBytes('# SIG # Begin ' + 'signature block')
+    $markerIndex = -1
+    for ($index = 0; $index -le $bytes.Length - $marker.Length; $index++) {
+        if ($index -gt 0 -and $bytes[$index - 1] -ne 10) {
+            continue
+        }
+        $matched = $true
+        for ($offset = 0; $offset -lt $marker.Length; $offset++) {
+            if ($bytes[$index + $offset] -ne $marker[$offset]) {
+                $matched = $false
+                break
+            }
+        }
+        $afterMarker = $index + $marker.Length
+        if ($matched -and $afterMarker -lt $bytes.Length -and
+            $bytes[$afterMarker] -in 10, 13) {
+            $markerIndex = $index
+            break
+        }
+    }
+    if ($markerIndex -lt 0) {
+        return
+    }
+
+    $unsignedBytes = [byte[]]::new($markerIndex)
+    [Array]::Copy($bytes, $unsignedBytes, $markerIndex)
+    [IO.File]::WriteAllBytes($LiteralPath, $unsignedBytes)
+}
+
 foreach ($file in $files.Values | Sort-Object FullName) {
     if (-not $PSCmdlet.ShouldProcess($file.FullName, 'Apply an Authenticode signature')) {
         continue
     }
 
+    Remove-ExistingAuthenticodeSignatureBlock -LiteralPath $file.FullName
     $signature = Set-AuthenticodeSignature -FilePath $file.FullName `
         -Certificate $certificate -TimestampServer $TimestampServer.AbsoluteUri
     if ($signature.Status -ne [Management.Automation.SignatureStatus]::Valid) {

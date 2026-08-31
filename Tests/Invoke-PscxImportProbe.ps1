@@ -146,6 +146,7 @@ if ($CollisionAliasName -or $DisableOptionalFeatures) {
         $PSModuleAutoLoadingPreference = $previousModuleAutoLoadingPreference
     }
 }
+$errorCountBeforeImport = $global:Error.Count
 try {
     if ($null -eq $preferences) {
         Import-Module $manifestPath -Force -ErrorAction Stop -WarningVariable warnings
@@ -177,6 +178,11 @@ try {
         CollisionAliasDefinition = if ($CollisionAliasName) {
             (Get-Alias -Name $CollisionAliasName -ErrorAction SilentlyContinue).Definition
         }
+        ImportErrors = @(
+            $global:Error |
+                Select-Object -First ($global:Error.Count - $errorCountBeforeImport) |
+                ForEach-Object ToString
+        )
         Warnings = @($warnings | ForEach-Object ToString)
     }
     Remove-Module Pscx -Force -ErrorAction Stop
@@ -198,6 +204,7 @@ catch {
         PreexistingCommandNames = $commandsBeforeImport
         CdAliasDefinition = $null
         CollisionAliasDefinition = $null
+        ImportErrors = @($_.ToString())
         Warnings = @($warnings | ForEach-Object ToString)
         Error = $_.ToString()
     }

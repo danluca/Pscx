@@ -833,13 +833,13 @@ $pscxAliases = [ordered]@{
     touch = 'Pscx\Set-FileTime'
 }
 $previousAutoLoadingPreference = Get-Variable -Name PSModuleAutoLoadingPreference `
-    -Scope Global -ErrorAction SilentlyContinue
+    -Scope Global -ErrorAction Ignore
 # Get-Command otherwise auto-loads PSCX again from the discovery cache while
 # this module is still initializing its advertised aliases.
 $global:PSModuleAutoLoadingPreference = 'None'
 try {
     foreach ($aliasName in $pscxAliases.Keys) {
-        $commands = @(Get-Command -Name $aliasName -ErrorAction SilentlyContinue)
+        $commands = @(Get-Command -Name $aliasName -ErrorAction Ignore)
         $existingCommand = if ($commands.Count -gt 0) { $commands[0] } else { $null }
         if ($Pscx:Preferences.OverrideExistingAliases -or $null -eq $existingCommand) {
             $target = $pscxAliases[$aliasName]

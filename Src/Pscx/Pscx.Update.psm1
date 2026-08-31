@@ -169,12 +169,20 @@ function Get-PscxInstalledVersion {
         $prerelease = $null
         $privateDataProperty = $module.PSObject.Properties['PrivateData']
         if ($null -ne $privateDataProperty -and $null -ne $privateDataProperty.Value) {
-            $psDataProperty = $privateDataProperty.Value.PSObject.Properties['PSData']
-            if ($null -ne $psDataProperty -and $null -ne $psDataProperty.Value) {
-                $prereleaseProperty = $psDataProperty.Value.PSObject.Properties['Prerelease']
-                if ($null -ne $prereleaseProperty) {
-                    $prerelease = $prereleaseProperty.Value
-                }
+            $privateData = $privateDataProperty.Value
+            $psData = if ($privateData -is [Collections.IDictionary]) {
+                $privateData['PSData']
+            }
+            else {
+                $psDataProperty = $privateData.PSObject.Properties['PSData']
+                if ($null -ne $psDataProperty) { $psDataProperty.Value }
+            }
+            if ($psData -is [Collections.IDictionary]) {
+                $prerelease = $psData['Prerelease']
+            }
+            elseif ($null -ne $psData) {
+                $prereleaseProperty = $psData.PSObject.Properties['Prerelease']
+                if ($null -ne $prereleaseProperty) { $prerelease = $prereleaseProperty.Value }
             }
         }
         $text = $module.Version.ToString()
