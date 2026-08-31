@@ -10,7 +10,7 @@ upstream commit
 
 The customizations made in this fork include:
 
-- current development version 4.0.0-preview.1 targeting .NET 10 and the
+- current development version 4.0.0-preview.2 targeting .NET 10 and the
   PowerShell 7.6 SDK;
 - a cross-platform core for Windows, macOS, and Linux, with a Windows companion
   module for platform-specific commands;
