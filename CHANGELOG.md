@@ -67,6 +67,13 @@
   report written before baseline enforcement.
 * Prevented name-based imports from recursively auto-loading PSCX while its
   advertised compatibility aliases are being initialized.
+* Prevented expected alias-discovery misses from polluting PowerShell's global
+  error history during a successful PSCX import.
+* Corrected updater discovery of installed prerelease metadata stored in
+  module-manifest hashtables.
+* Protected signed PowerShell files from Git line-ending conversion, made the
+  signing tool remove stale signature blocks safely before re-signing, and
+  added release-blocking validation for packaged Authenticode content hashes.
 
 ## 3.8.0 - August 2026
 

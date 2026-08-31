@@ -67,11 +67,45 @@ if ($files.Count -eq 0) {
     throw 'No PowerShell files matched the requested paths and filters.'
 }
 
+function Remove-ExistingAuthenticodeSignatureBlock {
+    param([Parameter(Mandatory)][string] $LiteralPath)
+
+    $bytes = [IO.File]::ReadAllBytes($LiteralPath)
+    $marker = [Text.Encoding]::ASCII.GetBytes('# SIG # Begin ' + 'signature block')
+    $markerIndex = -1
+    for ($index = 0; $index -le $bytes.Length - $marker.Length; $index++) {
+        if ($index -gt 0 -and $bytes[$index - 1] -ne 10) {
+            continue
+        }
+        $matched = $true
+        for ($offset = 0; $offset -lt $marker.Length; $offset++) {
+            if ($bytes[$index + $offset] -ne $marker[$offset]) {
+                $matched = $false
+                break
+            }
+        }
+        $afterMarker = $index + $marker.Length
+        if ($matched -and $afterMarker -lt $bytes.Length -and
+            $bytes[$afterMarker] -in 10, 13) {
+            $markerIndex = $index
+            break
+        }
+    }
+    if ($markerIndex -lt 0) {
+        return
+    }
+
+    $unsignedBytes = [byte[]]::new($markerIndex)
+    [Array]::Copy($bytes, $unsignedBytes, $markerIndex)
+    [IO.File]::WriteAllBytes($LiteralPath, $unsignedBytes)
+}
+
 foreach ($file in $files.Values | Sort-Object FullName) {
     if (-not $PSCmdlet.ShouldProcess($file.FullName, 'Apply an Authenticode signature')) {
         continue
     }
 
+    Remove-ExistingAuthenticodeSignatureBlock -LiteralPath $file.FullName
     $signature = Set-AuthenticodeSignature -FilePath $file.FullName `
         -Certificate $certificate -TimestampServer $TimestampServer.AbsoluteUri
     if ($signature.Status -ne [Management.Automation.SignatureStatus]::Valid) {
@@ -91,11 +125,12 @@ foreach ($file in $files.Values | Sort-Object FullName) {
     }
 }
 
+
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCABJZ+74zdpNaq5
-# suVE2zAq1VnDS9DQile3zfW/RI+Yd6CCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBiW3DNFTiM35PM
+# vq/U0EhHqdOP6oTkZPxP9fhbM0Qu/qCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -274,34 +309,34 @@ foreach ($file in $files.Values | Sort-Object FullName) {
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQg+QBKAHYFHf+jGN2FkDws
-# gNOCRTb25bRXa7rFlq2foG4wDQYJKoZIhvcNAQEBBQAEggIAZsUQi6m5e67XyS2G
-# RF51t7gIef0KJuSIfwHm5S0+oPxuIbfif2LcJq4tlF21IWzBY/nHnm032ZgW0bBn
-# 7E+tS8VoEm8xmNCI/82jwNrcvz96E6HRAu0dzPFy3MiHbanLeo/vSxsGMw8yk+62
-# Ev5PtxzJd/XDw2bhDTmKyDsENY/S12SamF/N7O8lbBcF/HYvpkTGB6YqeNmzcuWS
-# RQ7Eq/I4PQZotAVrjKNB7E1t4t1exqohRxoMUCUZwpcljcwTKblvO1Mbxd3s8rk8
-# 9KaPixgW8telH+48zDDanLn+cjCAJLZCM2Eb0xt/gtWZ0aT38gM5/8kvZnFH3wn5
-# qxYlxS5rDNplp4zSYbVq92pal5Gn3W5plNDMHQbxTP9wyQlGlrhCZ+XJtMIosrCp
-# OetiZT5pH6uNjiAUW6CsYUXu64h4qVflZK4n01KTT706kGCcErJpTPf+bmfXKvVa
-# RtW91w2fR7C+H5dLJT2xCbvAMDL8NvA0X0p0T5e2nbGlG9sl1ycAksojRL8UT2uL
-# ZZtBYVctxFa2OTlXAQDaAsacCke+bF1HRkIKGutR+uipehOkZ4K7CqB9nZkuh4aR
-# zEzBt2Sv/YFwZ2JQ+FP76vIswHYOfaiUdWlnyDWcZFXdb4IhNIXuYDbULBFLydsw
-# TNe+Sl/281r66UBpOH70kTHUL2mhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgbJTPqHghDzIJRHWtkjkX
+# zHfc8jFVT7SHn4kAp1pUsQIwDQYJKoZIhvcNAQEBBQAEggIAneg57lhdIXCDSkM4
+# aaKNZQX7VvXQrSXCAqo8geb6t+49hOH2HddC4pRgTxLegft3/ck7zbnjTg6mmD3y
+# 8laetp/Ndg9324KqeF1Spa438LdzTF0svdNq1AVHELrF17uZ//uZWi9P+OQkJDPJ
+# 9z8+FmUgNEzR88PItRb8/kucQvNAgKgTWCKXfyIMt0yJOq/DvR2RMgmmA0GtN/L4
+# /yc6fHbvQ8W5+wpnWByhgbnCCfWqhGzwxGc5jpK9K8aap7I2wpB67JiFEVsr38eh
+# 44QBY12PBUiHLG9d0ej8YtzN2QAU6buiTzlKQ97MUWg7MgfsnWs+9VtPDVO4Ozin
+# rX71g5KlPpDsyqvOSmCGhOVMfGorWkimWAYRWu8xeK5CWHSmVPj/3U8XCDHnSffc
+# sAFNRyp+VxWSybn43vGFd8jHDAafGQ3HNYDZVJ/w4hN0DW+SKi7oyTBQqgmw68Wd
+# ads5NgU+dKbPOuM+rKbMMWappkhulgpXxVt5q+sRY2W1z/yUZehKd3ypXN5d8XlW
+# 1wNN4g3bFpO44Y3rUjbw5rC96GL+dcgDzRwAriOH6B7tccUbfqoUEG/DNDekgvkg
+# 6kb68JH9M+S2E06S+OYXFsiWczBUY2KD+LlHn/o9CumjAV1zwohZ01olH02LDmSX
+# VrKekjAbQA9Kj0h1fiwZNViQiQ2hggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODA4MDUwNTM2WjAvBgkqhkiG9w0BCQQxIgQgR6gZqNflqV1OFUvr59ulkhMWAo6J
-# W7WBuoURAawdOjEwDQYJKoZIhvcNAQEBBQAEggIAv5xVRKanHr8drS72ujbrCsxO
-# LCGtd1eh9uoOXXULiHVue+3jNZxMotfdcNSoZhQCodQE0J3x8lOsjg0qkHbxtwdn
-# 3dqpYHBYjVuD3HGyxh+IFDkXRx+gb2HHUlfgCLoRRruaE+NpxjJA+5zjbUU0jJvc
-# rKqIppXBREvm/V84HoKFwzxIu91W1mWYLQIgOuRaSkiU4kTL0KYTWSPMjhKxOLtF
-# +cIuExSUGpEefCBSy0uLUtJbr8YLLT1DwCT6OwVTQM2f7AzREi16qY0Fb4um/DbJ
-# Gunj8D/fDByh5YXPnU2YYox1G5jO4kTQ2wuQ51RxmdkvspDNQ9QN4GKF1HwVpSsX
-# UTyzg2RAPKlEb8eq3np2RVbWl/o5RWp9+huRd1YHP1y+3KrpTlQTdt4SOQJpzepr
-# QkR946XQ/G0EgLXNmFJH7QMxK0G2WhqSyeYwXodQAx7MEQ71TtcfoqPTCabB5u5A
-# qEHh/k5vmY2qZX0HtNaBJDLx5zUfTXSSsflaaTRckygzzyQvAnZjsgcFTRvvR/ns
-# B7voUgCe5B5K3ti2Z5xB4meXvVaP3+vxqsaCpbctJJ+JkMYOJbnSZ9XNGMGBoIQu
-# 1hotcS3eFpM54kCiVWDojM+Onu3XBgmmsj3wJd+Od0H7VbSE1fgk+IuTeabnK+B2
-# CHN7VpoMHB5y4kZqVHo=
+# ODMxMTY0MTE1WjAvBgkqhkiG9w0BCQQxIgQg4QujYZ9KYgurcmXBLV2wHH7WWFSn
+# NnVy0v5Xzbgmn5swDQYJKoZIhvcNAQEBBQAEggIAsgSP2XtayUbvs2JgbvNY54qT
+# 2cUVALXqTYrZlPW6YqP0SQKvhBDCsDwOzP2Lj7Q0f5U7wLYQM+0zZh68Xc7YEqiT
+# DanTD9Pt0v8IkmAnlkhc952vPYmutgLPQhOiqtHRKxRmZzzzhIcW3XkTc/roI6Wn
+# 1GsMeDIzRKJip2O8WYDORaU/W340PrugUtIzuS92engyLsxBniH25ICzEpP2TkAk
+# okYfumQ5lrQ0qG6kPV5FcxUD2CDKK6KPJM/5hGSjj72w7Hc9vILyin7lZEPeca9/
+# /eBi2TvhtIJKNmx6lsxml9cQ1U1jXhOuEnBORCdd+Y3xzrIv/RN/K2LeRwIC/8qu
+# pTIQwNw/d2X1GnRPxRgcDDKFJlKVbNmr2kokbkD6CM8lOO1dZ2V7ZCpjmQEFGtqP
+# LekYcar54Clns1WHIUxR3FpR2TnoEBHoRfmfCNM7rdY/XmaDMmLs9/8NTxEIB3K9
+# 7bFjlcDI4x9vpGHBwpNvCkwXJu5ZW2gq/nZvu3olQ42sK88uAMetlAHF/cuoKxDd
+# fchpfNi+yQwgQaeYNl2agagPT1OhmfFuWBW/x+iLnF2OeAZkcrJ4Aj0IOB9ZRaOE
+# r1Wi7/oU3mzCpLtBuPGzzYGzi74a3Cf+ZmsmNrV3kJSHQRudIaQY4uIOr0rVQzMw
+# lRfD76X+kF37IKMXECg=
 # SIG # End signature block

@@ -145,6 +145,25 @@ Describe 'PSCX updater semantic version and release selection' {
 
         $selected.Version.Text | Should -Be @('4.2.0-preview.2', '4.1.0')
     }
+
+    It 'reads installed prerelease metadata from manifest hashtables' {
+        Mock -ModuleName Pscx.Update Get-Module {
+            @([pscustomobject]@{
+                    Name = 'Pscx'
+                    Version = [version]'4.0.0'
+                    Path = '/modules/Pscx/4.0.0/Pscx.psd1'
+                    PrivateData = @{
+                        PSData = @{ Prerelease = 'preview.1' }
+                    }
+                })
+        }
+
+        $installed = @(& $script:updateModule { Get-PscxInstalledVersion })
+
+        $installed | Should -HaveCount 1
+        $installed[0].Version.Text | Should -Be '4.0.0-preview.1'
+        $installed[0].Version.IsPrerelease | Should -BeTrue
+    }
 }
 
 Describe 'PSCX updater package security' {
@@ -398,11 +417,12 @@ Describe 'PSCX updater confirmation and WhatIf contract' {
     }
 }
 
+
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDZvUrIkfZ6AY0S
-# +H9ZL+HoHtYeyE67HihdaMKZ3G8OxKCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBSdGhIEm3VgOC+
+# k1U1w4zUarUqcHO9pxkPqq53Q+AmTqCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -581,34 +601,34 @@ Describe 'PSCX updater confirmation and WhatIf contract' {
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgWeqAn4e97/1ntd8hBcNB
-# t1ceiLzAMz1Iu+5Yexl7umMwDQYJKoZIhvcNAQEBBQAEggIAP6N2TZWHJMWWvTBJ
-# 2PkMuOi03w9fWX0qKBBKKD3dJlmAWJvUqd5fy/yc24hCJewVZfeacGsBXKsInssi
-# cyOflF/9EdmNUrfwyx7aqpsSK1ERHWeIbDO7IPfsEOI4PoWf9a/3owedKEq5Z6ns
-# W0j9cIx1bU7O/rFS5+Vay7fa9ASVpdYWscN0rnJiMCADJbBvT+5S/wZT8obWhxKO
-# ki0VU03ZNWCPdr6P1LRUX6n3XKD8Ay4pvqIm6zoWmwp4AQzo/y7fJBtuo9iYNlQA
-# Bo3GAj61IFBH8Bk7Wuxcq2atXZiWJNl0zvCGUot0FLaVYfkH5kKZWAZJ/qaHQdN5
-# tgVws/L3+fYvgA0n1fano+Siq/uBAptNVxhqWHCfNxMK3sjZGV3Lhiqw+OilNJ3O
-# 1kk+2kP2E7jURXI2ZK6F0XgQfht+Q0rYQqdjFm8pARoRi4n6Kr43u3PC6cXodcMH
-# cBfqmUSTcxOJVGsQflSjAwNPd/tqlaSrzeSpzuwjZsNNQlafrQBDgBLHZtc6mQRr
-# X9hhMOdkGJ/u2fz5iEUoFR6O9NnyI3ljxtQN154lSWO0WoPo4g/wJiwlDEwNHD9r
-# TzvDgDgEi5lILH0f2iONzvFMLp+BFlWKnmaCMNYuL6CGxqJoXwax0CESQWV9xNlI
-# UhDfchgY4ei8FxASn8SOi7vOmVahggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgDvVMXF+A55MQbtv5s10A
+# MoPDBxL8gzjCohWERV6fzwEwDQYJKoZIhvcNAQEBBQAEggIAHnPM5BMGM9D4johf
+# Zyfy/FKZCxa0mzmwLrxxdZkRArFZfzBId72lJbM32IBB/BiniXcamcSl3GRnLafp
+# N/iQ2L/cXqbgI5AsLfJwmoa9rw5qWqzo4C+/08mWAdIIVB5B8Ie5PYw3apcE/+uW
+# Dx0gr50t3EABSrfSE6/CD92m20balxakiCWEQbnoApNhtAzGtKBxz0hukZigiCgV
+# AKyM9M45Wd0sIxHHnDoR9aSLBwbGSmXR8d/9HAGtRKbKM3SY8IEd9M7MbCH4A2xQ
+# B+7AGpH/ZsYZcUW8+RSxvgRklrxU9gHuqGTX0ZFVqMQdh5FC2Ik8boRvecfUaIaU
+# OBBLO+tAY6tgJ2sDglzqpoDEfv5LAiTZUy8FjO2wRwZP9PixJ55Kfrc5Z0regqYE
+# SVInS8lfNY36Y7wehAe7C6lXXp9uLHFiduygNGYHJazeXQ7qEN39v+dfNmH0/7r8
+# RiW6PkZSSZU7O7P3A8N4/GmOwBLIw9mjBPNFNCxP3ev7TMdwNT5MSGGJuWztZjV1
+# g1Rn9apG5rPJ/ySimOPs5EWn5qRMPWBcfXhLH3kSE/Rk98v0e6l6MwnWHXkPPAFw
+# cOyOSJcDhoYq6wQELDURZO+AqBNI3bXZswKy+d8q5EpU7emqAcpc9VrhRPX6XU9x
+# 6P+KCn65s/resEy+CFtEW4GWD56hggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODI4MjEwNTIzWjAvBgkqhkiG9w0BCQQxIgQg7CyMunL4HCXQQlQloellfhRF5KUY
-# uKbX4xsGGLeydy4wDQYJKoZIhvcNAQEBBQAEggIAJuVnmz/kILdQjtLMYgxKHujY
-# xvctHwZx2izmWrcT09ebIlipyk+y7qmrc2P2qqBvr7avbekTFzE0czhW5dmPizhI
-# Zl3JgG4oz/oC2jO3Sx2/zoRdQvqML+RKZdaaVckKcxB7+4hZ4+kSkwCH9UDKUBZF
-# ipW0Ox4ll0XAdxXm1xha8e3N5g8zH22ETdyDIWIwTWwgeic2M/pFt55CdMUT9eUa
-# a/mJ3Yn9nQqcDOMXWFfm5aAcoh0y7Xh/Kys4btlB0x0LXpPpRKC/o1VeaV5cJhcY
-# 1IBQMho4eAvtM7omFfqm9ylTEZnUxiVbpz+Q1GfthSaWAIg1F4hnxx1LDmaBmGk7
-# ErfCeZmbwbG3deDPx4qstndZY3mU8XlCiyAZ6cXQBU1pVsdHBAWNyc9kQkSHpnJS
-# UVkjGG4W9apcSixrsNI2uJoYl0fcwgg2I5WtnPCDkjcUh/JTtSA37hM9+0hriPDU
-# o+hAPryYbxluZPkSNNS5xI+wWT9jE++zjy5Ad1cf9uyfQLuesHH10GJ0FbXeopDT
-# MVJc05Nx0N8MuwQePg4CRh5p57ePFPAq2aRERjgM/DjxP7v66slkDT8dX6Qd12IV
-# 8MNpX7TUm+SgIAKrMxtnUkRRcKuPLJXp2zysCCAvwGszr6kw19+96RS/zFGGlsaa
-# oW4714JmThw9yqLuBu4=
+# ODMxMTY0MTA5WjAvBgkqhkiG9w0BCQQxIgQgt7nZcjWYsq9ncQu1ZOoOWPWqI11J
+# z5KOHQsup2WYPEYwDQYJKoZIhvcNAQEBBQAEggIAVg0FH3beAr5LR/34shRtSdTB
+# 5GAkLxwJfP3If3Upw2KjwFNGVg9KnWGpzlf0nRATXqXArTpvF50H/Sm4xu8zNlMO
+# 2LChAX8yAj5JsANNI2gOM2S1EeZ9iU6bjaf37BPkRJhZa6UNZ+JG2z5rZ9A4JNjZ
+# WZtwcHk8zFssptlKUALfb+YXSqrD8hqW9ffTr7OUwrh5aIW5v1avMw9cVIgf8ix+
+# Zy56/uk4/UU34+zSEI+c9Z3TxBAEjku3o+8P86XpejwkXYGqih4XnATxrdffE5th
+# dBTLliiFMekasqEi2J8Ax+lCxJLMEpDQR4vU7FGzxYY+I1pqPpmSDN/3+O6NiggI
+# islprc5F53qMnYb+uV6eE+G94sdtncUZsk8/srxaO/cjVKuRlETHhq2a4Z8XM3pM
+# 9QG25pLlzznXlijlCOOoavTKv6VSeWW/YgJQ5l2m1i3orpZoYEbE3dVApP9hyUIL
+# yQN3yh1V3w5/Jneqq3ydtELX9QERhoLjJK1hgoM0BQN0/pBj35C7w4noWegGJAZ6
+# RLk5XwU12Lcl+tZ57TZwWt/LJ3FbSSd5nZ0kiLhY7acAtUozxNPE5xjbwsvlAdXx
+# VS7BZQvutX9/vzfGsQkVse/hdRBxJe7MzKLIK1MbkPmHkxCXfG/OekAeWfQ+cDYX
+# DDJCTVar+GNyH5lkoYY=
 # SIG # End signature block
