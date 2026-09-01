@@ -67,7 +67,7 @@ if ($files.Count -eq 0) {
     throw 'No PowerShell files matched the requested paths and filters.'
 }
 
-function Remove-ExistingAuthenticodeSignatureBlock {
+function Get-UnsignedPowerShellContent {
     param([Parameter(Mandatory)][string] $LiteralPath)
 
     $bytes = [IO.File]::ReadAllBytes($LiteralPath)
@@ -92,12 +92,12 @@ function Remove-ExistingAuthenticodeSignatureBlock {
         }
     }
     if ($markerIndex -lt 0) {
-        return
+        return ,$bytes
     }
 
     $unsignedBytes = [byte[]]::new($markerIndex)
     [Array]::Copy($bytes, $unsignedBytes, $markerIndex)
-    [IO.File]::WriteAllBytes($LiteralPath, $unsignedBytes)
+    return ,$unsignedBytes
 }
 
 foreach ($file in $files.Values | Sort-Object FullName) {
@@ -105,7 +105,8 @@ foreach ($file in $files.Values | Sort-Object FullName) {
         continue
     }
 
-    Remove-ExistingAuthenticodeSignatureBlock -LiteralPath $file.FullName
+    [byte[]] $unsignedContent = Get-UnsignedPowerShellContent -LiteralPath $file.FullName
+    [IO.File]::WriteAllBytes($file.FullName, $unsignedContent)
     $signature = Set-AuthenticodeSignature -FilePath $file.FullName `
         -Certificate $certificate -TimestampServer $TimestampServer.AbsoluteUri
     if ($signature.Status -ne [Management.Automation.SignatureStatus]::Valid) {
@@ -129,8 +130,8 @@ foreach ($file in $files.Values | Sort-Object FullName) {
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBiW3DNFTiM35PM
-# vq/U0EhHqdOP6oTkZPxP9fhbM0Qu/qCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAxlEf6GfTK+M52
+# AOOuF8v7ax7Juu6Qq3Lwz5Z8V9WDQqCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -309,34 +310,34 @@ foreach ($file in $files.Values | Sort-Object FullName) {
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgbJTPqHghDzIJRHWtkjkX
-# zHfc8jFVT7SHn4kAp1pUsQIwDQYJKoZIhvcNAQEBBQAEggIAneg57lhdIXCDSkM4
-# aaKNZQX7VvXQrSXCAqo8geb6t+49hOH2HddC4pRgTxLegft3/ck7zbnjTg6mmD3y
-# 8laetp/Ndg9324KqeF1Spa438LdzTF0svdNq1AVHELrF17uZ//uZWi9P+OQkJDPJ
-# 9z8+FmUgNEzR88PItRb8/kucQvNAgKgTWCKXfyIMt0yJOq/DvR2RMgmmA0GtN/L4
-# /yc6fHbvQ8W5+wpnWByhgbnCCfWqhGzwxGc5jpK9K8aap7I2wpB67JiFEVsr38eh
-# 44QBY12PBUiHLG9d0ej8YtzN2QAU6buiTzlKQ97MUWg7MgfsnWs+9VtPDVO4Ozin
-# rX71g5KlPpDsyqvOSmCGhOVMfGorWkimWAYRWu8xeK5CWHSmVPj/3U8XCDHnSffc
-# sAFNRyp+VxWSybn43vGFd8jHDAafGQ3HNYDZVJ/w4hN0DW+SKi7oyTBQqgmw68Wd
-# ads5NgU+dKbPOuM+rKbMMWappkhulgpXxVt5q+sRY2W1z/yUZehKd3ypXN5d8XlW
-# 1wNN4g3bFpO44Y3rUjbw5rC96GL+dcgDzRwAriOH6B7tccUbfqoUEG/DNDekgvkg
-# 6kb68JH9M+S2E06S+OYXFsiWczBUY2KD+LlHn/o9CumjAV1zwohZ01olH02LDmSX
-# VrKekjAbQA9Kj0h1fiwZNViQiQ2hggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgKYbKuUvhfEWdDaYZRA7/
+# 0wRM3/fcC43n+HPQGox4U+kwDQYJKoZIhvcNAQEBBQAEggIAgPTR9OYIrWPuAne7
+# 5AwRMh2OwLyHoRBg2DE/ICfQNOpHEYl71tN52O3gycyLGw0b9pvZbGSS8tfdu1Fu
+# AgVzukVnSnFoGWDBaAHXqRMLutfoNyT5Gpzi4bWc6U4HCp52EhASS+ivV8OsSVfD
+# N4D1yys/CW/YEIlhQeLB2fEFPRNkVsRMrXtKj8cYQQ6CPKDpBk4XPRN26X4b+SJ2
+# JCtdBvpQN1m30KvH1v44dcfMsydoaogaL/6YWQ2PR7P8PD4vU09ApW2Z3YIThUaG
+# N3ja4oRFD7ciJCPoJbhr6qA10CXnxXXJfOpGmZTJFYlGOw4w6d2xrmXwltMICnk5
+# FTxVn4rnocVSPqVUHGZuGID01PnLUDL1cmr+jlPAZOm9GUDG7s8sh8IycFN04/cB
+# 55v/08kswHJlaP46a1U1F+MP6jtlFGLUKJHzpYbVaSBIgbQYDrFNnqrwZ2Ba1LmW
+# jRXteRyp6uSZaerr9Q/IKurg3kuav/g4OjyhM8RaGS2dXf782DFexeXmEYu6t/g5
+# iFfpG7CODPnVYqGECXw7ENYC51V7+c5nFmZsqzDEx5HkU835+mwbaGvRRoXQZNko
+# 0OvyNr0LAjLzPlauzNiWsJYn5cx7nPk6d0Dur4VbrMezEFovL3DWkEdyRtfD3lKX
+# Mkb2f4O6yvPpNmBsgjKgGMcRnRuhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODMxMTY0MTE1WjAvBgkqhkiG9w0BCQQxIgQg4QujYZ9KYgurcmXBLV2wHH7WWFSn
-# NnVy0v5Xzbgmn5swDQYJKoZIhvcNAQEBBQAEggIAsgSP2XtayUbvs2JgbvNY54qT
-# 2cUVALXqTYrZlPW6YqP0SQKvhBDCsDwOzP2Lj7Q0f5U7wLYQM+0zZh68Xc7YEqiT
-# DanTD9Pt0v8IkmAnlkhc952vPYmutgLPQhOiqtHRKxRmZzzzhIcW3XkTc/roI6Wn
-# 1GsMeDIzRKJip2O8WYDORaU/W340PrugUtIzuS92engyLsxBniH25ICzEpP2TkAk
-# okYfumQ5lrQ0qG6kPV5FcxUD2CDKK6KPJM/5hGSjj72w7Hc9vILyin7lZEPeca9/
-# /eBi2TvhtIJKNmx6lsxml9cQ1U1jXhOuEnBORCdd+Y3xzrIv/RN/K2LeRwIC/8qu
-# pTIQwNw/d2X1GnRPxRgcDDKFJlKVbNmr2kokbkD6CM8lOO1dZ2V7ZCpjmQEFGtqP
-# LekYcar54Clns1WHIUxR3FpR2TnoEBHoRfmfCNM7rdY/XmaDMmLs9/8NTxEIB3K9
-# 7bFjlcDI4x9vpGHBwpNvCkwXJu5ZW2gq/nZvu3olQ42sK88uAMetlAHF/cuoKxDd
-# fchpfNi+yQwgQaeYNl2agagPT1OhmfFuWBW/x+iLnF2OeAZkcrJ4Aj0IOB9ZRaOE
-# r1Wi7/oU3mzCpLtBuPGzzYGzi74a3Cf+ZmsmNrV3kJSHQRudIaQY4uIOr0rVQzMw
-# lRfD76X+kF37IKMXECg=
+# OTAxMDMyMTEwWjAvBgkqhkiG9w0BCQQxIgQgZlHHfSXR6fpWejmv0SvXUlqXwRNk
+# alUSf6iM26MpqKIwDQYJKoZIhvcNAQEBBQAEggIAC8o8gpckaseTQWGw4gM2+eYe
+# YcBtwdNnqtzUV14vffvkRdtynt/dya3R3VOWWpFTwcLYwphTjaymoW4bzhgccnYe
+# GCaYudyKFp0XDamoUnBlOt1b9SuPg2ZM/CWxBvSkHu23qbrcx4Iwh4KDPa7Fulys
+# U22peo6U/y+uGgb1KgyCV+Sy3bkruvaY03yDwcbggIJQfrjDSV7dpGybz/6CMMdB
+# mCVEaIXp3OD9ay7Qk6Z9hsnM1RBtxKNfPPpQYQYqZUJ3GXVelHVFmDecJ6LU4fpa
+# LvY5hHlzHTCKLiMGULKCole7bE1w3XpDAfHvay+3e/MiAaAZSIdYrZ+Qrz4B+Lcu
+# 9wgfGEN667ejtCp2H3pySfgRV4pm7feePcJ18HFktjcvOfAXdT+2LSFDU8zp8lKa
+# p16EPAmQU9mAE3u90Mw2aWhU+GdqDvky+/Gu6EThmqXJDjE4SeUKwbonDfEYRdCJ
+# IYo+Uyie0eYeHXDUSf/kmTtEj46aQ/3MXnT2VW4sDW6Wt7tr+F3jMcs33gJxNKNL
+# Whn2hoAiSJsUn1kp2Me7PkWFCa9J9z06n1YW2k42k999XTMlxI7BFfQPrMnquANK
+# ZQExVv92t5hcKbysEIVgWKveaDOFYWKhe5KSPo1kH8Zb+ta+rez9exqVvr/Sln+e
+# 79gfMewpWjqymUI7L8E=
 # SIG # End signature block
