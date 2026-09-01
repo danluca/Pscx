@@ -166,6 +166,10 @@ function Get-PscxInstalledVersion {
     $versions = [Collections.Generic.List[object]]::new()
     $seen = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
     foreach ($module in $modules) {
+        if ($module.Guid -ne $script:PscxManifestGuid) {
+            continue
+        }
+
         $prerelease = $null
         $privateDataProperty = $module.PSObject.Properties['PrivateData']
         if ($null -ne $privateDataProperty -and $null -ne $privateDataProperty.Value) {
@@ -765,6 +769,14 @@ function Invoke-PscxUpdate {
             $assets = Save-PscxReleaseAsset -Candidate $candidate -Destination $candidateRoot
             Test-PscxReleaseChecksum -ArchivePath $assets.ArchivePath `
                 -ChecksumPath $assets.ChecksumPath | Out-Null
+            if ($IsWindows) {
+                try {
+                    Unblock-File -LiteralPath $assets.ArchivePath -ErrorAction Stop
+                }
+                catch {
+                    throw "Downloaded PSCX archive passed SHA-256 verification, but Windows could not remove its Mark of the Web. The package was not installed. $($_.Exception.Message)"
+                }
+            }
             Expand-PscxSafeArchive -ArchivePath $assets.ArchivePath -DestinationPath $extractRoot
             $package = Test-PscxPackageCandidate -PackageRoot $extractRoot `
                 -ExpectedVersion $candidate.Version
@@ -820,8 +832,8 @@ Export-ModuleMember -Function Invoke-PscxUpdate
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAcG6JwJtRk49yA
-# LEfo0n9zSwj0MOhJAT2gRCmW85zEZKCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAadpKvPreuay6E
+# lkwDORZZq3Ri4eSFTpH1Uk7/sZve6aCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -1000,34 +1012,34 @@ Export-ModuleMember -Function Invoke-PscxUpdate
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQg67lsjSCJEFhOKY2ba4ql
-# LMWYYkYFDsgmt9l2O50yx90wDQYJKoZIhvcNAQEBBQAEggIAdq6xoMXSARD3L9YW
-# uR8lZXUOu2ZgX+k5fmbLJ+9Ytdnq8EPDOAf63MUvyDNU3AjOeTxumRBmBNbV2ZTb
-# cxFCLQyklkYF0md2OrfetbxFxwBFWPXx9yGIe5bEVitVemmj3Uz7Gz1z/lIfi5Zg
-# X5rsEP5VT6QyQSzN4Hjv5w+9BHBWYWK8MoYzWZ72SNSH8FdQmKfeUa+tAvbitpRE
-# DMbpZfmjNpV70hp7jrllcSscp+0zxCeMaYOOM8uNiYzkvQ6+SefjAsQdYh3jDDgn
-# E/2T+20moeDGnbKhQT2OkJ1UzuohEt5MZP7+4psCtM9F/t814t88gqPEJbzcVNHN
-# P33LgXaxuW+YNZlM6H8xLc/XJWl/7NOiLcvRCTHKUSZ2+KRtZJAUWO6k9FxUnX1e
-# eNrz7+xDXAMcflJBlM7Fy+Fj3ol7PnqrBGk6XCgfCG1mqlxZ1/wbr22przlh4Df8
-# l8Y5/q9kzrgX/gVFsxSKoSLv3DF000omo7ewoTcOiu83w9PgMPz+t4/t2KC1qbie
-# Sn2bInPQKu8QnTIdrj5Hdp1tQLU7kN4VWhkhCoNszQj2V8DumN7BD0Oc9RiysbjL
-# 10igp1oTrHPGiTkluxR2my/FWLRQNyJnXcq5T+vx180tVbhOYoW4NM2HEmGfs6O4
-# I56mMbx+oWTggsNLj7B7w+UcdLChggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQg54Sg0dkt2OM0WHrzZBQy
+# 7W+Sxd0VZfQdR/mKAJe7/IQwDQYJKoZIhvcNAQEBBQAEggIANbMQg/jpbZ+EBGA4
+# 8H+KaFihj13POCTLgaPDxIp+ydhRSpBPBt3JrH7k55nT6a92UgQ2kmQX9hU6W71P
+# dVntK7/+bTH6OdeopQHWlsDrE0ntp/gX4aDD1TLj0FtiwYb1/rqkDUik7DFnFWhB
+# x5MwMjzwaXQ0KmWs5yFI/6KtZmhdSVQCb/lG55NflkFGrQV4ywIfMPieeEc0aGyD
+# Ok4y6IhgDszzBa9nrAlYlFfN52txRZg6IbNv0Hn0mzZlH6pw1wjzeIPvZzdKMQU2
+# tB1p/FI46slffjoODZKksyDzF3FeS8vh2JaTCcO8rxo90mZFAGNU3fB01kGxjaMj
+# WUIOwl68tUu1ktnczkjjzTjQBV4DaKL4Umken6bZd6H9LtM5yNsEQUrdghCTbq5/
+# WVFdb13MpFz3hpA5GGWFpcbQlB/VUVr32XMZaQRbPivu0kJvV1obNuCTGiXEPivm
+# ZG5gHWBcbrzYdh27aiUzbPem84iGSFbCT3G5Wb4TCepEJr62YVvH1adFqXk7vZOX
+# RjuKTRRRMvKZTLwfD3VkFHmmyj6gshA0+7nElv79ccDfUGK0TBUnFaF9cHO4TjqL
+# 1lffnHjTkNM8/GtYSdB2nDpugGmYRydwy4VMdEi0xUApjnJTZWKr851r5OWZzMba
+# e/cyNYKP1Saa9qOXE8pQ32upZD+hggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODMxMTY0MTA2WjAvBgkqhkiG9w0BCQQxIgQgMFBXvZFhqK7Zp26V32QVNTUVaAwh
-# bYzvjx96PkdKXV8wDQYJKoZIhvcNAQEBBQAEggIAPiC01t3PF9OY9nyjlj851ps+
-# NGOTZgfye0veIaxuxfIaoYTvWNlmquOrVs1OP8R4yJuWtqO2KNsdwydBqBj0avF2
-# 9CpMY7MPVrPkcyb+3wxVh+aJ0jn9YP2Er/dl+XE5/qzB2x77pqyOKeBpckBjL/30
-# E9sPwD/zbVgf2mCTxLpufnd0F6yaPfGfQasXOytrOMeq3EK9TXMfv6+lwSud9TL0
-# vEYqQeuTNR5AGE+RsDGQfduhhycIpZPirPuEa1rfhAnf2DPwgPSLKiTsphQrMXle
-# 0p53B5Aw9pR3gZqQL98QFRPlYz63nV/HIT0+UeYu54dgCcDcQo5qQzg2sgSGnC4Q
-# xfKgp0DMb/WLCFESeIjz1S6QYLMUcaYAz4sIhmgdoXDBrn5yNLpGqxfl4ONIZJs0
-# bId2dWJm8PYByPB9YnxniyLF9kp0dol5BExQRNP2tMt4i4HAbRF0fZlqYuiqISRt
-# Hp6sGkZEIV14j877WAYjGanQ14+EPlQRixaG5PPH2xfAJkfNcii7pV13ZFCjDpIk
-# KCGkxCn7nXVYzHz4LX/AKePqlANYW171ZPjAZu889UTG6Y9ky/w6tkp+ODsfYPH2
-# uNMUPUGjPShIJAa+XMRWNDeT0Bx8PQOZ8dBzMXg4JN23Q98j9zlejNoKfEs16AI0
-# VEY0BKS0ifPJniUffO8=
+# OTAxMTgyNTQ3WjAvBgkqhkiG9w0BCQQxIgQg6ZiyNlCfKk1kg0QeBIBgJrKYTExl
+# GrUTJnJK0KQax5QwDQYJKoZIhvcNAQEBBQAEggIArhHIhsE/o2A4RD5eJ7JpMAd1
+# gbq4Kh2WrTqKuKNPQJ15Y+GKn4n1pRuO7gKolL9idhOl6NlZEsbT0y+ryxCVYgrY
+# FT+QV1D1NfdsYwtO7Vs9JSPXJ7g7LatAZcMMZ4cJclNEEN7Nu5QwaE/39wvj3BmF
+# 1Nb6dLO+K4qBdzGsw9O+y2KvE368wH6AprZdB7WkoTOliUA5Sznb8CTI4M8j0CPQ
+# bc/moUXWZTVNfgEzb6p+ovj/cxY31hcUxclqRkNjyDCItSJi2fGrN89Adna2q5Tr
+# FdBp8ogx5VdnE7cdx+z2rT2gIsqWCz2SfkAGDSzPg5dM/RotZ/mMynX1gxRP1xrK
+# +srFwbjZBjcmaAFS4JFRQ/qwA/RErSNy7nkKTlTcuG8gHu3mhMHKujA2B49Fsju/
+# 4V2fh4ht8XolovGllC8EUm1eTUjejTTfgzBLtNAbh6npujzLgDsmL+4A3GDZOL4K
+# hd5PL/vM3C2z6ddFMlXuAsnuLUJpNoLdA2iqryD6F4+zkEwXOzbw7l84OpM21+pG
+# cPelY5x0wurTY7gWN562wSRTa73m7FqiHKCGsCdDLfZhuqvJd3ELb3rRsQgi0X8O
+# rxATWgguUn7gCZFBC0GhC0ecwR08q42L4xuUCg+/src9+w9otcSuv0qjYr96KwA2
+# I3STBnxL70B7a/JMwPc=
 # SIG # End signature block

@@ -148,14 +148,24 @@ Describe 'PSCX updater semantic version and release selection' {
 
     It 'reads installed prerelease metadata from manifest hashtables' {
         Mock -ModuleName Pscx.Update Get-Module {
-            @([pscustomobject]@{
+            @(
+                [pscustomobject]@{
+                    Name = 'Pscx'
+                    Version = [version]'4.0.0.0'
+                    Path = '/modules/Pscx/4.0.0/Pscx.dll'
+                    Guid = [guid]::Empty
+                    PrivateData = $null
+                }
+                [pscustomobject]@{
                     Name = 'Pscx'
                     Version = [version]'4.0.0'
                     Path = '/modules/Pscx/4.0.0/Pscx.psd1'
+                    Guid = [guid]'0fab0d39-2f29-4e79-ab9a-fd750c66e6c5'
                     PrivateData = @{
                         PSData = @{ Prerelease = 'preview.1' }
                     }
-                })
+                }
+            )
         }
 
         $installed = @(& $script:updateModule { Get-PscxInstalledVersion })
@@ -374,6 +384,9 @@ Describe 'PSCX updater confirmation and WhatIf contract' {
             [pscustomobject]@{ ArchivePath = 'test.zip'; ChecksumPath = 'test.sha256' }
         }
         Mock -ModuleName Pscx.Update Test-PscxReleaseChecksum { $true }
+        if ($IsWindows) {
+            Mock -ModuleName Pscx.Update Unblock-File {}
+        }
         Mock -ModuleName Pscx.Update Expand-PscxSafeArchive {}
         Mock -ModuleName Pscx.Update Test-PscxPackageCandidate {
             [pscustomobject]@{
@@ -406,6 +419,18 @@ Describe 'PSCX updater confirmation and WhatIf contract' {
 
         $result.Status | Should -Be 'UpdateAvailable'
         Should -Invoke -ModuleName Pscx.Update Install-PscxPackage -Times 0
+        if ($IsWindows) {
+            Should -Invoke -ModuleName Pscx.Update Unblock-File -Times 1 `
+                -ParameterFilter { $LiteralPath -eq 'test.zip' }
+        }
+    }
+
+    It 'does not unblock an archive before checksum validation succeeds' -Skip:(-not $IsWindows) {
+        Mock -ModuleName Pscx.Update Test-PscxReleaseChecksum { throw 'Invalid checksum.' }
+
+        { Invoke-PscxUpdate -DestinationRoot (Join-Path $TestDrive 'InvalidModules') -CheckOnly } |
+            Should -Throw '*Invalid checksum*'
+        Should -Invoke -ModuleName Pscx.Update Unblock-File -Times 0
     }
 
     It 'installs after confirmation is explicitly accepted' {
@@ -421,8 +446,8 @@ Describe 'PSCX updater confirmation and WhatIf contract' {
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBSdGhIEm3VgOC+
-# k1U1w4zUarUqcHO9pxkPqq53Q+AmTqCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCjXsNFIXvO8ypK
+# jYgCpKUuB06pCpeel7/gYNddZ+y4s6CCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -601,34 +626,34 @@ Describe 'PSCX updater confirmation and WhatIf contract' {
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgDvVMXF+A55MQbtv5s10A
-# MoPDBxL8gzjCohWERV6fzwEwDQYJKoZIhvcNAQEBBQAEggIAHnPM5BMGM9D4johf
-# Zyfy/FKZCxa0mzmwLrxxdZkRArFZfzBId72lJbM32IBB/BiniXcamcSl3GRnLafp
-# N/iQ2L/cXqbgI5AsLfJwmoa9rw5qWqzo4C+/08mWAdIIVB5B8Ie5PYw3apcE/+uW
-# Dx0gr50t3EABSrfSE6/CD92m20balxakiCWEQbnoApNhtAzGtKBxz0hukZigiCgV
-# AKyM9M45Wd0sIxHHnDoR9aSLBwbGSmXR8d/9HAGtRKbKM3SY8IEd9M7MbCH4A2xQ
-# B+7AGpH/ZsYZcUW8+RSxvgRklrxU9gHuqGTX0ZFVqMQdh5FC2Ik8boRvecfUaIaU
-# OBBLO+tAY6tgJ2sDglzqpoDEfv5LAiTZUy8FjO2wRwZP9PixJ55Kfrc5Z0regqYE
-# SVInS8lfNY36Y7wehAe7C6lXXp9uLHFiduygNGYHJazeXQ7qEN39v+dfNmH0/7r8
-# RiW6PkZSSZU7O7P3A8N4/GmOwBLIw9mjBPNFNCxP3ev7TMdwNT5MSGGJuWztZjV1
-# g1Rn9apG5rPJ/ySimOPs5EWn5qRMPWBcfXhLH3kSE/Rk98v0e6l6MwnWHXkPPAFw
-# cOyOSJcDhoYq6wQELDURZO+AqBNI3bXZswKy+d8q5EpU7emqAcpc9VrhRPX6XU9x
-# 6P+KCn65s/resEy+CFtEW4GWD56hggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQg6NHeru2eRVCVFLB1Vu44
+# 1dGDjyQ9CwUhq8y9enP0MFwwDQYJKoZIhvcNAQEBBQAEggIAoqp266WElSZMyR2Q
+# Up+5Msz2rzHV1CBX4+wOD4EwrSK1/QYzO0r3+/oNqy0YEcc9BUEoefPaPv+5nB/p
+# qjoadm9z8PBXX81jJQneNh1EnQz6EO6pWA7JrV5pgr2X3PuAMulHGzZOHMeXp9Hm
+# BSrxDatsaPgGGLn4QSfawk/TzvF/yPcz/nkKfwrBk6BBE/HBKGbtWqtD2IoxMCzE
+# H6ndD4DXp6VfWfTG0akthKoEqFU+7v9TsVx3+gvyioz3qUDc59njFoDVkuDSS0db
+# KtBOPs/c757v2YbN2yr0EEJVY8pxHimoR+QoMIRmOdlZQh9JcQzaCsRXvw6LY4EA
+# faKPVbzPN96rbpLWHggEodwi47vL2aCEcCXpgdumF8ExoSxyJKIdn9B3UlWCzQ4l
+# rg3Cx9L92g5oWFzo+VCKqamyRixL7dczw1QIhoKVGjA5uqsqS1oCaMKap7JjHVGy
+# x6Cci/pgTptoNtYTmo/MRbT1NEcF+VKMwpol5msxHYg8516TerR+HgnAfF0eXo6L
+# /gmhbMS3PAGN65R4wYHWVuzzDby7hxRj4Snbz1SoLazc+Uli394FOmOHbJr70NlW
+# UmeByvbfaCYahNZ/qV+yahcGVb60HgoWbC0P1SGWMr78fMhXUbUAIH17TGDCLhNI
+# 3f5+vVSC0ETb1lGKfdjG/QayiH+hggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODMxMTY0MTA5WjAvBgkqhkiG9w0BCQQxIgQgt7nZcjWYsq9ncQu1ZOoOWPWqI11J
-# z5KOHQsup2WYPEYwDQYJKoZIhvcNAQEBBQAEggIAVg0FH3beAr5LR/34shRtSdTB
-# 5GAkLxwJfP3If3Upw2KjwFNGVg9KnWGpzlf0nRATXqXArTpvF50H/Sm4xu8zNlMO
-# 2LChAX8yAj5JsANNI2gOM2S1EeZ9iU6bjaf37BPkRJhZa6UNZ+JG2z5rZ9A4JNjZ
-# WZtwcHk8zFssptlKUALfb+YXSqrD8hqW9ffTr7OUwrh5aIW5v1avMw9cVIgf8ix+
-# Zy56/uk4/UU34+zSEI+c9Z3TxBAEjku3o+8P86XpejwkXYGqih4XnATxrdffE5th
-# dBTLliiFMekasqEi2J8Ax+lCxJLMEpDQR4vU7FGzxYY+I1pqPpmSDN/3+O6NiggI
-# islprc5F53qMnYb+uV6eE+G94sdtncUZsk8/srxaO/cjVKuRlETHhq2a4Z8XM3pM
-# 9QG25pLlzznXlijlCOOoavTKv6VSeWW/YgJQ5l2m1i3orpZoYEbE3dVApP9hyUIL
-# yQN3yh1V3w5/Jneqq3ydtELX9QERhoLjJK1hgoM0BQN0/pBj35C7w4noWegGJAZ6
-# RLk5XwU12Lcl+tZ57TZwWt/LJ3FbSSd5nZ0kiLhY7acAtUozxNPE5xjbwsvlAdXx
-# VS7BZQvutX9/vzfGsQkVse/hdRBxJe7MzKLIK1MbkPmHkxCXfG/OekAeWfQ+cDYX
-# DDJCTVar+GNyH5lkoYY=
+# OTAxMTgyNTU4WjAvBgkqhkiG9w0BCQQxIgQghBCv3y9eiPvwneEyD02Pc/RZH0C5
+# Wqxit964Wb0GqNUwDQYJKoZIhvcNAQEBBQAEggIARDs5K/Tfo9Sm39Q/5g1JV8J2
+# 46y0mwAYXyP0vFuQb24++0bHpez/OS9YbQiBN1YGKJ84ZXJt3FYwTdJy/OpuRWSI
+# hrQaIqIS8ScPhS19y3zumCDA08+rds/yLhNDj0Gzv7PIksKRnFuCRw1YDNVcCgTt
+# /zhYEmeF44iIghCXufz4TBMgJvw7DukmbqWDQsGnmqCfu4S1CqFsEY4nvtQBISgE
+# ar/JE6fVNk2Q/QqR2LbGIX7llQWGbckV/o29PQSvjhTYUPXCAQ4RqigcDCvRm5yd
+# i2qShvGw56IVbmSv4I2NvHXKsjfrjdCvFNyVkmrjdbpwppNaYZ9YYVMfoAb/iV/n
+# b7Ek5A2oS04eeX8FoD9jtZaGaTXkkaCNWKZn/MabZyej4j4krDqPwMfi1/J7NFwM
+# XyXge+XnX9TIbnMASW2H7oiqyMB9CXMB0fE35nUdcuBd0MHBvuHkZPwyugVLK4o8
+# iFL6YfJMZ8WcfqA3EnFbT6Y6DDSCknMujtM4hjWwrNWIdwu6eTdj9ECbacTeZVx5
+# EivrfrjbZ9OKgUpkehRVfeBjq3sBlFZnCnuJQBcRQCT+XPwUH9UxniXY3GibmMgc
+# Q1zDnAyviK4j0QnCHgrwYkmxtsYF7kz8XPjVYFL+RYFb2NPKiPGM4OiGdKOo23rh
+# DDPKGHRVxRpOSt7IvSc=
 # SIG # End signature block
