@@ -190,9 +190,13 @@ $updateScript = Join-Path (Get-Module Pscx).ModuleBase 'Update-Pscx.ps1'
 
 `-CheckOnly` still downloads the candidate ZIP and checksum to a temporary
 directory so it can verify SHA-256, archive paths, manifests, version identity,
-and runtime compatibility. Run the script without `-CheckOnly` to receive a
-confirmation prompt immediately before installation, or inspect the planned
-change with `-WhatIf`:
+and runtime compatibility. On Windows, once the ZIP matches its published
+checksum, the updater removes the ZIP's Mark of the Web before extraction so
+the installed files do not inherit it. This does not add a trusted certificate,
+trust the publisher, or change execution policy; the remaining package checks
+and explicit installation confirmation still apply. Run the script without
+`-CheckOnly` to receive a confirmation prompt immediately before installation,
+or inspect the planned change with `-WhatIf`:
 
 ```powershell
 & $updateScript

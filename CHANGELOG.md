@@ -55,7 +55,9 @@
   confirmation and `-WhatIf`, and recoverable side-by-side versioned installs.
 * Fixed installed-version discovery in the updater to ignore PSCX's nested
   binary module record, whose four-part assembly version is not Semantic
-  Version 2.0 metadata.
+  Version 2.0 metadata; on Windows, successfully checksum-verified release ZIPs
+  are now unblocked before extraction so installed files do not inherit Mark of
+  the Web.
 * Added a portable, self-contained HTML dashboard over the authoritative test,
   coverage, and static-analysis results, generated consistently by local and CI
   test pipelines and uploaded with CI artifacts.

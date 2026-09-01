@@ -8,7 +8,9 @@
 
     Before installation, the script downloads the release ZIP and checksum to
     a temporary directory, verifies SHA-256, validates archive paths and module
-    manifests, and confirms runtime compatibility. Installation requires
+    manifests, and confirms runtime compatibility. On Windows, after successful
+    checksum verification, it removes the ZIP's Mark of the Web before
+    extraction so installed files do not inherit it. Installation requires
     confirmation, uses versioned module directories, and never removes or
     overwrites an existing PSCX version.
 .PARAMETER CheckOnly
@@ -71,8 +73,8 @@ if ($PSBoundParameters.ContainsKey('Confirm')) {
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDO5HNnj3gObURm
-# ElHCdna/TmJRHcmFp20W8eBYcXhTZ6CCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCBOXYH8yw4EGCG
+# c3eJx1MohrHNFp5kwNiPAj3u4UVpDaCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -251,34 +253,34 @@ if ($PSBoundParameters.ContainsKey('Confirm')) {
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQg6o/PTWyhVMSGKVhSATSj
-# C9LVf8Yn1jm1pQSUbdljb74wDQYJKoZIhvcNAQEBBQAEggIAaGVne7wRWvaffC9y
-# mpcJOAO32LD1/QyUNxYH1qH3rZ7RbHpCLd/6FQ2xPcwSIOenz5rxptuToIf4YfAl
-# DQM0E3n+f2yqhyZ/3HJVw++bsg/NzP9a3hHUh1291LFTbn8A4Jd2PLJc7NvG7KON
-# OG0SUTmf1VanPe9I921KTcMI2gTJby5E97u6pj+MHpUz8kBt8iw9ityB1USDa6fF
-# dViBbhfscsocdMaTe914sse2bIGIZZ2+qKjw53po8Gg++AWgpmaIkWVpHvdQ6GQr
-# tUZwEt90+OBUemNXRnqK8QaUQyYqcXhIJoyc/EzvCG3Rc2c46N1bqZf+aFlrQghQ
-# 4YB8gMvHm65YsDyW0THVCia2NpLxM9gmlT43i+eIZpD+lWPZcyEIFR+e1XuYFWAU
-# 9tIcMsHMwqfx3tEJlYAnocsWb/dLRA+yFfe1fg943xqnd5ICUWv8y7KJs8F2Gbg0
-# oWTZ1pDYWwDlck/yo3S73sZIEEjrQPRmIUESiKf/TiUCwUPa/2P+7coAMW7eSdks
-# gfneM/KB0ldvorZEnxsyi6yveSDhvjdtWawcWJ13To+UztjwFUQB2eF4ZO+mjrlI
-# rI8DdIeEf98aEdZPda0KUczMz0eyB8GmojL4v9cssw95rkujLdgeKRPqZM8T+P79
-# l3gy0AHOgbBPAb11eLrZIIF/+CmhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgAI8gfB79DmChkz+sDba+
+# MGUT9bw9l1MuCeiNWdg99BgwDQYJKoZIhvcNAQEBBQAEggIAh4FOr6/IOYIac7Tw
+# 1dbv4R58osCnWt04xpCPAVnRnc03SBbvNpxfHpwiR/kQrrPIJlNeIgGnRXEoh146
+# giuEXZCUvk9u3Sn+/ow28r4LAPuWkV69B2aCDJldXS7ZnboPz0t468s//41FI48V
+# 3eIfrRhl4YZhXz4CyOyimdsQIhv0jg92MFxgOdTRLXGlFK/DVdHDPUn8HbcCGSd0
+# OhORtUu/3DaHeucyhPY8xeb2Fya8Ea1wWilWp0wC3EAzx3sZU2YZqjuz2lGbvAQQ
+# 9jRhxxjjuB9+jTg7zVIru+9+iW98qPAyz62KMra1rf4S1FnTi4vfKi3JR7rBeV+O
+# uIfKg1JaSrYl83Z1W9COPNkuGEmEm3QPFmm+w3pSzCF5+RevpJTxOb0tgOO4ZC1z
+# jG8xyW0Ty7WlHJHIP6XRtj49kfhRy/m53vEwdoriK3WpYq7D54Z/b4y0XYmjJf5e
+# 2vbIIuDyq3Jjy8Th1ZoOzUqA8SLsDoCVCj9kWkX5TILrc0LHlrKxZ9beor172nWX
+# 9ocq0pe0GBPkFS6Z2Ri+ath5hDWPKhr+SolrTer1jwCKgmPNX40hJNdSguBR6fgm
+# sH75nxiqGg0d2Jumlq0lKbYiPOAaxfjC2FYC8ufBuhc9klmTI18DNr+gZHn0Odje
+# P7GQDJYml3u9a+UbanPV6mUUBs6hggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODMxMTY0MTA3WjAvBgkqhkiG9w0BCQQxIgQg9Wh7tBXftNbpauGv7IyBGfDyWbd7
-# CqUERzd/0MbAcd4wDQYJKoZIhvcNAQEBBQAEggIAsZdVeC+bH2qgp+UhG5X6iWZK
-# KZXcKRgWP/QyMybYZadwKmXub7tWrFwInykz/fFbgSfQKAUFFjIf/1SmYxRb/B/0
-# 5sZ97R/DYjmxRLFKz13UVDt7NNNG+tBPixQ/kBIc8oAUwtBq6UYx7/xXOEepQ/Um
-# gyOt9EMmA7kT6KrPbwQXDjYYN2cLh7EkXgqoY+tJIRWffk2hdAVNDKSC3lqAc8Jd
-# UGcQjbu6AXx5y2nj6XPN2gzI4ozMyxBW4d84IsmHMvFWFLcbVV+NMPmivyDsMdux
-# ZvEf4HNQaWOWNlwadDJ9ts/2jujr8k/3cIQ/nH6NV+f1ENxjWIKVF3uNpDG5SROU
-# ZM9pIgNnrGvXSL7xqIUtV2IRbvAn9payLUrqKXvK7UnZ9ybdJZlhf32mLXbqq9CM
-# YZeE1oi2mLzqCiivv489IIZo3L1cRwBftNvwSMO1ekcvIBRJTTcU1zrSeNAdTfbK
-# lWnNw73LJuWR3CeEjsF2VOcXuevws9wJDhSTzG4U5B+burgVU5JlOV9pIDAlnItH
-# o3SPDaovzkb1LmgQ0lCxzRJIG/eUhWN5D8f/4IxD4AsYdCqCuBcCuWuFag9jxkV8
-# ic2fUkIbZMDfPEkYxK1EyE28wvLgxqSqyljvenbF70k6UGwFevhybzRHB9DOrKri
-# Cv4Fbg6J4VxiFr1dZmk=
+# OTAxMTkwOTQyWjAvBgkqhkiG9w0BCQQxIgQgyZhTlu0VQj0moX7e/NmyakRgRc/b
+# D0HV9szJzeB2EcMwDQYJKoZIhvcNAQEBBQAEggIADIf6SdJJzC18kO03j0PkWkkO
+# uo7QwMGyS2fCPHLXYvUVzMByD+NiAAPAaaWiMbDaZZn1KGj7K6j9tDuvkkm1erDd
+# wObw0LSM4uOpkTewiuWRUT3/t0r86r8jFMgxs0/0gxokgu2ob9Kjg45ezH9l2RIc
+# G47KHSUUfdy7E0nRiZwMCpgP6cWwagpfbfVBW/ZoR4RzLCjjvwTTAAEvra/HBF0N
+# laH8bgoQefLw1oXGavuuwusRYfcIiFh5wwjNPCGNiH/Cfr3bopt1oQgIe5PAlvJ3
+# 8aHb0l/7Yp/C2HIbV2hufJzlyALjR/4pyffX4va/gtT/T/guXvAit7AI+tlC4/0L
+# Gxr5R6k8JbHPUuCqcQmrDkhTLcwErqVvLEhctsAPnyWi18VUS4S+QXIJFUB98w+8
+# crFxYlDVq3rgDHafyEqMII7MajCSerioUIaxp4CCZMC+CgG7x3SHmPa3OnE2ePvr
+# +IsBMHMVkpmYth3BFcYH9u21JRc4+KEAo9nMIN2rso68I0CUlDUfcBqKtXFewbRj
+# tiSj6SmTdtYeOszNgjHi2mYirC+/xpK4KyOhD8bIBTH3UFv7XpH+zw2m4qycCsVy
+# BoHBafqOPdlaPu8oiG9Cs2OJo/672uo/E9ZaAFi6EyKjxokr9L6tDTOVAx8dOYjt
+# BCYHuLgDgDCLwfgXhzY=
 # SIG # End signature block
