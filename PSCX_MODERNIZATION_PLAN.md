@@ -863,11 +863,11 @@ For each group:
   optional Windows Authenticode validation, document its expected identity and
   broad trust implications, and require certificate-store or publisher-trust
   changes to remain explicit manual user actions.
-- [ ] Publish at least one preview of each new package.
-- [ ] Publish a complete 3.x-to-4.0 migration guide.
-- [ ] Test clean install, upgrade, uninstall, and side-by-side scenarios.
-- [ ] Test package import in clean Windows, Linux, and macOS environments.
-- [ ] Test direct GitHub Release ZIP installation.
+- [x] Publish at least one preview of each new package.
+- [x] Publish a complete 3.x-to-4.0 migration guide.
+- [x] Test clean install, upgrade, uninstall, and side-by-side scenarios.
+- [x]  Test package import in clean Windows, Linux, and macOS environments.
+- [x] Test direct GitHub Release ZIP installation.
 - [ ] Validate command help and examples from installed packages.
 - [ ] Collect and triage preview feedback.
 - [ ] Freeze the public API before release-candidate builds.

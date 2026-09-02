@@ -752,7 +752,7 @@ function Invoke-PscxUpdate {
         $currentText = if ($null -ne $current) { $current.Text } else { $null }
         return ConvertTo-PscxUpdateResult -Status Current -CurrentVersion $currentText `
             -AvailableVersion $currentText -ReleaseNotesUri $null -DestinationRoot $DestinationRoot `
-            -ImportCommand $null -Message 'No newer PSCX release is available under the selected release policy.'
+            -ImportCommand $null -Message "No newer PSCX release than $currentText is available under the selected release policy."
     }
 
     $temporaryRoot = Join-Path ([IO.Path]::GetTempPath()) (
@@ -792,7 +792,7 @@ function Invoke-PscxUpdate {
         if ($null -eq $selectedCandidate) {
             return ConvertTo-PscxUpdateResult -Status NoCompatibleRelease -CurrentVersion $currentText `
                 -AvailableVersion $null -ReleaseNotesUri $null -DestinationRoot $DestinationRoot `
-                -ImportCommand $null -Message 'Newer releases exist, but none are compatible with this PowerShell runtime.'
+                -ImportCommand $null -Message "Newer releases than $currentText exist, but none are compatible with this PowerShell runtime."
         }
         $availableText = $selectedCandidate.Version.Text
         $importCommand = "Import-Module Pscx -RequiredVersion $($selectedPackage.ModuleVersion) -Force"
@@ -828,12 +828,11 @@ function Invoke-PscxUpdate {
 
 Export-ModuleMember -Function Invoke-PscxUpdate
 
-
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCxUOk08fiBc9Qg
-# lIfcMNtt520QdjVOWS1/b7gcVN0ntaCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBsD3f4BmnCfzL6
+# W7TSDABdzjeJ+Mb/LWRAeI4goG8E8aCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -1012,34 +1011,34 @@ Export-ModuleMember -Function Invoke-PscxUpdate
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgjmfT/4RNDnYMNsHhTbJr
-# h/yrzoFcC5GcPjeIi3b0NIQwDQYJKoZIhvcNAQEBBQAEggIAQnVsWiovw+ajPgLk
-# uKn5iauTcbJI+jfUTbP3n81hfUthMvMzNtlKhq6nh/XLVuETll6hPQUk14WtDppq
-# P78HLshUtrGPRcvD/FytPyoso68+QhxvPKcmOz7tM7Wkf2l0y975MApjm4iAOdkE
-# XMuIb2UXDuFKZvctUrl+BduMceeYg3XBmDwQkVuQhr9JBncHQbiRqfmZhoBYqauk
-# pBGBNncpfNPe/2s8dk74ALLbPSHS1REdUsCtHJh83bFHtKL78HwCgY/brjWs03ej
-# XyT2vHTKrD41W5vgqSuMCsXfbwz2XwwyTBYBtKSg8eoJ5lD5vABmZX86v1YtuUER
-# /OXlxom/xjfp62+2Dtp8DjpOrn1D7wI3uY0+bPOyG/YI74ET4pgjXu2IXL4zipx2
-# PIrBeM/WstbA6yjnxJEANRNKewrG3ZMVaex/xJaMPalH83aC0rpZ8QbgQ/9eeHaf
-# sT1HKxJ1BOLe5ul8cIBdisL9zw+rmGfM3wbBlrtD59FX8NbFGcgGa3IULlpoBIqf
-# XuzuhhY6sBsvLhZ7mfmAEzBlET3OusExtjlnPibftGI0Xrsy6l+atP7ldiMB+JCA
-# 7amCNv+KQwIQ4XscOGptaFbGFUHWt5BSLSnqbM9ALOi1DquxSd5wDmSk8jdG1UfE
-# v9m86fY86saKGoIP2eZEvT6nOI+hggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQg4V5Bp+e++lm14YMMVti1
+# yM2OUxl2GeLF2BfXmi7PWkIwDQYJKoZIhvcNAQEBBQAEggIAFsJ2Rj0qasVc+c2L
+# VC05yLCKJuDrhm39XYlInKFfgSdyMFpAG+7JHF4+K4up7nVGZUkaDmXBH0hU11yE
+# cEywUsCbi9YzG1QAPjg8kWFbKi+jhKCUXw+fYPYkgxaSXVWISuDH3C6er8RNt3gs
+# eB7aBs55I/TXve8vdeiheGubWURv4vrLyDUadeneOO66jnAYWO/o81za5UuSsEa0
+# rd/NiXkj8DC4qIMbCTgcA7Vj1YmLPJeytj28qTeT4nJ9bzPblrztwTvgghW0tK0u
+# luQy6pc96cg8KJ7Fvgrin92OgpqXKVu5gU795X9GKNR1zAhKLTVjlMxOUsfYZxFs
+# 68f/+x2BTXL1DrTW00TwR48hNXvtt1a2Z1MjFLHf5lHA4ncNwvUOlTGvY1R8+v7T
+# wJWCfgrL/b80a9xBk1gA6rzP5bdiO4Y3hpSJjwY53eAHbR9dknBZfDQCdqUUTDw0
+# aE0yT6dIpLlqaELk889Omji+JGZRBWAdqxaB+BXb6PBY/zu4Rn0dPL4z+f1/UuEd
+# sGtE7k53ZKNlTfUxiXJwIwIQe79V4zjlDlqC8f24+aCI+fcslzeFjvMv+zurp8aC
+# NpW+jIIyrVk1WmdhDfftwcYMWkhKqUORV2Vyf9n/dMlHN1q3O5DPyp+vzl3RxxZE
+# I3a1vC543UZFq9eJs7Qf63NRpj+hggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# OTAxMTkwOTM0WjAvBgkqhkiG9w0BCQQxIgQgxpXmQxihvQUiR/SiEYFU0GmN8z5c
-# vilTVVaiG4VU+Y0wDQYJKoZIhvcNAQEBBQAEggIASSiREppUY6xQhE9mIiN0F/3A
-# bajrrTYMIXelWMov0cYj80GMg2WMHiZSAxpMWHuJKdBY2mkKnXt2MxdCtwL2G7xF
-# X+EORYiyev4wBNldeudNWZ4qTRc2AVZJNdTQczVMs9wNynsxwgRWQP7bdzfk7y1+
-# xiWWVPDJBmdzooH7+BishwdVelbBAcgpGUE+T86WxM6rEwL8SPLhWOqp33pMcn2w
-# Su4mYgAyORu1qmK4A+5yKQyz1x+j+WDyArjANAHwslaXw/0egFr7fAQbp+sEToJN
-# PwU9CeOuv4E/6wpaCxuMikDnbL2nYpCrRPbatvsOaTHpAakvqTCxOhs5xnvUyE9s
-# oMFK2U7jympuGU9S44wZmXp0I1TvhIfH68sHUHjkiPgOzdDOrQYX4yhjsa9T2bW9
-# +Fq/XBi9t/1ZFzmFHGyDR5KZ5bFIGJX7z67x1oa55SXSgPcX8T2HNXeQWGmoLyB2
-# 9kMRmoQSDFCgRfXrWzekwjE1t1FkxcTtt5uqykGQc44N8y+KyXQJUZdVVblLAvbC
-# 8v39fj+ZXBK1F+amDpHjN1/pGegsDUgqIDpY2Yx5TBQrrbEXjoUTp8rSSEqpAmDe
-# 1Aa5JyK3FJE3ft5xrGRn1BMb3TG8JvcRInV1FjxY/QtaiGGtpiW86YsFS9+j8MLH
-# 7kooGCe5V1r0fqiWruE=
+# OTAyMTI1MTM1WjAvBgkqhkiG9w0BCQQxIgQgyac8Sjl47GBR7lOG9UeWZDe938Th
+# 49aq4KmPU6ysFOgwDQYJKoZIhvcNAQEBBQAEggIAmTxzC0gamPhMlrfn5GN8cOED
+# DYV7FlMUjQ4XdoWxioFb3atg6PVIIe2Ah3VGWaOZai6ZbmRj7pDfMdyvujt4Hx5u
+# nq1Wl/kzOon0nYikatigKrcfp8K8h+CPoY4QE2zOheu/m51lcm3jviWioVVhgkzy
+# x0sFsUv8R2ED3w0+zRuqHCRuvb861VvQPRA70t9XbLHhRXmOlTbFUfg/EFEdQwXa
+# Rq/5auIaMnP5Cwy/x1kOJ8Zv9YVEKlGNam5IbOAr+sfYn0AiuqOUCNu9MkDhloqA
+# c20QqNscpm+RCBknY8vgNxW6Nv+7gaAAGWWN2lK6xM9N4oa4VZ4N4w/xkur4eaXG
+# tmNCe4y0E0Rd0/L8bk8JXtCGCxkafqC4ydAOs7YKNTxL8jlDpDbR8v7xvKtg/Hii
+# K5gRibNS19JBmlRm+/60reqIUgjtrcw6SVB+GAtNa80ajYJZfNk6CFAFbyxsMfRy
+# 05fDR8WJztA2ZFjoQWPiSdb09zUycWBUXLvbihk9RMQA2CATMwC0vnH596n+Ykcn
+# TJFUnaO0TmiGJYqHPLImk5RiLF0ePieQnSwi5604k6ZHXThrlnbukHQ2ie8DTr+B
+# wX7ZsCAySP4Z2ca6fl+WFlle6k77MZ05HOcAe+ZzJvh5mf+tCecVIeKO2UpauXdJ
+# fe9lba+VfB6xpykhBuk=
 # SIG # End signature block
