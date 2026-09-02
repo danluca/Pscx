@@ -67,6 +67,8 @@
 * Included the maintainer's public code-signing root certificate with explicit
   Windows guidance for inspecting signatures and manually opting into trust;
   PSCX never installs the certificate or changes publisher trust automatically.
+* Normalized generated MAML examples so terminal help no longer exposes
+  Markdown code fences or invalid paragraph-separator characters.
 * Strengthened static validation with time-bounded analyzer workers, canonical
   diagnostic deduplication, environment metadata, and a complete diagnostic
   report written before baseline enforcement.

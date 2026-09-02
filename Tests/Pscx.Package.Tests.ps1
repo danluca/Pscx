@@ -497,6 +497,31 @@ Describe 'Packaged PSCX help and examples' {
         (Get-Help about_Pscx).Name | Should -Be 'about_Pscx'
     }
 
+    It 'renders compiled-command examples without Markdown or control-character artifacts' {
+        $culturePath = Join-Path $ModulePath 'en-US'
+        $helpFiles = @(Get-ChildItem -LiteralPath $culturePath -Filter '*-Help.xml' -File)
+        $helpFiles | Should -Not -BeNullOrEmpty
+        foreach ($helpFile in $helpFiles) {
+            [xml] $helpDocument = Get-Content -LiteralPath $helpFile.FullName -Raw
+            $namespaceManager = [Xml.XmlNamespaceManager]::new($helpDocument.NameTable)
+            $namespaceManager.AddNamespace(
+                'command',
+                'http://schemas.microsoft.com/maml/dev/command/2004/10'
+            )
+            $examples = @($helpDocument.SelectNodes('//command:example', $namespaceManager))
+            foreach ($example in $examples) {
+                $example.InnerText | Should -Not -Match '```'
+                $example.InnerText.Contains([string][char]0x80) | Should -BeFalse
+            }
+        }
+
+        $exampleText = Get-Help Add-PathVariable -Examples | Out-String
+        $exampleText | Should -Match ([regex]::Escape(
+                "Add-PathVariable -Name LIB -Value '/opt/example/lib', '/opt/project/lib'"
+            ))
+        $exampleText | Should -Not -Match '```'
+    }
+
     It 'provides usable help and an example for every public function and cmdlet' {
         $gaps = @(
             $script:publicCommands |
@@ -1092,8 +1117,8 @@ Describe 'Optional feature imports' {
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCA2m3IgR0PN9mip
-# ZZMatapGsidG3676rils2sLOFhpoMKCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBkw0bK74L1Sj2C
+# B/nGLN6+cA2BtzpxU5cNlswxngdMaqCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -1272,34 +1297,34 @@ Describe 'Optional feature imports' {
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgfLDT+XV4pQ4Sl78xiWJG
-# CBoBuovxb/h7bPp7a4mEOmcwDQYJKoZIhvcNAQEBBQAEggIAlkoR1jJ5KSRRixb1
-# 22ymzNDcsxPEelKiU078UK0I6Sd28wF6pLMJs7T2lpAozJ7WltlTkWyeN4/uprdo
-# +IhJhC2tciK+FkZFMlfWxIfB9T+wrQgJE2wt3jjzwnDuD1gZNsvI9zBuBZYJibeg
-# T/2Sl3K5Jzo3mtpT0xi9TsaMTsp21/R5EzNcV1YKmcb2ZNtZ221K/7Ua/chOiWms
-# pkmbUiX0ZjSy4vCcoBdEfJaWZ4TS9DX6gl06QdkvlwdBjiRzFEfdHzNQjF10Z0z3
-# R3NItYfNo1/BXm7v0Jq3QOQZlvMpMsTkLW0ybfsy2MQCEryB3VtSbFm9bW+wEGwF
-# rPFqS6mZXnTk5uenAhXgcywQBMXWFFPpKkJJh0JjVCXhEc2FV9b/zAHGS29+YAkj
-# XAKzHmTPgTjfV4zBs6RlRXUra8DET7nuCWh8N7MSyRU1tURWblIbLKyeJoyeBKHT
-# dA9IuHe9MXp2DhZcMH8jFk9XD8qfpxj5xF9HuO4V+pHOOPPGbj7DvcJp1WcKwZBh
-# O7rN57ecel3wAXbjQde72q7Zr4Ft9usIv6D2HRgZ6kjo7co2MzDz0tqJWdnhfWZ+
-# 7KeIARmYqHAoqMsajbKN9lmFo5AVFmVsEVdeouAKawdbsfTKCQkxwaIgzOucx2wz
-# HKg77nfP4/OQsqc2XkDjW6GyfWOhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgIziM40y7T3Q7Ua2on5s9
+# YDPnWlBa2jV4xdLYIBXgVgEwDQYJKoZIhvcNAQEBBQAEggIAhkhqyaIZ4JmXTFYp
+# RqaMWKBq0I34TtE/LqAWWh7c7utpl+UMo0zfdeB3q0POP2P8bVkd94x8N3Su6w24
+# 65mRsua4UpBkKTod8i+YmbkRBSJjLxtB3FSPklM6suNNOEU8RGjwaABsrCe7WIuS
+# o/6kVgCZFiX5poU+wHmyz1xIw8K+0JUaQAlDC3k83ajJsn5KTY8lqfSMeaMc/t8u
+# DZ1wiRuNDFVQBg/fWdTLyxo7ipbGU/WBbJlCoFnw+WB5qefZB1EMRvxR3jca6flo
+# mHHr2IJaonI5DwogyIFlNmY/0rpzWAM+kqiy55BKEeBJNna75LjOUbabfWhSJXRD
+# jYZdK1RmV7p1VtceSGre0/1F+h3/5xCBIJmSlHvaD6A2s33U2PhFS++r6mwu6/Oj
+# CSZvkW2NlNDI+GmqTjNCETwWwYDQ7bGn9PHzoi010QpOkUWUNcfVOtKQGvPCAK5J
+# c7Z9QzmrO3Z3AjLyw9s33kFOKMU3NbqLQJVlZBMEP3zkoDUDhIK4MQzEhvPnqWIu
+# fIyGas0qfBGDpZfrohPu/M4UIgJfiQzLw9QfH83XEsASelUaQrkpTcw0WG6tejoC
+# 2EI1y8f9wl62ITkJaTUhNvxv96B63u1esDkkQEfJASpZLPRITMmuyxb2s0lCtVTU
+# 2VAgGda4Ln9ZP4EN/J+tT4f5U9mhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODMxMTY0MTA3WjAvBgkqhkiG9w0BCQQxIgQgpkD+1xmRo4n2w2ZJBYNQspvwiZXM
-# xSs4wspUybEKlDQwDQYJKoZIhvcNAQEBBQAEggIApQll14fJAtytSmLPrBfxptaw
-# cG2WXyDzW4ImSbJqcYDisLk6h4B+4cigvi6WPoI4Tfj7F+laSyFZkVwfYx8URZI9
-# zNqBEfBfXJ9sTebv8XK/E35lLh9iSRkAvnA7ejbaUbbFO1Xdh+HwpekM33QHTcFk
-# rmeBH6CpaP2b23a2acgtIAuzXwoZgbSQChQBar3E652DU1gJWBjYXIgHvxd9iquf
-# xhmmYfSAWHfZlLbFf2DKCYaGN2GS+NPEtfOyJ0EbHARYLuVd4gR8+YJT4fXuSacO
-# nWDMNSkKp2+kqpW1sRBGhIKoOjnhq/jhLl1AI/4uQFtgIrdvrJdF+ThjJxH6JVXR
-# NUFHFJ8FexO0jP13E0ZmxoQB1u+ZCpaMtnDlLcOn5Yf+Irtz8Z/7dN52WU77TQVT
-# DWmKYjkUrBezXe7/zoMRyRsj6X4MMv1Vaj7qur1qKWIzclMXI6FWtbiXerSPW0L6
-# s0TXg12mq9EtOgGFDugUlWOwXf1xqAq++zoYuUVHMG5vFZe5CLBGnE9p1eSIX0Xj
-# tZryyvwibhDdP5g0xArxDxwmF6TcAww69Q/WLbFCn2Ogm09gDiE8LJswK4SwZsyi
-# 7feKdnM52Fjs/QtxDoAZ8umfp0R1ST1hF4cySDvk1CT0CP2ytqDSGjjq5oVsXAW9
-# 7SvOX/u8sCVb2TJ/M3Y=
+# OTAyMjEwODAxWjAvBgkqhkiG9w0BCQQxIgQgIzZ7vo5c6dKB/NIvAGCEa2dbvDJO
+# Kp5ABfk6Q6pP69wwDQYJKoZIhvcNAQEBBQAEggIAftYy8Dy7OpN8dACh3aKgJEj4
+# lOM1uCx1eA6W07F2K9ymW3Vd/vGSx3oH8XeRxpj3rWV+UX8RPoScW+vdHMEF/sul
+# +afA0adLCuwYLIyJTH8UFDtLrh+fxuBzYYt+xhWNoBDNTPHcrairZ6gNH1hVVkeD
+# 8lENvQuJEEcg7k0+Fdf7RsCYaYyVtVHaCQ5bEiqbRDMdCzml2NX0RSCgkyPplvwc
+# jK4L5vSK24466EVnT09hRqAd6GyvrJkO5xaFCiGdO+aZNKr8IBAEC1vS56DdMDSC
+# VQ5u3+Q+obkwBsUvJ4UKNRXS/VdH4voYNQEnWWgTa/OHgf5dKKAX758sPR4Kolwo
+# 03IrHt3TaPNsoRvsWluwdDQa5H6XTcA5/9IU8uWuUzg94wesEi/KzZkNf3PRM7dS
+# pybe8qPXQOnjXeNttZYe1CkTKkbgh9vclOjoNY54WkSLm4tzDJVLso8PV5rXdPKr
+# MSxDsPVmdoFVpEjFbkgQ3nDltSikNzlZQmLsxwy1R+m5FhllpgFHm+DTwPityeQG
+# wnW5Z7E92ANNcb0zaO0R5z+P/rKBvqMl7pinKs1tsq+qP/ii7gOJnNY+4K3PVAms
+# SXzXYVlWJ7gAETvRfnKZXF4JQO3A7I7XdzKuodLIwqGLxH/CPOKxpCFLVC66DnAB
+# CIaIjsAgCQI+et8ivpk=
 # SIG # End signature block

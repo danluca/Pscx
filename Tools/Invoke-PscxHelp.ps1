@@ -39,6 +39,50 @@ if ((Get-Module Microsoft.PowerShell.PlatyPS).Version -ne [version]$platyPSVersi
     throw "Expected Microsoft.PowerShell.PlatyPS $platyPSVersion but loaded $((Get-Module Microsoft.PowerShell.PlatyPS).Version)."
 }
 
+function ConvertTo-PscxTerminalMaml {
+    param([Parameter(Mandatory)][xml] $Document)
+
+    $namespaceManager = [Xml.XmlNamespaceManager]::new($Document.NameTable)
+    $namespaceManager.AddNamespace('command', 'http://schemas.microsoft.com/maml/dev/command/2004/10')
+    $namespaceManager.AddNamespace('maml', 'http://schemas.microsoft.com/maml/2004/10')
+    $separator = [char]0x80
+    $examples = @($Document.SelectNodes('//command:example', $namespaceManager))
+    foreach ($example in $examples) {
+        $introduction = $example.SelectSingleNode('maml:introduction', $namespaceManager)
+        if ($null -eq $introduction) {
+            continue
+        }
+
+        foreach ($paragraph in @($introduction.SelectNodes('maml:para', $namespaceManager))) {
+            $text = $paragraph.InnerText
+            if ($text.Length -eq 1 -and $text[0] -eq $separator) {
+                $introduction.RemoveChild($paragraph) | Out-Null
+                continue
+            }
+
+            # PlatyPS can split one fenced block into several MAML paragraphs
+            # when the example contains blank lines (for example, captured
+            # command output). Remove opening and closing fences independently
+            # so those paragraph boundaries and their ordering are preserved.
+            $plainText = [regex]::Replace(
+                $text,
+                '^\s*```[^\r\n]*(?:\r?\n|$)',
+                ''
+            )
+            $plainText = [regex]::Replace($plainText, '(?:\r?\n)?```\s*$', '')
+            if ($plainText -ne $text) {
+                $paragraph.InnerText = $plainText.TrimEnd()
+            }
+        }
+    }
+
+    $exampleXml = $examples.OuterXml -join [Environment]::NewLine
+    if ($exampleXml.Contains('```') -or $exampleXml.Contains([string]$separator)) {
+        throw 'Generated MAML examples still contain Markdown fences or invalid paragraph separators.'
+    }
+    return $Document
+}
+
 $modulePath = (Resolve-Path -LiteralPath $ModulePath).Path
 $outputPath = [IO.Path]::GetFullPath($OutputPath)
 $commandDocsRoot = Join-Path $repositoryRoot 'docs/commands'
@@ -188,6 +232,18 @@ foreach ($docPackageName in $packageNames) {
         $packageHelp | Export-MamlCommandHelp -OutputFolder $outputPath -Encoding utf8 -Force
     )
     foreach ($file in $generatedMaml) {
+        [xml] $mamlDocument = Get-Content -LiteralPath $file.FullName -Raw
+        $mamlDocument = ConvertTo-PscxTerminalMaml -Document $mamlDocument
+        $xmlSettings = [Xml.XmlWriterSettings]::new()
+        $xmlSettings.Encoding = [Text.UTF8Encoding]::new($false)
+        $xmlSettings.Indent = $true
+        $xmlWriter = [Xml.XmlWriter]::Create($file.FullName, $xmlSettings)
+        try {
+            $mamlDocument.Save($xmlWriter)
+        }
+        finally {
+            $xmlWriter.Dispose()
+        }
         Copy-Item -LiteralPath $file.FullName -Destination (Join-Path $outputPath $file.Name) -Force
     }
     $nestedOutputPath = Join-Path $outputPath $docPackageName
@@ -235,8 +291,8 @@ Write-Host "Validated $($commandHelp.Count) Markdown command topics and generate
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBgvMHkgBbQB5MH
-# VOG1SwDjw6I/PU8x634afMdFTAf21KCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCTGe5qcspaI6e5
+# rpB0wmG3BIjksFthrcre3LMyjvfYuaCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -415,34 +471,34 @@ Write-Host "Validated $($commandHelp.Count) Markdown command topics and generate
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgzN/dlLJEkhsDyhDzCCtl
-# vpGiYWKUIH2KXVXbvYC6TPwwDQYJKoZIhvcNAQEBBQAEggIAIMZVFVzPr3slgaL9
-# LvT7o0aNQDx+Njvtm64Iz3dyRDlSQSP/zDFeyJUJA6r9mcz5CpQVByaj21AXkxJs
-# XdE20AayDus95tY3fxJU5Q2ppUkkG9p8NYcru7I5Ka0SgsDB7mJ2b/syydB/2E9p
-# tVFzDTEiPvHPdEKF8p7CxfuNgpvPUd+2cguFqTLZd3zSMDAdn6cHhaHXFcI+wbhE
-# I2CVmbzsKcybFNGPhmYZdFaoFi7S5SEqVlSFPepEKUbIi4nqsACXmDqLa6TKWMfC
-# VihLgNa0E8RBiAk10e9eXLVmUqkVwd8OK6gv2WGBXUkHqc1P0/XFLmDQuDgDMnPA
-# sfe3Dh5piglsPCSsfnv/TbW0QfW6SmnX45Gn9GowEQkrKj6iZLFpSKYckv79cl7a
-# J+icR7u3GitZam00dHFfrkdW5ti+ExFVqjrpljd0TUvLj6cuxcKl7Z83bLPwLrOp
-# GMq1HDR5zkyJLU/3stqXwdjtpLTN+kBx2lQp7oiwh8zBZjhuqDOr0YGwreSLdhfx
-# Zhd69u2h832hISILm7Ol1QhscCVi1q5vgaWZlBZcl5S5nICNWLNWQbTGkVQwWSWa
-# D12vIF4zx+dbDgAulynzsm3+0A+5LidC8FokjISiV3uit9YRF1pBO9Di5xhVESQ6
-# bzl1LZpsvQhvEQUducJ59TdoS7KhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgEnlysgzKVlcoA4PP6OuA
+# T98nk3ihHtIft1N/tB4AGfwwDQYJKoZIhvcNAQEBBQAEggIAGN64aqahILHtUimy
+# 0sPerniR10F8ffLI+KfBcKULbn/OrS9SZWjbtjUam9a8veH6QFUg3jX63AvsOnqT
+# Q0PNrd7P61zDb56eMTljfdpNE1s4s5r6Wz8+q3yWeHj0IQlE9lyiwK+Ty/T/yTgy
+# fB6PleaiuYS6n7+Fc5mnv7GJFwPkMq+xe3N8b//w0Pgjsq6hK1eH8RxMY+0YtW9i
+# nB4tvMcHCoa/ds9/QeuP73IpjxJKQ6aOZpYcRSn4V1Xyal8YDJ8ZDUGfZeclF4rG
+# wLDOC6+Ji1tXCosigwkH20c7rMo6BjastePeYvGyDwO5wGVrvDSRkNeImcIK9o2Z
+# IVQkd+1UvMWY3uCcKT3xHtIG2wBxUGhPTQ4VhxWQYtn9fEA3VO1yLHvglGJKldnH
+# G/fVzKCf/K+uLgrW6YXiyvvNLd8scTocPD9rvWhS4o+WDSkaGxT2sufRSDN45w2y
+# J7Ta21DB4Zd3cJdPgMZOVPZpAuVpZJcKsluNsPa2p6w2wMdUsWbojL5BrKnIC9sK
+# ziMT64FNq0LO9hwNxEo4EIzE3Jq6HWO9ertPQBPsOt53M13OIUynu21LJ3ubR+Ko
+# 4h0IlaUFx9bcvQ68IGmWjovFSCEPukc46vzd0tpKEUn5vZq3eWS/OprkotfJWOZg
+# KwPJAGE2qRQ5yDJR1zHWNuRPwQWhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODMxMTY0MTEyWjAvBgkqhkiG9w0BCQQxIgQgtfCcydeQVmk6j78gE1zoYg+MXRA9
-# M57HgMtXzSvX8AwwDQYJKoZIhvcNAQEBBQAEggIAOt1vfIVUnTaDu2xt96/hL/ft
-# gXGGM/TvRyhwnM3c8rCb9pCCLafUjeLROFNHfPE/m9DI6jal98AGbGhHA67uDNMA
-# 8XYt6LZERJ5bNLHIcTfocOIrPy5HU3RE45cUBcYfjGtGD5UKeGVBW5zyl/l/0ZMt
-# Tg+qJEMXdHlsrbSAGGBu/jieFvIlHPmVWcLd2+EjyYpWVH47RiLGnOfCqWOm7ieO
-# WUi6b5BQotxtCbaxB+tqXKcsp1HEwsxjDZcXih+i1Jmgtz6ZeqOnOd3oXSKRv7pC
-# mayEJRTGJei0I8RbxskXilvhjAjrRzppy1ZkEb05WIy6J5lXCdWzp0yRobq3wXqc
-# mWhyT+Wzg/p57qWnA6XK2R5x+B1MEKGqtN0h2eYzC3MuVqs+druxpbq4WhkjuUMt
-# SIxIFN/abYocIHFP9hp7kyXwLkpA06hYxxrk5KxTTB1BuiLG+f4itQMlSm1sZF7R
-# rZPKCvkmGTNyrGBIhWyUa6/+wlnXA0wUlpLo0ee3QLCuSQTl1Vsl755oN29pyRS3
-# H+8BkjWLXvQShDJUa6CxKwpFxw7EqI0HpMz4okOEXPLasD+hdSzcgxpARAAK9l9W
-# 0u9fx9nw6Yrlu2uh8HkT315Air8eQHCsVGO4H+uVq1D3UQXZPooKpDBmTkuX2LW8
-# YDWXt3pDoFwvNpsEkrA=
+# OTAyMjEwNzUzWjAvBgkqhkiG9w0BCQQxIgQgTd5Qm7Hk/59qCgk6JR2EGRWICal6
+# PoOyXZbTqoKiQUUwDQYJKoZIhvcNAQEBBQAEggIAsUY8g/QCdVozNct5UnEOBHdT
+# QIeAuktC9RDtGLTCXYXmoW4a42AgqfJps6YpEvnIuodJiNFS7TshGFbSLuk6t1wX
+# VLqvglOKXdfnChT6lSPRro2sPLv3aeDAZoSDJaPBGyFoF3DxRDq4BXzlOt2zSrvq
+# JSfaFebWM8CzaeMs1bqF1myo2LkjHCjJI5UORCnwuEUMCRcpLawb1eSx7jCsOneL
+# ZXlGTila6aCguPUsqQg9o+lgok30vXgCROXfpjkAfFuJuIWNNL/OEBF6c9IAlxfr
+# HcSqDK+lWXREOyl9g50z1dCOQNk7Srhoz/AtzZNnNPPn4AhUWUcjkqNRVxZToqfh
+# xy6VRDCi2lnBOBGvyx4qc0uXtvpYHhUpulkjlLqHzAkjd/RASN5WY4lHPV35UOyZ
+# ++a70pCa61Koq/adyn4/1x61fD0PlXFekpHYsl27Jw47AjVwaJa+RRCcG8IHcqZA
+# B+UAykPwMGwguiCtTHsfplYms8k/xEJkkr0b7GA5oQn37RkA6+eBsYwCQ6Clfh39
+# yXWX8wdNhLpIiBBwz0Old4iQnkI9RUXicIbCn4Y9EE7VyHNnSXtDBWWTIO8xVOBr
+# tC2NozHz2bFiuXDvBAsB6qtyyJt3WHmFunJ7cVFA2O/zmle3iUNhwsjicJ6Q358D
+# LfGXy+uO+8ITP1sQgMQ=
 # SIG # End signature block
