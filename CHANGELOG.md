@@ -58,6 +58,8 @@
   Version 2.0 metadata; on Windows, successfully checksum-verified release ZIPs
   are now unblocked before extraction so installed files do not inherit Mark of
   the Web.
+* Fixed GitHub release discovery to enumerate every release returned by the
+  REST API before applying draft, prerelease, and version-selection policy.
 * Added a portable, self-contained HTML dashboard over the authoritative test,
   coverage, and static-analysis results, generated consistently by local and CI
   test pipelines and uploaded with CI artifacts.
