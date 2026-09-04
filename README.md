@@ -417,6 +417,22 @@ operations can also be run when their prerequisites already exist:
 ./build.ps1 -Task Audit
 ```
 
+For rapid local testing, build and install the current source into the current
+user's standard PowerShell module directory:
+
+```powershell
+./Tools/Local-Install.ps1
+```
+
+On Windows, the installer uses the operating system's Documents known folder,
+which honors OneDrive folder redirection and falls back to the local user
+profile for accounts without it. On macOS and Linux it uses the normal
+`~/.local/share/powershell/Modules` location, or `$XDG_DATA_HOME` when set.
+Pass one or more `-DestinationRoot` paths to override this selection. The
+installer supports `-WhatIf`, uses a recoverable same-directory replacement,
+retains other PSCX versions, and selects a Full build on Windows or Core build
+elsewhere. Use `-SkipBuild` to reinstall an already staged package.
+
 `-BuildScope Auto` selects a Full build on Windows and a Core build elsewhere.
 Use `-BuildScope Full` for the complete Windows package or `-BuildScope Core`
 for the cross-platform projects and package. Full builds are intentionally

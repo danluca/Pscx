@@ -83,6 +83,9 @@
 * Protected signed PowerShell files from Git line-ending conversion, made the
   signing tool remove stale signature blocks safely before re-signing, and
   added release-blocking validation for packaged Authenticode content hashes.
+* Added a cross-platform local-build installer with platform-native user module
+  paths, version-derived destinations, `-WhatIf`, and recoverable replacement
+  of only the matching locally installed version.
 
 ## 3.8.0 - August 2026
 
