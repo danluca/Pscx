@@ -949,6 +949,13 @@ Describe 'Representative public command behavior' {
     }
 
     It 'reports structured installation diagnostics without changing module state' {
+        $manifest = Import-PowerShellDataFile -LiteralPath (Join-Path $ModulePath 'Pscx.psd1')
+        $expectedVersion = ([version]$manifest.ModuleVersion).ToString(3)
+        $prerelease = [string]$manifest.PrivateData.PSData.Prerelease
+        if ($prerelease) {
+            $expectedVersion = "$expectedVersion-$prerelease"
+        }
+
         $loadedModulesBefore = @(
             Get-Module -All | ForEach-Object { "$($_.Name)|$($_.Path)" } |
                 Sort-Object -Unique
@@ -988,7 +995,7 @@ Describe 'Representative public command behavior' {
         )
         $diagnostics.Name | Should -Be $expectedNames
         ($diagnostics | Where-Object Name -EQ 'PSCX version').Value |
-            Should -BeLike '4.0.0-preview.*'
+            Should -Be $expectedVersion
         $diagnostics | Where-Object Name -In 'Module manifest', 'Command exports', 'Command help' |
             ForEach-Object { $_.Status | Should -Be 'Pass' }
 
@@ -1173,8 +1180,8 @@ Describe 'Optional feature imports' {
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAYxQ2w/plMG3qt
-# ypNFWwSxE+7hSfSonEjh9GQoI/k9VKCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAjbvrE6g3TZttC
+# 8Cl5lc1wGJrGE3ognut7PJ7ljREcZKCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -1353,34 +1360,34 @@ Describe 'Optional feature imports' {
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgfArIch9AMNBo1E8pqZuT
-# oUuStfQy9H9pJtPsYhmf4WMwDQYJKoZIhvcNAQEBBQAEggIAqaNyrlC4nwj/Wc6K
-# j1U6PzSFUzW9Jj29rgo19YBRJCsg7nh6cyDUinrM3rZTIzqs5lU3NpTEN8gSvUWu
-# fe8iHGU5J8aTGZ9RvFRtt7ug+YAVifIWLECTeaqQuNQ63/9r9MfZDTIrZNPTPjnA
-# IGB8l1ZfcmioWmqUlFBn7mh1s5+YUIteK8wWYfJfxWh+S6aWsyv8gEdHg4Bgv0Ty
-# LT2rt/8XImLKOQJWnJxoTrQZmRevMI+sMmIneUMY/A8TNwc8/cwO3TosqL1nAPiE
-# rjByfQ86x/wv8CAxGo527tXBvyQdUE9+6RcIoY93pC58wa55OcxDQh51ucgBZeG8
-# Q4VcWAbONhz4HjMbOL+7fKfAuXic24L5fSVvs+Ecf0AZHJQJZ4wPJT/Pe9eXoY5D
-# NpmzwZarzP7faD4K8EOfDvXys/iOI1N+SqhA60z8dKu0xl3/PnP/lgfoXmpMPAjT
-# 1Ksq3T3DnYjeKAYBXBfWBDqQ9nsQUbF2uER9YGPIaHO38gwT0hM8FO6jPVQaOdw7
-# ewfn95Fh8GBlwFEEyNn72J1LQCs9gMvWtF6X5H/1CUhKp7HIsREfAG2su8SNoaAO
-# SaaHdwBpp9NOX/C4E3IV6M7NYHe4XpvX1XfADMGqlzq5+tkuhU55LBeEFTlZzy6k
-# g8dHLWf2D2jTthA2+3TsYZ9gqyChggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgQNPT7oENAOmY2oykVbKA
+# 5j8asrplEC1+PZcdKtzRqxYwDQYJKoZIhvcNAQEBBQAEggIAqMv/xuFDOiKoNBNk
+# n8gU+O6vuw5sh5jLSf32oiOm4DBBMuMlS8CwdGJUEMwi0evoOyg9c1WSaYyuf332
+# uJdOeeOZRlBxHZVwSBGqZCI/a3Bgo1t3zS4ier4Of9erN55eR1Kvjrl6F1yEwW+k
+# K9UeAXDpsgOKZGgQVTAHFR6hH2BkZsScLZI8O5kjNokiDRkWwG3bkM1DEcXxAXUs
+# kJ3A5HnGMLdlUW4HjT5J8Z7FuplX1omS/Npp5Mvi25PE6r/OusLYp/5AOiO89C+j
+# JEqU/7L4zzWWqCHwAOuWi5ivOFlYX0/GuVt2oc7DEfP2v63FeOT1xFWIQxFYqGkq
+# QsfY66eMoWl5VVN/S5OSFlq0lS6bhdr8vIOdOqpMAorcBLLVUnG+H3YUxRSTfKX6
+# CAD+hLVMN3xjQ/sojhZd7A7M2sDxgLmqSH/wRGglNo6ndhBVjdoM+G9wEhSXs7Pb
+# jHy5v3xM6ty2Zj6H5LqsPCC39ZrpO+Fqd+kEy87Z5T4cLMR+cCUj4En/pieD8y/n
+# aYc2b2QweDjdbfrMWRDTOOshFtIDr1Fjn4zlBF1p4oLXoEoKk+KFZiqwVIziC0Ib
+# rzvJ4ZwkhcnPorcP/zTMyHsq1TRloz5jXIK6zPPZmeV7lZ8pVKmmLr3tmxTfaRj6
+# AIt5gsiuIfoEtzY2Zf+8jsEzSXyhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAIT9wzT35FTtvDD4/5khg1MA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# OTA0MDM1NTE2WjAvBgkqhkiG9w0BCQQxIgQgMqVfRZ7gxohSGngoZi1+o8TeWrEn
-# gLj36Ev+dWEleZQwDQYJKoZIhvcNAQEBBQAEggIAdGnQ0KZ+5YqCtZtbKCZ7gXp5
-# KBZDj2ULHQTFvY4lORlaeDJj2gWVxwDyg3jIrGQNaJqS3aUMMRLAkwKO4AwJ8R5D
-# VegBvYWkoKwxZVwIGrl4V/H8doI0DFlwa7p75PEl5L6BlewspgeBvwTitI3SeJCn
-# Yb+kkg0AIehFm1w+5HbgShGL5FEMewtivTLs9TljfmsV1bCInth9/nw0f58Z/QvZ
-# 78snRFUCNaK0MY29P8CeYW1YwDE/5bcSaB9mtZ5BBvWchA45hDbz219nmsvAget4
-# hTwQRc5iKb0uaNT9QyrS6z9PTgunJ2iCnAMoYEG5uTXDVCtjDMxPzU6TEcH4EMzt
-# g6BGSBZVycmmde0DgYBN8XcpoReaT6+hAy12aiyn7qsnzVIH7hCL9lzNao6kXPHa
-# A4Neq7BX7g7ZxpL5wgQon/Nd39HRhTrhFzU4gg9zLRI4VX325T0m8DVGU7vw/N6M
-# BUsaE5iqsAOOtPKLsCIgAdkOz20FLWI5CG09a5xuhxPMZPdVEVswPElwEp5RtSm6
-# j4GBAMLUSakxWjxXGZnmEZYs3RuA7gt+6K5Ih77b7zO8Oe8GMu1dlK2NAWIilRde
-# xVJAiYfDhvULLccIDhTDzAlrdn50gQnxMSGgiZLtE2br1jljeY1reHKMpn+g+m4y
-# Fw66i9XCgQBzW7cK4dE=
+# OTA0MjEwMzQ3WjAvBgkqhkiG9w0BCQQxIgQg3cp+qcCFNYzVNB0fVpowfv/+wl87
+# 2j5p+0PxC1HOjZ0wDQYJKoZIhvcNAQEBBQAEggIATythScPKiKAtsO9flppbFf1l
+# DSYjSGRnu8FyPsFdmlxUcXKyLqXJ/CbUWFbGU5GOBNhWlJ8rXcbmidXHO6KfkAeY
+# XXrj2pe8C1++xlfsU5puhVmFrHn1SFijq/vOO/9qN+yBAxGoo4AdLcuDQK1/b7np
+# giSPpn4llCEo4DOk7VRdNtuAbkK1WHsdWVrMiQNAWZhP3PniHH1fojfNYFQpOo9r
+# b3Se3kZQt8AvNf7etYdYQFeI18FEvBXNrh2AlNwI0iTP4IFnIjp+HLsVqkkYVk5z
+# RxU+yBLkUfDQAqagkWoSkV3+pA2eY64MS7OQ4dV8W52tlJWOtcMU3Y1wrdGxxrHu
+# zDfs5NV9pC25PRWTq6DuOVd6pglfqVZQe4msL0xKYWUQ23axtXrs6AT7Rcty/Orc
+# WuQDvl+RNnxdtLdwgHJR4yrBOcKk1GdE0pv4yev471kspORqPM0phWflyLoiTgu9
+# 3Z+HmdpwFPL64jxFCApQyiTPvNHimVevsrVQ8dBMUNcG7M6+cZpkX1oaAxzVUYOg
+# qadMcMcUwlj1E2AA3OgE0srhfz+vm44RWKYZp2FmFdJSw0gpvVhb2G2vl/1edHsT
+# TemR5qnmcXkpKR00jecESMYZy6JUs2E6CJqRtyYAbpHYpemTfc+cw/kXGykzOteF
+# dP3euNUg9voCUsK0NNM=
 # SIG # End signature block

@@ -86,6 +86,8 @@
 * Added a cross-platform local-build installer with platform-native user module
   paths, version-derived destinations, `-WhatIf`, and recoverable replacement
   of only the matching locally installed version.
+* Classified tagged semantic prereleases as GitHub prereleases when creating
+  draft releases, while retaining the maintainer's explicit publish step.
 
 ## 3.8.0 - August 2026
 

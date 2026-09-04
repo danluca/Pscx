@@ -54,7 +54,7 @@ and uncompressed byte sizes for every build are written to
 `artifacts/test-results/Pscx.PackageContents.json` and uploaded with CI test
 results.
 
-| Module root | Contents | Current 4.0 preview size, uncompressed |
+| Module root | Contents | Current 4.0 prerelease size, uncompressed |
 | --- | --- | ---: |
 | `Pscx` | Cross-platform core plus the Full build's Windows companion and retained Windows utilities | about 11.1 MiB |
 | `Pscx.Archive` | Optional managed SharpCompress archive module | about 2.4 MiB |
@@ -62,7 +62,7 @@ results.
 | `Pscx.WinAdmin` | Optional Windows administration module; Full build only | about 0.4 MiB |
 
 The optional module roots do not load with `Pscx`; clients install or import
-them according to need. The current combined compressed preview ZIP is about
+them according to need. The current combined compressed prerelease ZIP is about
 6.6 MiB.
 
 ## Maintenance requirements

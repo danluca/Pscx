@@ -868,8 +868,8 @@ For each group:
 - [x] Test clean install, upgrade, uninstall, and side-by-side scenarios.
 - [x]  Test package import in clean Windows, Linux, and macOS environments.
 - [x] Test direct GitHub Release ZIP installation.
-- [ ] Validate command help and examples from installed packages.
-- [ ] Collect and triage preview feedback.
+- [x] Validate command help and examples from installed packages.
+- [x] Collect and triage preview feedback.
 - [x] Freeze the public API before release-candidate builds.
 
 The maintainer approved the PSCX 4.0 public command and module surface at
@@ -883,12 +883,12 @@ cycle.
 ### Stable release checklist
 
 - [ ] All CI checks pass from a clean checkout.
-- [ ] No unapproved high or critical dependency vulnerability remains.
+- [x] No unapproved high or critical dependency vulnerability remains.
 - [ ] Package contents and SBOM are reviewed.
-- [ ] Release notes list additions, fixes, removals, and replacements.
+- [x] Release notes list additions, fixes, removals, and replacements.
 - [ ] Checksums and an SBOM are published, and signing status is documented.
 - [ ] Documentation points to stable package names and versions.
-- [ ] Legacy compatibility package or migration instructions are available.
+- [x] Legacy compatibility package or migration instructions are available.
 
 ---
 
