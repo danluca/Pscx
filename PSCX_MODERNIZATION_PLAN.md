@@ -863,24 +863,32 @@ For each group:
   optional Windows Authenticode validation, document its expected identity and
   broad trust implications, and require certificate-store or publisher-trust
   changes to remain explicit manual user actions.
-- [ ] Publish at least one preview of each new package.
-- [ ] Publish a complete 3.x-to-4.0 migration guide.
-- [ ] Test clean install, upgrade, uninstall, and side-by-side scenarios.
-- [ ] Test package import in clean Windows, Linux, and macOS environments.
-- [ ] Test direct GitHub Release ZIP installation.
-- [ ] Validate command help and examples from installed packages.
-- [ ] Collect and triage preview feedback.
-- [ ] Freeze the public API before release-candidate builds.
+- [x] Publish at least one preview of each new package.
+- [x] Publish a complete 3.x-to-4.0 migration guide.
+- [x] Test clean install, upgrade, uninstall, and side-by-side scenarios.
+- [x]  Test package import in clean Windows, Linux, and macOS environments.
+- [x] Test direct GitHub Release ZIP installation.
+- [x] Validate command help and examples from installed packages.
+- [x] Collect and triage preview feedback.
+- [x] Freeze the public API before release-candidate builds.
+
+The maintainer approved the PSCX 4.0 public command and module surface at
+commit `fd49962` on September 4, 2026. Until the stable 4.0.0 release, changes
+are limited to release-blocking defect fixes, documentation corrections,
+tests, and build or release tooling. Any necessary change to exported commands,
+aliases, parameters, output contracts, module placement, or supported runtime
+and platform behavior requires explicit review and another release-candidate
+cycle.
 
 ### Stable release checklist
 
 - [ ] All CI checks pass from a clean checkout.
-- [ ] No unapproved high or critical dependency vulnerability remains.
+- [x] No unapproved high or critical dependency vulnerability remains.
 - [ ] Package contents and SBOM are reviewed.
-- [ ] Release notes list additions, fixes, removals, and replacements.
+- [x] Release notes list additions, fixes, removals, and replacements.
 - [ ] Checksums and an SBOM are published, and signing status is documented.
 - [ ] Documentation points to stable package names and versions.
-- [ ] Legacy compatibility package or migration instructions are available.
+- [x] Legacy compatibility package or migration instructions are available.
 
 ---
 

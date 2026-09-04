@@ -10,7 +10,7 @@ upstream commit
 
 The customizations made in this fork include:
 
-- current development version 4.0.0-preview.2 targeting .NET 10 and the
+- current development version 4.0.0-rc.1 targeting .NET 10 and the
   PowerShell 7.6 SDK;
 - a cross-platform core for Windows, macOS, and Linux, with a Windows companion
   module for platform-specific commands;
@@ -190,15 +190,19 @@ $updateScript = Join-Path (Get-Module Pscx).ModuleBase 'Update-Pscx.ps1'
 
 `-CheckOnly` still downloads the candidate ZIP and checksum to a temporary
 directory so it can verify SHA-256, archive paths, manifests, version identity,
-and runtime compatibility. Run the script without `-CheckOnly` to receive a
-confirmation prompt immediately before installation, or inspect the planned
-change with `-WhatIf`:
+and runtime compatibility. On Windows, once the ZIP matches its published
+checksum, the updater removes the ZIP's Mark of the Web before extraction so
+the installed files do not inherit it. This does not add a trusted certificate,
+trust the publisher, or change execution policy; the remaining package checks
+and explicit installation confirmation still apply. Run the script without
+`-CheckOnly` to receive a confirmation prompt immediately before installation,
+or inspect the planned change with `-WhatIf`:
 
 ```powershell
 & $updateScript
 & $updateScript -WhatIf
 
-# Opt in to preview releases; drafts are never considered.
+# Opt in to prerelease versions; drafts are never considered.
 & $updateScript -IncludePrerelease
 ```
 
@@ -412,6 +416,22 @@ operations can also be run when their prerequisites already exist:
 ./build.ps1 -Task Package,Validate -BuildScope Core
 ./build.ps1 -Task Audit
 ```
+
+For rapid local testing, build and install the current source into the current
+user's standard PowerShell module directory:
+
+```powershell
+./Tools/Local-Install.ps1
+```
+
+On Windows, the installer uses the operating system's Documents known folder,
+which honors OneDrive folder redirection and falls back to the local user
+profile for accounts without it. On macOS and Linux it uses the normal
+`~/.local/share/powershell/Modules` location, or `$XDG_DATA_HOME` when set.
+Pass one or more `-DestinationRoot` paths to override this selection. The
+installer supports `-WhatIf`, uses a recoverable same-directory replacement,
+retains other PSCX versions, and selects a Full build on Windows or Core build
+elsewhere. Use `-SkipBuild` to reinstall an already staged package.
 
 `-BuildScope Auto` selects a Full build on Windows and a Core build elsewhere.
 Use `-BuildScope Full` for the complete Windows package or `-BuildScope Core`

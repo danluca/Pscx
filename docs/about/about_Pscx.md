@@ -109,7 +109,7 @@ $updateScript = Join-Path (Get-Module Pscx).ModuleBase 'Update-Pscx.ps1'
 ```
 
 Stable releases are selected by default. Use `-IncludePrerelease` to opt into
-preview releases. The script verifies the release checksum and package before
+prerelease versions. The script verifies the release checksum and package before
 prompting, installs into versioned module directories, and retains every
 existing version for explicit rollback or cleanup.
 

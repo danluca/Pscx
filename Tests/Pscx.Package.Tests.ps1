@@ -497,6 +497,31 @@ Describe 'Packaged PSCX help and examples' {
         (Get-Help about_Pscx).Name | Should -Be 'about_Pscx'
     }
 
+    It 'renders compiled-command examples without Markdown or control-character artifacts' {
+        $culturePath = Join-Path $ModulePath 'en-US'
+        $helpFiles = @(Get-ChildItem -LiteralPath $culturePath -Filter '*-Help.xml' -File)
+        $helpFiles | Should -Not -BeNullOrEmpty
+        foreach ($helpFile in $helpFiles) {
+            [xml] $helpDocument = Get-Content -LiteralPath $helpFile.FullName -Raw
+            $namespaceManager = [Xml.XmlNamespaceManager]::new($helpDocument.NameTable)
+            $namespaceManager.AddNamespace(
+                'command',
+                'http://schemas.microsoft.com/maml/dev/command/2004/10'
+            )
+            $examples = @($helpDocument.SelectNodes('//command:example', $namespaceManager))
+            foreach ($example in $examples) {
+                $example.InnerText | Should -Not -Match '```'
+                $example.InnerText.Contains([string][char]0x80) | Should -BeFalse
+            }
+        }
+
+        $exampleText = Get-Help Add-PathVariable -Examples | Out-String
+        $exampleText | Should -Match ([regex]::Escape(
+                "Add-PathVariable -Name LIB -Value '/opt/example/lib', '/opt/project/lib'"
+            ))
+        $exampleText | Should -Not -Match '```'
+    }
+
     It 'provides usable help and an example for every public function and cmdlet' {
         $gaps = @(
             $script:publicCommands |
@@ -924,6 +949,13 @@ Describe 'Representative public command behavior' {
     }
 
     It 'reports structured installation diagnostics without changing module state' {
+        $manifest = Import-PowerShellDataFile -LiteralPath (Join-Path $ModulePath 'Pscx.psd1')
+        $expectedVersion = ([version]$manifest.ModuleVersion).ToString(3)
+        $prerelease = [string]$manifest.PrivateData.PSData.Prerelease
+        if ($prerelease) {
+            $expectedVersion = "$expectedVersion-$prerelease"
+        }
+
         $loadedModulesBefore = @(
             Get-Module -All | ForEach-Object { "$($_.Name)|$($_.Path)" } |
                 Sort-Object -Unique
@@ -963,7 +995,7 @@ Describe 'Representative public command behavior' {
         )
         $diagnostics.Name | Should -Be $expectedNames
         ($diagnostics | Where-Object Name -EQ 'PSCX version').Value |
-            Should -BeLike '4.0.0-preview.*'
+            Should -Be $expectedVersion
         $diagnostics | Where-Object Name -In 'Module manifest', 'Command exports', 'Command help' |
             ForEach-Object { $_.Status | Should -Be 'Pass' }
 
@@ -1002,6 +1034,62 @@ Describe 'Representative public command behavior' {
                 $env:PAGER = $pagerBefore
             }
         }
+    }
+}
+
+Describe 'Cross-platform local build installer' {
+    It 'installs and replaces staged Core modules only within an explicit destination' {
+        $repositoryRoot = Split-Path -Parent $PSScriptRoot
+        $installerPath = Join-Path $repositoryRoot 'Tools/Local-Install.ps1'
+        $artifactsRoot = Join-Path $TestDrive 'local-install-artifacts'
+        $destinationRoot = Join-Path $TestDrive 'local-modules'
+        $whatIfRoot = Join-Path $TestDrive 'whatif-modules'
+        $moduleNames = @('Pscx', 'Pscx.Archive', 'Pscx.Time')
+
+        foreach ($moduleName in $moduleNames) {
+            $sourcePath = Join-Path $artifactsRoot "module/$moduleName"
+            New-Item -ItemType Directory -Path $sourcePath -Force | Out-Null
+            @"
+@{
+    RootModule = '$moduleName.psm1'
+    ModuleVersion = '4.2.0'
+    PrivateData = @{ PSData = @{ Prerelease = 'local.1' } }
+}
+"@ | Set-Content -LiteralPath (Join-Path $sourcePath "$moduleName.psd1") -Encoding utf8
+            '# local installer fixture' |
+                Set-Content -LiteralPath (Join-Path $sourcePath "$moduleName.psm1") -Encoding utf8
+        }
+
+        $installOutput = & $PowerShellPath -NoLogo -NoProfile -NonInteractive `
+            -File $installerPath -SkipBuild -BuildScope Core `
+            -ArtifactsPath $artifactsRoot -DestinationRoot $destinationRoot 2>&1
+        $LASTEXITCODE | Should -Be 0 -Because ($installOutput -join [Environment]::NewLine)
+        foreach ($moduleName in $moduleNames) {
+            $installedPath = Join-Path $destinationRoot "$moduleName/4.2.0"
+            Test-Path -LiteralPath (Join-Path $installedPath "$moduleName.psd1") |
+                Should -BeTrue
+            'old local content' | Set-Content -LiteralPath (Join-Path $installedPath 'old.txt')
+        }
+
+        $replaceOutput = & $PowerShellPath -NoLogo -NoProfile -NonInteractive `
+            -File $installerPath -SkipBuild -BuildScope Core `
+            -ArtifactsPath $artifactsRoot -DestinationRoot $destinationRoot 2>&1
+        $LASTEXITCODE | Should -Be 0 -Because ($replaceOutput -join [Environment]::NewLine)
+        foreach ($moduleName in $moduleNames) {
+            Test-Path -LiteralPath (Join-Path $destinationRoot "$moduleName/4.2.0/old.txt") |
+                Should -BeFalse
+        }
+
+        $whatIfOutput = & $PowerShellPath -NoLogo -NoProfile -NonInteractive `
+            -File $installerPath -SkipBuild -BuildScope Core `
+            -ArtifactsPath $artifactsRoot -DestinationRoot $whatIfRoot -WhatIf 2>&1
+        $LASTEXITCODE | Should -Be 0 -Because ($whatIfOutput -join [Environment]::NewLine)
+        Test-Path -LiteralPath $whatIfRoot | Should -BeFalse
+
+        $defaultWhatIfOutput = & $PowerShellPath -NoLogo -NoProfile -NonInteractive `
+            -File $installerPath -SkipBuild -BuildScope Core `
+            -ArtifactsPath $artifactsRoot -WhatIf 2>&1
+        $LASTEXITCODE | Should -Be 0 -Because ($defaultWhatIfOutput -join [Environment]::NewLine)
     }
 }
 
@@ -1092,8 +1180,8 @@ Describe 'Optional feature imports' {
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCA2m3IgR0PN9mip
-# ZZMatapGsidG3676rils2sLOFhpoMKCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAjbvrE6g3TZttC
+# 8Cl5lc1wGJrGE3ognut7PJ7ljREcZKCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -1229,77 +1317,77 @@ Describe 'Optional feature imports' {
 # GLS/D284NHNboDGcmWXfwXRy4kbu4QFhOm0xJuF2EZAOk5eCkhSxZON3rGlHqhpB
 # /8MluDezooIs8CVnrpHMiD2wL40mm53+/j7tFaxYKIqL0Q4ssd8xHZnIn/7GELH3
 # IdvG2XlM9q7WP/UwgOkw/HQtyRN62JK4S1C8uw3PdBunvAZapsiI5YKdvlarEvf8
-# EA+8hcpSM9LHJmyrxaFtoza2zNaQ9k+5t1wwggbtMIIE1aADAgECAhAKgO8YS43x
-# BYLRxHanlXRoMA0GCSqGSIb3DQEBCwUAMGkxCzAJBgNVBAYTAlVTMRcwFQYDVQQK
+# EA+8hcpSM9LHJmyrxaFtoza2zNaQ9k+5t1wwggbtMIIE1aADAgECAhAIT9wzT35F
+# TtvDD4/5khg1MA0GCSqGSIb3DQEBCwUAMGkxCzAJBgNVBAYTAlVTMRcwFQYDVQQK
 # Ew5EaWdpQ2VydCwgSW5jLjFBMD8GA1UEAxM4RGlnaUNlcnQgVHJ1c3RlZCBHNCBU
-# aW1lU3RhbXBpbmcgUlNBNDA5NiBTSEEyNTYgMjAyNSBDQTEwHhcNMjUwNjA0MDAw
-# MDAwWhcNMzYwOTAzMjM1OTU5WjBjMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGln
+# aW1lU3RhbXBpbmcgUlNBNDA5NiBTSEEyNTYgMjAyNSBDQTEwHhcNMjYwODA1MDAw
+# MDAwWhcNMzcxMTA0MjM1OTU5WjBjMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGln
 # aUNlcnQsIEluYy4xOzA5BgNVBAMTMkRpZ2lDZXJ0IFNIQTI1NiBSU0E0MDk2IFRp
-# bWVzdGFtcCBSZXNwb25kZXIgMjAyNSAxMIICIjANBgkqhkiG9w0BAQEFAAOCAg8A
-# MIICCgKCAgEA0EasLRLGntDqrmBWsytXum9R/4ZwCgHfyjfMGUIwYzKomd8U1nH7
-# C8Dr0cVMF3BsfAFI54um8+dnxk36+jx0Tb+k+87H9WPxNyFPJIDZHhAqlUPt281m
-# HrBbZHqRK71Em3/hCGC5KyyneqiZ7syvFXJ9A72wzHpkBaMUNg7MOLxI6E9RaUue
-# HTQKWXymOtRwJXcrcTTPPT2V1D/+cFllESviH8YjoPFvZSjKs3SKO1QNUdFd2adw
-# 44wDcKgH+JRJE5Qg0NP3yiSyi5MxgU6cehGHr7zou1znOM8odbkqoK+lJ25LCHBS
-# ai25CFyD23DZgPfDrJJJK77epTwMP6eKA0kWa3osAe8fcpK40uhktzUd/Yk0xUvh
-# DU6lvJukx7jphx40DQt82yepyekl4i0r8OEps/FNO4ahfvAk12hE5FVs9HVVWcO5
-# J4dVmVzix4A77p3awLbr89A90/nWGjXMGn7FQhmSlIUDy9Z2hSgctaepZTd0ILIU
-# bWuhKuAeNIeWrzHKYueMJtItnj2Q+aTyLLKLM0MheP/9w6CtjuuVHJOVoIJ/DtpJ
-# RE7Ce7vMRHoRon4CWIvuiNN1Lk9Y+xZ66lazs2kKFSTnnkrT3pXWETTJkhd76CID
-# BbTRofOsNyEhzZtCGmnQigpFHti58CSmvEyJcAlDVcKacJ+A9/z7eacCAwEAAaOC
-# AZUwggGRMAwGA1UdEwEB/wQCMAAwHQYDVR0OBBYEFOQ7/PIx7f391/ORcWMZUEPP
-# YYzoMB8GA1UdIwQYMBaAFO9vU0rp5AZ8esrikFb2L9RJ7MtOMA4GA1UdDwEB/wQE
+# bWVzdGFtcCBSZXNwb25kZXIgMjAyNiAxMIICIjANBgkqhkiG9w0BAQEFAAOCAg8A
+# MIICCgKCAgEAtnum8sn+zUr41JtMZbP9OMYw+HwJDpG5xkIu/lqcfNYmMX81YmsU
+# iHLbh9ykpeWBGKTLhYBrAN9Tdg/QEzG32XcObmgIblnr0CoQ3WSAeDZ6nH6X6VkF
+# yYkJw3QBJREwvm4UhLzSxmwPA7cFKRTEOMsmEEj6qJk/dqLEAL+oQYuOwE2UuiX1
+# Vnul8YReIyWd4kgLn9gq6LNXM0UplkR6jL/QHxmb6fMoGBJYbnaUI7XD6cKDpekK
+# 2SVMld4iDbzeHDtOaaxldH5IxuNusQ69nd8/ZXEiB5Hbxj3RlK13cX1W4DlFXKdv
+# /CEhM8Cj1vvlmvhNroyPdRGbbpBlgyf8Wdu5N6ByhFwURn0U6ozlPoxN22v+fviU
+# hP+6DR547OZnpBMWDfei1f5sVGwiiW/KQTWOK97g+4RJpPzPNV4VYMAwO2jM2Aty
+# 2QYPVmOQTJm0msuXnJrSbl2gf9JylpkJlWXqk1Q4LJsxz+TELoQCZIljbgvTJgoP
+# U2R12ydv8i1UqL/adelA0y7U9Pmmtbze9Xx3rtajC5SzQd1jgfwAwsa90v9YcSPd
+# meoyoBBA/27cCL237l5DTYYPDLQ4ON3OLTGWnvRb6jDrf/T75gMRfUzSLCBQfBus
+# m9+mSWRlC/Df6S/e9Q8i13CuhzOT2Jx+V/nlbXM4QoBwlUAhelwwJT0CAwEAAaOC
+# AZUwggGRMAwGA1UdEwEB/wQCMAAwHQYDVR0OBBYEFBTJY4owLtRK+26U8+bjQH71
+# 7M3iMB8GA1UdIwQYMBaAFO9vU0rp5AZ8esrikFb2L9RJ7MtOMA4GA1UdDwEB/wQE
 # AwIHgDAWBgNVHSUBAf8EDDAKBggrBgEFBQcDCDCBlQYIKwYBBQUHAQEEgYgwgYUw
 # JAYIKwYBBQUHMAGGGGh0dHA6Ly9vY3NwLmRpZ2ljZXJ0LmNvbTBdBggrBgEFBQcw
 # AoZRaHR0cDovL2NhY2VydHMuZGlnaWNlcnQuY29tL0RpZ2lDZXJ0VHJ1c3RlZEc0
 # VGltZVN0YW1waW5nUlNBNDA5NlNIQTI1NjIwMjVDQTEuY3J0MF8GA1UdHwRYMFYw
 # VKBSoFCGTmh0dHA6Ly9jcmwzLmRpZ2ljZXJ0LmNvbS9EaWdpQ2VydFRydXN0ZWRH
 # NFRpbWVTdGFtcGluZ1JTQTQwOTZTSEEyNTYyMDI1Q0ExLmNybDAgBgNVHSAEGTAX
-# MAgGBmeBDAEEAjALBglghkgBhv1sBwEwDQYJKoZIhvcNAQELBQADggIBAGUqrfEc
-# JwS5rmBB7NEIRJ5jQHIh+OT2Ik/bNYulCrVvhREafBYF0RkP2AGr181o2YWPoSHz
-# 9iZEN/FPsLSTwVQWo2H62yGBvg7ouCODwrx6ULj6hYKqdT8wv2UV+Kbz/3ImZlJ7
-# YXwBD9R0oU62PtgxOao872bOySCILdBghQ/ZLcdC8cbUUO75ZSpbh1oipOhcUT8l
-# D8QAGB9lctZTTOJM3pHfKBAEcxQFoHlt2s9sXoxFizTeHihsQyfFg5fxUFEp7W42
-# fNBVN4ueLaceRf9Cq9ec1v5iQMWTFQa0xNqItH3CPFTG7aEQJmmrJTV3Qhtfparz
-# +BW60OiMEgV5GWoBy4RVPRwqxv7Mk0Sy4QHs7v9y69NBqycz0BZwhB9WOfOu/CIJ
-# nzkQTwtSSpGGhLdjnQ4eBpjtP+XB3pQCtv4E5UCSDag6+iX8MmB10nfldPF9SVD7
-# weCC3yXZi/uuhqdwkgVxuiMFzGVFwYbQsiGnoa9F5AaAyBjFBtXVLcKtapnMG3VH
-# 3EmAp/jsJ3FVF3+d1SVDTmjFjLbNFZUWMXuZyvgLfgyPehwJVxwC+UpX2MSey2ue
-# Iu9THFVkT+um1vshETaWyQo8gmBto/m3acaP9QsuLj3FNwFlTxq25+T4QwX9xa6I
-# Ls84ZPvmpovq90K8eWyG2N01c4IhSOxqt81nMYIGfzCCBnsCAQEwgaIwgZUxCzAJ
+# MAgGBmeBDAEEAjALBglghkgBhv1sBwEwDQYJKoZIhvcNAQELBQADggIBAI3FOmEe
+# nVIK35msCYB+fShAsWvSYvLBItoNdAgQ2jIqrGsVsluXMJU/+mRebBc52s6lbKAv
+# OVPXaizmKkMLLflEEKDZQx4CkS2t8aHPjkXha3hYZ010htFa3dhNgmalH5vuWvh3
+# tTCf4frTS7gPtGc4Z/xaPhQ2AB1mR8eEe/WbH0RWHvVIl6VwQ3+g5FKNfN2N/DWJ
+# kf13w2H+2GfqEfbd35Ww8CvoYBjLNIDTadcPWdgsjsiOaK/7EsKJgLjUNIVgvcaF
+# OLLQ/GlrA+0ZHJoFUbOr5SJN8zykPspXIXlpDJY/gqFUZRROeab9GVgmhbdOJcD/
+# 63RhxPahFUGbckRONqMe6DYAv6/mOG0pWd3cPStsdcS7buj5DyniwRY8yooMH6pt
+# x5vpP/pZzBPBeZD2U4IsthyxB5Jaa8qrOkB5z160TXiM5ADMspZ0TfD9MJoq0tFp
+# FPssKRFhWeEDYPvcUuN7U7lvcdHl4ezQ3NT/7Ffs1sR1yh/LRbdZ3B3Vc6q2WmD8
+# mDC0p9kzl2o73iVtS946IkEj7FkRsZGww1teYxERROC745xrtjvcw9ZyyUjHZWGR
+# IpJeMNsPquCDf0fkyHtB+J4AiNZqCQk23rxh+KbpyMTNVKItJ5l92Svl20U9NbqM
+# BOVYl1h54NEYLJq1/xHWFKPNK903zJZA9P2DMYIGfzCCBnsCAQEwgaIwgZUxCzAJ
 # BgNVBAYTAlVTMQswCQYDVQQIEwJNTjEUMBIGA1UEBxMLTWlubmVhcG9saXMxEjAQ
 # BgNVBAoTCUx1Y2EgSG9tZTEPMA0GA1UECxMGT2ZmaWNlMRowGAYDVQQDExFMdWNh
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgfLDT+XV4pQ4Sl78xiWJG
-# CBoBuovxb/h7bPp7a4mEOmcwDQYJKoZIhvcNAQEBBQAEggIAlkoR1jJ5KSRRixb1
-# 22ymzNDcsxPEelKiU078UK0I6Sd28wF6pLMJs7T2lpAozJ7WltlTkWyeN4/uprdo
-# +IhJhC2tciK+FkZFMlfWxIfB9T+wrQgJE2wt3jjzwnDuD1gZNsvI9zBuBZYJibeg
-# T/2Sl3K5Jzo3mtpT0xi9TsaMTsp21/R5EzNcV1YKmcb2ZNtZ221K/7Ua/chOiWms
-# pkmbUiX0ZjSy4vCcoBdEfJaWZ4TS9DX6gl06QdkvlwdBjiRzFEfdHzNQjF10Z0z3
-# R3NItYfNo1/BXm7v0Jq3QOQZlvMpMsTkLW0ybfsy2MQCEryB3VtSbFm9bW+wEGwF
-# rPFqS6mZXnTk5uenAhXgcywQBMXWFFPpKkJJh0JjVCXhEc2FV9b/zAHGS29+YAkj
-# XAKzHmTPgTjfV4zBs6RlRXUra8DET7nuCWh8N7MSyRU1tURWblIbLKyeJoyeBKHT
-# dA9IuHe9MXp2DhZcMH8jFk9XD8qfpxj5xF9HuO4V+pHOOPPGbj7DvcJp1WcKwZBh
-# O7rN57ecel3wAXbjQde72q7Zr4Ft9usIv6D2HRgZ6kjo7co2MzDz0tqJWdnhfWZ+
-# 7KeIARmYqHAoqMsajbKN9lmFo5AVFmVsEVdeouAKawdbsfTKCQkxwaIgzOucx2wz
-# HKg77nfP4/OQsqc2XkDjW6GyfWOhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgQNPT7oENAOmY2oykVbKA
+# 5j8asrplEC1+PZcdKtzRqxYwDQYJKoZIhvcNAQEBBQAEggIAqMv/xuFDOiKoNBNk
+# n8gU+O6vuw5sh5jLSf32oiOm4DBBMuMlS8CwdGJUEMwi0evoOyg9c1WSaYyuf332
+# uJdOeeOZRlBxHZVwSBGqZCI/a3Bgo1t3zS4ier4Of9erN55eR1Kvjrl6F1yEwW+k
+# K9UeAXDpsgOKZGgQVTAHFR6hH2BkZsScLZI8O5kjNokiDRkWwG3bkM1DEcXxAXUs
+# kJ3A5HnGMLdlUW4HjT5J8Z7FuplX1omS/Npp5Mvi25PE6r/OusLYp/5AOiO89C+j
+# JEqU/7L4zzWWqCHwAOuWi5ivOFlYX0/GuVt2oc7DEfP2v63FeOT1xFWIQxFYqGkq
+# QsfY66eMoWl5VVN/S5OSFlq0lS6bhdr8vIOdOqpMAorcBLLVUnG+H3YUxRSTfKX6
+# CAD+hLVMN3xjQ/sojhZd7A7M2sDxgLmqSH/wRGglNo6ndhBVjdoM+G9wEhSXs7Pb
+# jHy5v3xM6ty2Zj6H5LqsPCC39ZrpO+Fqd+kEy87Z5T4cLMR+cCUj4En/pieD8y/n
+# aYc2b2QweDjdbfrMWRDTOOshFtIDr1Fjn4zlBF1p4oLXoEoKk+KFZiqwVIziC0Ib
+# rzvJ4ZwkhcnPorcP/zTMyHsq1TRloz5jXIK6zPPZmeV7lZ8pVKmmLr3tmxTfaRj6
+# AIt5gsiuIfoEtzY2Zf+8jsEzSXyhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
-# U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
+# U0hBMjU2IDIwMjUgQ0ExAhAIT9wzT35FTtvDD4/5khg1MA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODMxMTY0MTA3WjAvBgkqhkiG9w0BCQQxIgQgpkD+1xmRo4n2w2ZJBYNQspvwiZXM
-# xSs4wspUybEKlDQwDQYJKoZIhvcNAQEBBQAEggIApQll14fJAtytSmLPrBfxptaw
-# cG2WXyDzW4ImSbJqcYDisLk6h4B+4cigvi6WPoI4Tfj7F+laSyFZkVwfYx8URZI9
-# zNqBEfBfXJ9sTebv8XK/E35lLh9iSRkAvnA7ejbaUbbFO1Xdh+HwpekM33QHTcFk
-# rmeBH6CpaP2b23a2acgtIAuzXwoZgbSQChQBar3E652DU1gJWBjYXIgHvxd9iquf
-# xhmmYfSAWHfZlLbFf2DKCYaGN2GS+NPEtfOyJ0EbHARYLuVd4gR8+YJT4fXuSacO
-# nWDMNSkKp2+kqpW1sRBGhIKoOjnhq/jhLl1AI/4uQFtgIrdvrJdF+ThjJxH6JVXR
-# NUFHFJ8FexO0jP13E0ZmxoQB1u+ZCpaMtnDlLcOn5Yf+Irtz8Z/7dN52WU77TQVT
-# DWmKYjkUrBezXe7/zoMRyRsj6X4MMv1Vaj7qur1qKWIzclMXI6FWtbiXerSPW0L6
-# s0TXg12mq9EtOgGFDugUlWOwXf1xqAq++zoYuUVHMG5vFZe5CLBGnE9p1eSIX0Xj
-# tZryyvwibhDdP5g0xArxDxwmF6TcAww69Q/WLbFCn2Ogm09gDiE8LJswK4SwZsyi
-# 7feKdnM52Fjs/QtxDoAZ8umfp0R1ST1hF4cySDvk1CT0CP2ytqDSGjjq5oVsXAW9
-# 7SvOX/u8sCVb2TJ/M3Y=
+# OTA0MjEwMzQ3WjAvBgkqhkiG9w0BCQQxIgQg3cp+qcCFNYzVNB0fVpowfv/+wl87
+# 2j5p+0PxC1HOjZ0wDQYJKoZIhvcNAQEBBQAEggIATythScPKiKAtsO9flppbFf1l
+# DSYjSGRnu8FyPsFdmlxUcXKyLqXJ/CbUWFbGU5GOBNhWlJ8rXcbmidXHO6KfkAeY
+# XXrj2pe8C1++xlfsU5puhVmFrHn1SFijq/vOO/9qN+yBAxGoo4AdLcuDQK1/b7np
+# giSPpn4llCEo4DOk7VRdNtuAbkK1WHsdWVrMiQNAWZhP3PniHH1fojfNYFQpOo9r
+# b3Se3kZQt8AvNf7etYdYQFeI18FEvBXNrh2AlNwI0iTP4IFnIjp+HLsVqkkYVk5z
+# RxU+yBLkUfDQAqagkWoSkV3+pA2eY64MS7OQ4dV8W52tlJWOtcMU3Y1wrdGxxrHu
+# zDfs5NV9pC25PRWTq6DuOVd6pglfqVZQe4msL0xKYWUQ23axtXrs6AT7Rcty/Orc
+# WuQDvl+RNnxdtLdwgHJR4yrBOcKk1GdE0pv4yev471kspORqPM0phWflyLoiTgu9
+# 3Z+HmdpwFPL64jxFCApQyiTPvNHimVevsrVQ8dBMUNcG7M6+cZpkX1oaAxzVUYOg
+# qadMcMcUwlj1E2AA3OgE0srhfz+vm44RWKYZp2FmFdJSw0gpvVhb2G2vl/1edHsT
+# TemR5qnmcXkpKR00jecESMYZy6JUs2E6CJqRtyYAbpHYpemTfc+cw/kXGykzOteF
+# dP3euNUg9voCUsK0NNM=
 # SIG # End signature block

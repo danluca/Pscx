@@ -53,6 +53,13 @@
 * Added an explicitly invoked, cross-platform guided updater for GitHub Release
   discovery, stable/prerelease policy, checksum and package validation,
   confirmation and `-WhatIf`, and recoverable side-by-side versioned installs.
+* Fixed installed-version discovery in the updater to ignore PSCX's nested
+  binary module record, whose four-part assembly version is not Semantic
+  Version 2.0 metadata; on Windows, successfully checksum-verified release ZIPs
+  are now unblocked before extraction so installed files do not inherit Mark of
+  the Web.
+* Fixed GitHub release discovery to enumerate every release returned by the
+  REST API before applying draft, prerelease, and version-selection policy.
 * Added a portable, self-contained HTML dashboard over the authoritative test,
   coverage, and static-analysis results, generated consistently by local and CI
   test pipelines and uploaded with CI artifacts.
@@ -62,6 +69,8 @@
 * Included the maintainer's public code-signing root certificate with explicit
   Windows guidance for inspecting signatures and manually opting into trust;
   PSCX never installs the certificate or changes publisher trust automatically.
+* Normalized generated MAML examples so terminal help no longer exposes
+  Markdown code fences or invalid paragraph-separator characters.
 * Strengthened static validation with time-bounded analyzer workers, canonical
   diagnostic deduplication, environment metadata, and a complete diagnostic
   report written before baseline enforcement.
@@ -74,6 +83,11 @@
 * Protected signed PowerShell files from Git line-ending conversion, made the
   signing tool remove stale signature blocks safely before re-signing, and
   added release-blocking validation for packaged Authenticode content hashes.
+* Added a cross-platform local-build installer with platform-native user module
+  paths, version-derived destinations, `-WhatIf`, and recoverable replacement
+  of only the matching locally installed version.
+* Classified tagged semantic prereleases as GitHub prereleases when creating
+  draft releases, while retaining the maintainer's explicit publish step.
 
 ## 3.8.0 - August 2026
 

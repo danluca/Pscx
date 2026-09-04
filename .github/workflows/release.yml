@@ -46,7 +46,7 @@ jobs:
           path: .tools/modules
           key: ${{ runner.os }}-pwsh-tests-${{ hashFiles('Tests/TestPolicy.psd1') }}
 
-      - name: Build stable release candidate
+      - name: Build tagged release candidate
         if: ${{ github.ref_type == 'tag' }}
         timeout-minutes: 25
         shell: pwsh
@@ -97,6 +97,9 @@ jobs:
             '--title', 'PSCX ${{ github.ref_name }}',
             '--generate-notes'
           )
+          if ('${{ github.ref_name }}' -match '-') {
+            $arguments += '--prerelease'
+          }
           $arguments += $assets.FullName
           & gh @arguments
           if ($LASTEXITCODE -ne 0) {

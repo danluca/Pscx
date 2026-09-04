@@ -146,16 +146,66 @@ Describe 'PSCX updater semantic version and release selection' {
         $selected.Version.Text | Should -Be @('4.2.0-preview.2', '4.1.0')
     }
 
+    It 'enumerates every release returned in a GitHub REST array' {
+        Mock -ModuleName Pscx.Update Invoke-RestMethod {
+            $response = @(
+                [pscustomobject]@{ tag_name = 'v4.0.0'; draft = $false; prerelease = $false }
+                [pscustomobject]@{ tag_name = 'v4.0.1'; draft = $false; prerelease = $false }
+                [pscustomobject]@{ tag_name = 'v4.1.0-preview.1'; draft = $false; prerelease = $true }
+                [pscustomobject]@{ tag_name = 'v3.8.0'; draft = $false; prerelease = $false }
+                [pscustomobject]@{ tag_name = 'v5.0.0'; draft = $true; prerelease = $false }
+            )
+            Write-Output -NoEnumerate $response
+        }
+
+        $releases = @(& $script:updateModule { Get-PscxGitHubRelease })
+
+        $releases | Should -HaveCount 5
+        $releases.tag_name | Should -Be @(
+            'v4.0.0'
+            'v4.0.1'
+            'v4.1.0-preview.1'
+            'v3.8.0'
+            'v5.0.0'
+        )
+
+        foreach ($release in $releases) {
+            $version = $release.tag_name.Substring(1)
+            $release | Add-Member -NotePropertyName html_url `
+                -NotePropertyValue "https://example.invalid/releases/v$version"
+            $release | Add-Member -NotePropertyName assets -NotePropertyValue @(
+                [pscustomobject]@{ name = "Pscx-$version.zip" }
+                [pscustomobject]@{ name = "Pscx-$version.sha256" }
+            )
+        }
+        $selected = @(& $script:updateModule {
+                param($Release)
+                Select-PscxRelease -Release $Release
+            } $releases)
+
+        $selected.Version.Text | Should -Be @('4.0.1', '4.0.0', '3.8.0')
+    }
+
     It 'reads installed prerelease metadata from manifest hashtables' {
         Mock -ModuleName Pscx.Update Get-Module {
-            @([pscustomobject]@{
+            @(
+                [pscustomobject]@{
+                    Name = 'Pscx'
+                    Version = [version]'4.0.0.0'
+                    Path = '/modules/Pscx/4.0.0/Pscx.dll'
+                    Guid = [guid]::Empty
+                    PrivateData = $null
+                }
+                [pscustomobject]@{
                     Name = 'Pscx'
                     Version = [version]'4.0.0'
                     Path = '/modules/Pscx/4.0.0/Pscx.psd1'
+                    Guid = [guid]'0fab0d39-2f29-4e79-ab9a-fd750c66e6c5'
                     PrivateData = @{
                         PSData = @{ Prerelease = 'preview.1' }
                     }
-                })
+                }
+            )
         }
 
         $installed = @(& $script:updateModule { Get-PscxInstalledVersion })
@@ -374,6 +424,9 @@ Describe 'PSCX updater confirmation and WhatIf contract' {
             [pscustomobject]@{ ArchivePath = 'test.zip'; ChecksumPath = 'test.sha256' }
         }
         Mock -ModuleName Pscx.Update Test-PscxReleaseChecksum { $true }
+        if ($IsWindows) {
+            Mock -ModuleName Pscx.Update Unblock-File {}
+        }
         Mock -ModuleName Pscx.Update Expand-PscxSafeArchive {}
         Mock -ModuleName Pscx.Update Test-PscxPackageCandidate {
             [pscustomobject]@{
@@ -406,12 +459,26 @@ Describe 'PSCX updater confirmation and WhatIf contract' {
 
         $result.Status | Should -Be 'UpdateAvailable'
         Should -Invoke -ModuleName Pscx.Update Install-PscxPackage -Times 0
+        if ($IsWindows) {
+            Should -Invoke -ModuleName Pscx.Update Unblock-File -Times 1 `
+                -ParameterFilter { $LiteralPath -eq 'test.zip' }
+        }
+    }
+
+    It 'does not unblock an archive before checksum validation succeeds' -Skip:(-not $IsWindows) {
+        Mock -ModuleName Pscx.Update Test-PscxReleaseChecksum { throw 'Invalid checksum.' }
+
+        { Invoke-PscxUpdate -DestinationRoot (Join-Path $TestDrive 'InvalidModules') -CheckOnly } |
+            Should -Throw '*Invalid checksum*'
+        Should -Invoke -ModuleName Pscx.Update Unblock-File -Times 0
     }
 
     It 'installs after confirmation is explicitly accepted' {
         $result = Invoke-PscxUpdate -DestinationRoot (Join-Path $TestDrive 'InstallModules') -Confirm:$false
 
         $result.Status | Should -Be 'Installed'
+        $result.AvailableVersion | Should -Be '4.1.0'
+        $result.Message | Should -Be 'PSCX 4.1.0 was installed. Existing versions were retained.'
         $result.ImportCommand | Should -Be 'Import-Module Pscx -RequiredVersion 4.1.0 -Force'
         Should -Invoke -ModuleName Pscx.Update Install-PscxPackage -Times 1
     }
@@ -421,8 +488,8 @@ Describe 'PSCX updater confirmation and WhatIf contract' {
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBSdGhIEm3VgOC+
-# k1U1w4zUarUqcHO9pxkPqq53Q+AmTqCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCbyWSKY59RcsdH
+# IF1op+yz7GCdiYE2yLJCc1NNZdNJvKCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -558,77 +625,77 @@ Describe 'PSCX updater confirmation and WhatIf contract' {
 # GLS/D284NHNboDGcmWXfwXRy4kbu4QFhOm0xJuF2EZAOk5eCkhSxZON3rGlHqhpB
 # /8MluDezooIs8CVnrpHMiD2wL40mm53+/j7tFaxYKIqL0Q4ssd8xHZnIn/7GELH3
 # IdvG2XlM9q7WP/UwgOkw/HQtyRN62JK4S1C8uw3PdBunvAZapsiI5YKdvlarEvf8
-# EA+8hcpSM9LHJmyrxaFtoza2zNaQ9k+5t1wwggbtMIIE1aADAgECAhAKgO8YS43x
-# BYLRxHanlXRoMA0GCSqGSIb3DQEBCwUAMGkxCzAJBgNVBAYTAlVTMRcwFQYDVQQK
+# EA+8hcpSM9LHJmyrxaFtoza2zNaQ9k+5t1wwggbtMIIE1aADAgECAhAIT9wzT35F
+# TtvDD4/5khg1MA0GCSqGSIb3DQEBCwUAMGkxCzAJBgNVBAYTAlVTMRcwFQYDVQQK
 # Ew5EaWdpQ2VydCwgSW5jLjFBMD8GA1UEAxM4RGlnaUNlcnQgVHJ1c3RlZCBHNCBU
-# aW1lU3RhbXBpbmcgUlNBNDA5NiBTSEEyNTYgMjAyNSBDQTEwHhcNMjUwNjA0MDAw
-# MDAwWhcNMzYwOTAzMjM1OTU5WjBjMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGln
+# aW1lU3RhbXBpbmcgUlNBNDA5NiBTSEEyNTYgMjAyNSBDQTEwHhcNMjYwODA1MDAw
+# MDAwWhcNMzcxMTA0MjM1OTU5WjBjMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGln
 # aUNlcnQsIEluYy4xOzA5BgNVBAMTMkRpZ2lDZXJ0IFNIQTI1NiBSU0E0MDk2IFRp
-# bWVzdGFtcCBSZXNwb25kZXIgMjAyNSAxMIICIjANBgkqhkiG9w0BAQEFAAOCAg8A
-# MIICCgKCAgEA0EasLRLGntDqrmBWsytXum9R/4ZwCgHfyjfMGUIwYzKomd8U1nH7
-# C8Dr0cVMF3BsfAFI54um8+dnxk36+jx0Tb+k+87H9WPxNyFPJIDZHhAqlUPt281m
-# HrBbZHqRK71Em3/hCGC5KyyneqiZ7syvFXJ9A72wzHpkBaMUNg7MOLxI6E9RaUue
-# HTQKWXymOtRwJXcrcTTPPT2V1D/+cFllESviH8YjoPFvZSjKs3SKO1QNUdFd2adw
-# 44wDcKgH+JRJE5Qg0NP3yiSyi5MxgU6cehGHr7zou1znOM8odbkqoK+lJ25LCHBS
-# ai25CFyD23DZgPfDrJJJK77epTwMP6eKA0kWa3osAe8fcpK40uhktzUd/Yk0xUvh
-# DU6lvJukx7jphx40DQt82yepyekl4i0r8OEps/FNO4ahfvAk12hE5FVs9HVVWcO5
-# J4dVmVzix4A77p3awLbr89A90/nWGjXMGn7FQhmSlIUDy9Z2hSgctaepZTd0ILIU
-# bWuhKuAeNIeWrzHKYueMJtItnj2Q+aTyLLKLM0MheP/9w6CtjuuVHJOVoIJ/DtpJ
-# RE7Ce7vMRHoRon4CWIvuiNN1Lk9Y+xZ66lazs2kKFSTnnkrT3pXWETTJkhd76CID
-# BbTRofOsNyEhzZtCGmnQigpFHti58CSmvEyJcAlDVcKacJ+A9/z7eacCAwEAAaOC
-# AZUwggGRMAwGA1UdEwEB/wQCMAAwHQYDVR0OBBYEFOQ7/PIx7f391/ORcWMZUEPP
-# YYzoMB8GA1UdIwQYMBaAFO9vU0rp5AZ8esrikFb2L9RJ7MtOMA4GA1UdDwEB/wQE
+# bWVzdGFtcCBSZXNwb25kZXIgMjAyNiAxMIICIjANBgkqhkiG9w0BAQEFAAOCAg8A
+# MIICCgKCAgEAtnum8sn+zUr41JtMZbP9OMYw+HwJDpG5xkIu/lqcfNYmMX81YmsU
+# iHLbh9ykpeWBGKTLhYBrAN9Tdg/QEzG32XcObmgIblnr0CoQ3WSAeDZ6nH6X6VkF
+# yYkJw3QBJREwvm4UhLzSxmwPA7cFKRTEOMsmEEj6qJk/dqLEAL+oQYuOwE2UuiX1
+# Vnul8YReIyWd4kgLn9gq6LNXM0UplkR6jL/QHxmb6fMoGBJYbnaUI7XD6cKDpekK
+# 2SVMld4iDbzeHDtOaaxldH5IxuNusQ69nd8/ZXEiB5Hbxj3RlK13cX1W4DlFXKdv
+# /CEhM8Cj1vvlmvhNroyPdRGbbpBlgyf8Wdu5N6ByhFwURn0U6ozlPoxN22v+fviU
+# hP+6DR547OZnpBMWDfei1f5sVGwiiW/KQTWOK97g+4RJpPzPNV4VYMAwO2jM2Aty
+# 2QYPVmOQTJm0msuXnJrSbl2gf9JylpkJlWXqk1Q4LJsxz+TELoQCZIljbgvTJgoP
+# U2R12ydv8i1UqL/adelA0y7U9Pmmtbze9Xx3rtajC5SzQd1jgfwAwsa90v9YcSPd
+# meoyoBBA/27cCL237l5DTYYPDLQ4ON3OLTGWnvRb6jDrf/T75gMRfUzSLCBQfBus
+# m9+mSWRlC/Df6S/e9Q8i13CuhzOT2Jx+V/nlbXM4QoBwlUAhelwwJT0CAwEAAaOC
+# AZUwggGRMAwGA1UdEwEB/wQCMAAwHQYDVR0OBBYEFBTJY4owLtRK+26U8+bjQH71
+# 7M3iMB8GA1UdIwQYMBaAFO9vU0rp5AZ8esrikFb2L9RJ7MtOMA4GA1UdDwEB/wQE
 # AwIHgDAWBgNVHSUBAf8EDDAKBggrBgEFBQcDCDCBlQYIKwYBBQUHAQEEgYgwgYUw
 # JAYIKwYBBQUHMAGGGGh0dHA6Ly9vY3NwLmRpZ2ljZXJ0LmNvbTBdBggrBgEFBQcw
 # AoZRaHR0cDovL2NhY2VydHMuZGlnaWNlcnQuY29tL0RpZ2lDZXJ0VHJ1c3RlZEc0
 # VGltZVN0YW1waW5nUlNBNDA5NlNIQTI1NjIwMjVDQTEuY3J0MF8GA1UdHwRYMFYw
 # VKBSoFCGTmh0dHA6Ly9jcmwzLmRpZ2ljZXJ0LmNvbS9EaWdpQ2VydFRydXN0ZWRH
 # NFRpbWVTdGFtcGluZ1JTQTQwOTZTSEEyNTYyMDI1Q0ExLmNybDAgBgNVHSAEGTAX
-# MAgGBmeBDAEEAjALBglghkgBhv1sBwEwDQYJKoZIhvcNAQELBQADggIBAGUqrfEc
-# JwS5rmBB7NEIRJ5jQHIh+OT2Ik/bNYulCrVvhREafBYF0RkP2AGr181o2YWPoSHz
-# 9iZEN/FPsLSTwVQWo2H62yGBvg7ouCODwrx6ULj6hYKqdT8wv2UV+Kbz/3ImZlJ7
-# YXwBD9R0oU62PtgxOao872bOySCILdBghQ/ZLcdC8cbUUO75ZSpbh1oipOhcUT8l
-# D8QAGB9lctZTTOJM3pHfKBAEcxQFoHlt2s9sXoxFizTeHihsQyfFg5fxUFEp7W42
-# fNBVN4ueLaceRf9Cq9ec1v5iQMWTFQa0xNqItH3CPFTG7aEQJmmrJTV3Qhtfparz
-# +BW60OiMEgV5GWoBy4RVPRwqxv7Mk0Sy4QHs7v9y69NBqycz0BZwhB9WOfOu/CIJ
-# nzkQTwtSSpGGhLdjnQ4eBpjtP+XB3pQCtv4E5UCSDag6+iX8MmB10nfldPF9SVD7
-# weCC3yXZi/uuhqdwkgVxuiMFzGVFwYbQsiGnoa9F5AaAyBjFBtXVLcKtapnMG3VH
-# 3EmAp/jsJ3FVF3+d1SVDTmjFjLbNFZUWMXuZyvgLfgyPehwJVxwC+UpX2MSey2ue
-# Iu9THFVkT+um1vshETaWyQo8gmBto/m3acaP9QsuLj3FNwFlTxq25+T4QwX9xa6I
-# Ls84ZPvmpovq90K8eWyG2N01c4IhSOxqt81nMYIGfzCCBnsCAQEwgaIwgZUxCzAJ
+# MAgGBmeBDAEEAjALBglghkgBhv1sBwEwDQYJKoZIhvcNAQELBQADggIBAI3FOmEe
+# nVIK35msCYB+fShAsWvSYvLBItoNdAgQ2jIqrGsVsluXMJU/+mRebBc52s6lbKAv
+# OVPXaizmKkMLLflEEKDZQx4CkS2t8aHPjkXha3hYZ010htFa3dhNgmalH5vuWvh3
+# tTCf4frTS7gPtGc4Z/xaPhQ2AB1mR8eEe/WbH0RWHvVIl6VwQ3+g5FKNfN2N/DWJ
+# kf13w2H+2GfqEfbd35Ww8CvoYBjLNIDTadcPWdgsjsiOaK/7EsKJgLjUNIVgvcaF
+# OLLQ/GlrA+0ZHJoFUbOr5SJN8zykPspXIXlpDJY/gqFUZRROeab9GVgmhbdOJcD/
+# 63RhxPahFUGbckRONqMe6DYAv6/mOG0pWd3cPStsdcS7buj5DyniwRY8yooMH6pt
+# x5vpP/pZzBPBeZD2U4IsthyxB5Jaa8qrOkB5z160TXiM5ADMspZ0TfD9MJoq0tFp
+# FPssKRFhWeEDYPvcUuN7U7lvcdHl4ezQ3NT/7Ffs1sR1yh/LRbdZ3B3Vc6q2WmD8
+# mDC0p9kzl2o73iVtS946IkEj7FkRsZGww1teYxERROC745xrtjvcw9ZyyUjHZWGR
+# IpJeMNsPquCDf0fkyHtB+J4AiNZqCQk23rxh+KbpyMTNVKItJ5l92Svl20U9NbqM
+# BOVYl1h54NEYLJq1/xHWFKPNK903zJZA9P2DMYIGfzCCBnsCAQEwgaIwgZUxCzAJ
 # BgNVBAYTAlVTMQswCQYDVQQIEwJNTjEUMBIGA1UEBxMLTWlubmVhcG9saXMxEjAQ
 # BgNVBAoTCUx1Y2EgSG9tZTEPMA0GA1UECxMGT2ZmaWNlMRowGAYDVQQDExFMdWNh
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgDvVMXF+A55MQbtv5s10A
-# MoPDBxL8gzjCohWERV6fzwEwDQYJKoZIhvcNAQEBBQAEggIAHnPM5BMGM9D4johf
-# Zyfy/FKZCxa0mzmwLrxxdZkRArFZfzBId72lJbM32IBB/BiniXcamcSl3GRnLafp
-# N/iQ2L/cXqbgI5AsLfJwmoa9rw5qWqzo4C+/08mWAdIIVB5B8Ie5PYw3apcE/+uW
-# Dx0gr50t3EABSrfSE6/CD92m20balxakiCWEQbnoApNhtAzGtKBxz0hukZigiCgV
-# AKyM9M45Wd0sIxHHnDoR9aSLBwbGSmXR8d/9HAGtRKbKM3SY8IEd9M7MbCH4A2xQ
-# B+7AGpH/ZsYZcUW8+RSxvgRklrxU9gHuqGTX0ZFVqMQdh5FC2Ik8boRvecfUaIaU
-# OBBLO+tAY6tgJ2sDglzqpoDEfv5LAiTZUy8FjO2wRwZP9PixJ55Kfrc5Z0regqYE
-# SVInS8lfNY36Y7wehAe7C6lXXp9uLHFiduygNGYHJazeXQ7qEN39v+dfNmH0/7r8
-# RiW6PkZSSZU7O7P3A8N4/GmOwBLIw9mjBPNFNCxP3ev7TMdwNT5MSGGJuWztZjV1
-# g1Rn9apG5rPJ/ySimOPs5EWn5qRMPWBcfXhLH3kSE/Rk98v0e6l6MwnWHXkPPAFw
-# cOyOSJcDhoYq6wQELDURZO+AqBNI3bXZswKy+d8q5EpU7emqAcpc9VrhRPX6XU9x
-# 6P+KCn65s/resEy+CFtEW4GWD56hggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgLSNLr7NbfzhEV39ypyfc
+# iXSIbzGbeuiDLCU4Ri/iVagwDQYJKoZIhvcNAQEBBQAEggIArf96Y1KQMAeRn+6b
+# 2fMsZ+nvBobSApujlGPJYICvDj0JCgoOOUH1CN+SfPTiG4k4Jolu8AX2OlP+XAfU
+# RkHU4gpgfJSprjQnXHTS5cjjO0qnYCNFfXJJB2jN9J2/AJgKC2PMrK0gDo9KJMHq
+# y9VxryZFeeN7vGMdZeiV4vExthh3dVpEaYs1KQy+zc9MDgBh/Ah0xFNGc2hyn05R
+# ad9OZjdT9PDfMw+WDWnY7e++DLsDfslQFnUUA7g48l0LS8VS9PpyO7LtTLaqqmH8
+# F6E9c56J1uUb86Ns4gRzRSjK4mrxlgZgc5UpMu+H9V/A/FQpKleQt+SdsbnRRxYi
+# KYoHPrm1SeRxb7H5srRNgso/nFzdJIYYsCSZIdnXTAphnud1i9D5OWYTRegIDadB
+# 6jIp63CgRSmRECpB9Ju7Exw/AraLz5bWb1cEiQ9/U9wwQzCgexnP0cgOWe8Whco7
+# Rz0N13IWcsCnzbL39GFRgwE9TLEXuDJqTZ/GrlnSpcx5BBCCB01qdqbfIhuSwlWO
+# Zf+CAMK6sG8aES5v3pXrPPjyWp5uYrpvJXoi43elg0H3/n+ug+4spXNUfPILxvhB
+# p5GV0jnyueoyAd9jN+dwrnkqonClQxUWCXP0DhCYDz3Jjih8OkV+ZIrX6nXeedq8
+# m0sjYXF7ryrQFc4kt5zjSJNFTgWhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
-# U0hBMjU2IDIwMjUgQ0ExAhAKgO8YS43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUA
+# U0hBMjU2IDIwMjUgQ0ExAhAIT9wzT35FTtvDD4/5khg1MA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# ODMxMTY0MTA5WjAvBgkqhkiG9w0BCQQxIgQgt7nZcjWYsq9ncQu1ZOoOWPWqI11J
-# z5KOHQsup2WYPEYwDQYJKoZIhvcNAQEBBQAEggIAVg0FH3beAr5LR/34shRtSdTB
-# 5GAkLxwJfP3If3Upw2KjwFNGVg9KnWGpzlf0nRATXqXArTpvF50H/Sm4xu8zNlMO
-# 2LChAX8yAj5JsANNI2gOM2S1EeZ9iU6bjaf37BPkRJhZa6UNZ+JG2z5rZ9A4JNjZ
-# WZtwcHk8zFssptlKUALfb+YXSqrD8hqW9ffTr7OUwrh5aIW5v1avMw9cVIgf8ix+
-# Zy56/uk4/UU34+zSEI+c9Z3TxBAEjku3o+8P86XpejwkXYGqih4XnATxrdffE5th
-# dBTLliiFMekasqEi2J8Ax+lCxJLMEpDQR4vU7FGzxYY+I1pqPpmSDN/3+O6NiggI
-# islprc5F53qMnYb+uV6eE+G94sdtncUZsk8/srxaO/cjVKuRlETHhq2a4Z8XM3pM
-# 9QG25pLlzznXlijlCOOoavTKv6VSeWW/YgJQ5l2m1i3orpZoYEbE3dVApP9hyUIL
-# yQN3yh1V3w5/Jneqq3ydtELX9QERhoLjJK1hgoM0BQN0/pBj35C7w4noWegGJAZ6
-# RLk5XwU12Lcl+tZ57TZwWt/LJ3FbSSd5nZ0kiLhY7acAtUozxNPE5xjbwsvlAdXx
-# VS7BZQvutX9/vzfGsQkVse/hdRBxJe7MzKLIK1MbkPmHkxCXfG/OekAeWfQ+cDYX
-# DDJCTVar+GNyH5lkoYY=
+# OTA0MDEzMjMxWjAvBgkqhkiG9w0BCQQxIgQgNMd5FjbmkbhLFPigVncLwQZ7iEDK
+# AKcmXfyqZexFbvMwDQYJKoZIhvcNAQEBBQAEggIAdENo9Z1TlPeLYIg+KE6MaKJ/
+# hxGsQxcLvhLXMPtx3y9fko/ZNFQ+6n6+BhmYx9fQTnjoviBtUgJNB03vInoaoWOQ
+# gPKnk3kieoT7Gcpe3ARLDmYsdVywiVyHFxbWwWnQmqESNvaRnJQ2Nr1lJxK/+1Ic
+# UQbAeL+/1PaIDX/oFS5boR2Jpi9A/v9jO1QBg39Cw/EearJj7NZ7Uwig9sPlxKSL
+# jTZLOdQ91PxmMmnuA/jeteDUNltBK0sZ6YentkXdHnMIsUXcfX6xcZXfsaaKSxer
+# H8OKMOMKX/e5YDOWCx5KtFbiM8Wa28H9l+HQ1y/i9VbCBOrIodk8XK5Rb4VuOybp
+# bYFwTAVkRiLuqcI0w0B122eXt3/R8Sp0yqRbC3O6nj/WKv4fpbg3cGpY8aY8hc3O
+# z9cL7yYXIxxJstK1+vtunwJogsgXP/Q5Qf+hcVmdgSaxwanMttApj1w0I+8jB8Eb
+# V605bqKW7slBtli15H2Zj7XUWsAsXnNhq+elM3P2qB0LShwIrYBRQqHzrhkkxVSo
+# UGvc7W6q5QWQCwLJLm7xwHAdrMC7a7c7fq3cCuJWJGG3lG92vwZmq0EcJ3H0oAcT
+# ESMHbKG4hIfAi4pHEdLy/+j4rojG6LRmTJzwyLmfjT8OJf64YvPLrs/tz5rafyx3
+# 2Tds9a36AZcJ7sRFNtc=
 # SIG # End signature block
