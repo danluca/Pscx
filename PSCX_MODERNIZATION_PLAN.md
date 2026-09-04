@@ -870,7 +870,15 @@ For each group:
 - [x] Test direct GitHub Release ZIP installation.
 - [ ] Validate command help and examples from installed packages.
 - [ ] Collect and triage preview feedback.
-- [ ] Freeze the public API before release-candidate builds.
+- [x] Freeze the public API before release-candidate builds.
+
+The maintainer approved the PSCX 4.0 public command and module surface at
+commit `fd49962` on September 4, 2026. Until the stable 4.0.0 release, changes
+are limited to release-blocking defect fixes, documentation corrections,
+tests, and build or release tooling. Any necessary change to exported commands,
+aliases, parameters, output contracts, module placement, or supported runtime
+and platform behavior requires explicit review and another release-candidate
+cycle.
 
 ### Stable release checklist
 
