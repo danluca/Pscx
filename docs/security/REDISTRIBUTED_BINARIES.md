@@ -6,9 +6,9 @@ the generated [NuGet dependency inventory](NUGET_DEPENDENCIES.md).
 
 | Component | Version | Packaged files | Purpose | License | Source and license record |
 | --- | --- | --- | --- | --- | --- |
-| gsudo | 2.6.0 | `Pscx/Apps/Win/gsudo.exe`, `Pscx/Apps/Win/sudo.exe` | Windows elevation used by the bundled gsudo integration | MIT | [Import notes and license](../../Imports/gsudo/) |
-| less | 678 | `Pscx/Apps/Win/less.exe` | Windows pager used by `PscxLess` | less upstream license; Windows-port changes under MIT | [Import notes and licenses](../../Imports/Less-678/) |
-| lesskey | 678 | `Pscx/Apps/Win/lesskey.exe` | Companion compiler for user-defined less key bindings | less upstream license; Windows-port changes under MIT | [Import notes and licenses](../../Imports/Less-678/) |
+| gsudo | 2.6.1 | `Pscx/Apps/Win/gsudo.exe`, `Pscx/Apps/Win/sudo.exe` | Windows elevation used by the bundled gsudo integration | MIT | [Import notes and license](../../Imports/gsudo/) |
+| less | 704 | `Pscx/Apps/Win/less.exe` | Windows pager used by `PscxLess` | less upstream license; Windows-port changes under MIT | [Import notes and licenses](../../Imports/Less-704/) |
+| lesskey | 704 | `Pscx/Apps/Win/lesskey.exe` | Companion compiler for user-defined less key bindings | less upstream license; Windows-port changes under MIT | [Import notes and licenses](../../Imports/Less-704/) |
 
 The authoritative, machine-readable record is
 [`Imports/REDISTRIBUTED_BINARIES.psd1`](../../Imports/REDISTRIBUTED_BINARIES.psd1).
@@ -17,7 +17,7 @@ state, upstream release, license paths, packaged names, and update owner. The
 repository and assembled package are checked against it by
 [`Test-PscxRedistributedBinary.ps1`](../../Tools/Test-PscxRedistributedBinary.ps1).
 
-The package contains byte-identical copies of gsudo 2.6.0 as `gsudo.exe` and
+The package contains byte-identical copies of gsudo 2.6.1 as `gsudo.exe` and
 `sudo.exe`, both with SHA-256:
 
 `21C470D6DEABFBD398349168E18ED1CF261D6C204D7BD12EEB53C846403A0D1A`
