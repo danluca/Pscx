@@ -335,9 +335,9 @@ function New-ModuleStage {
         $windowsApps = Join-Path $moduleRoot 'Apps/Win'
         New-Item -ItemType Directory -Path $windowsApps -Force | Out-Null
 
-        Copy-MatchingItem (Join-Path $repositoryRoot 'Imports/Less-704') 'less*.*' $windowsApps
-        Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/Less-704/license') (Join-Path $windowsApps 'LICENSE_less_orig.txt')
-        Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/Less-704/LICENSE_win.txt') (Join-Path $windowsApps 'LICENSE_less_win.txt')
+        Copy-MatchingItem (Join-Path $repositoryRoot 'Imports/Less-710') 'less*.*' $windowsApps
+        Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/Less-710/license') (Join-Path $windowsApps 'LICENSE_less_orig.txt')
+        Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/Less-710/LICENSE_win.txt') (Join-Path $windowsApps 'LICENSE_less_win.txt')
         Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/gsudo/win/gsudo.exe') (Join-Path $windowsApps 'gsudo.exe')
         Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/gsudo/win/gsudo.exe') (Join-Path $windowsApps 'sudo.exe')
         Copy-RequiredItem (Join-Path $repositoryRoot 'Imports/gsudo/win/Invoke-ElevatedCommand.ps1') (Join-Path $windowsApps 'Invoke-Elevated.ps1')
@@ -1325,8 +1325,8 @@ foreach ($item in $expandedTasks) {
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCG2ZV9xWufUiTZ
-# Mx+XdhbXxQOVKRx7ORUcxM1owYaAG6CCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCnTVcSqMkjlf6o
+# z4vR8IfP8b92VWtkoNVkMA/jF07ydKCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -1505,34 +1505,34 @@ foreach ($item in $expandedTasks) {
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgXOvZzgeZYqjMazAUHR8/
-# uP2G5ZCTvt+1/qzFqJzsLa0wDQYJKoZIhvcNAQEBBQAEggIAmNc33XpR9ZqI/My4
-# kKxWEz1qrGFUXM7hC8HKiiFhKf75pq2HUe+8XVFEa07IJJv0P1PQGaroeR8AR45O
-# cpH5+OE1RcEV8NbOHmytig7lI9zdlfPy5x2Ub/IuBpkqxcgeJVmbQm1NrhV7xzy/
-# CertCqNnYl8b5Yl33Nao/ObBC1bbAsR1vKuMgTASTQNpp0kld1GC2kEplirLMIjt
-# PrSs5/jpWouLcrVkFrEl/0petZHHLmw8GEE+3ZOGGWB9JidbTS4Ys8EekYLxEjkJ
-# Ljm0UaJSLfYTMQlTg3JHHoQgdRwwcgn71hz4N/RsyRq6vaBZQiBQs/gYR/WtDVOT
-# opNfgbuC6r6NSIekZ5TWvRTaqJc/2tSRwQ3wvKtwT3wrYkwXUAFe9n8k09v20pAl
-# eC3NCXQ4mw/jQWtNGr5qHFdW6jbE2hnOFnG2k7f05KdKPzwiWM8eXqbrwHvxsCc8
-# Raoay0shG1Jwj2oYh9Ru6r0qV23ZaTnIe3d15GXe3c24uvUAB4WPsiPj/Y2vbEh5
-# dtEFBfvwPlbTJSMxAiGpdmbR6fgolt/KO9QOJS+4mDNpw8SS+gEhfTU0tp+5lZfm
-# BHuBD05YUOFB3Xbm0C5Divxsf8rbFnP8FAIrh61IzcLA0v9Srv94w20rkoOpCdUz
-# YwxwNjll8a92U0BOditDtMpSyVChggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgb97FNR1K81l9T5dRJOlR
+# WoJFjp5Dvqg6S89nEuMr8zEwDQYJKoZIhvcNAQEBBQAEggIAYXFy62o2QDNg/Kwe
+# Mqj2oSbAvMMNcI6AHh53lHZBTXVA46WbIyLv0dsy5vMDYOWixr446mIh2ZVhPM93
+# PGdfJG7so293VtIqPw7l7oWMhm4MUT/uprIteaEgRYLK9NVw611nPtOMvsSShyAr
+# bRPI9qrB2OiMpn1CyFShHLf5wlF/NNfmjozynNuKIcNCLezvXHY4Bz5kkLTtbghP
+# 15gPu0tRfk2uDe15mC7JZSfTz5fuUJj30pOqmdNqEM6uGqgN9FUiKHFHQ9KUsQVn
+# wa5NTjHDjq0xOFWFODwemxNn6bGKzOolwO4QzLgpRkf4p200mrri6Wl8Q+8CmfTU
+# TOvvxAzSKBEEraPdAe4KoFBY94pOf9GtNmZiTwQzWgbiIae0dKc87/RaNSL/sOXx
+# PNf01tVfbkGZppnShIIctbpdTDuWjB4Glym2teNYLx7BRJZQJnwvc8VvLfyge6BG
+# y5iv53HnYlPRRhGhPXHjdg9+IDqJt0X2phlSYz9yzLyEuDqJ3crs5iwz8LQ+nqKO
+# GIHPAw2fEG7mS15XfBM61GRypm3HW3SrvyorVpp8th5wD//b/tLJL1ClI0AxA7s2
+# vlJ87vhlRuaK26T4fi/6bjf+RqleRet5Nf5XWWDHiltd/vBndF9OM4DQUv03XxjW
+# eeZjItIQl2Sfu9GjpERtaPL9A6OhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAIT9wzT35FTtvDD4/5khg1MA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# OTE3MDIxMjE0WjAvBgkqhkiG9w0BCQQxIgQgAt9zyUTAMwHKAycjeQvnzDNryXG9
-# Q/k2uvpyXeY48WAwDQYJKoZIhvcNAQEBBQAEggIAikbi5NsagXAWO4hhUgNX7a4M
-# Egj8ba3tYbUtNI+O3dpIJPoWHpfX+NKpW0epbc+ZIERAmYBUiPoDdpiXBb5AJjFr
-# 12o3VnoLedEweucT2lNbTPqR+XiAkUneM8isIF99Hr+hz+wHCr0VpxYrZGbEdF57
-# phdnExoz0KWFSrq12keoT4GbZNLBdPMfIS9LZFMrYlGelaYiIUqp7vYbcO42XGVn
-# ERzGsnotH/SZNDvSxgRHskljXdjWC5pQ1/b2D6L9lnNbK9bnCweje5TLopvVk4kI
-# 5d452/Ls6Kh8qVcKG0A+1fkmYGGQG9gM5ZS17hKspYFGUai5L1fbO9Gd/oYT3EIg
-# rXB8wTj+i2EoeIvGxw53zK1u8z+gGoqfA55fxPrf3FHuiA+cubgE50qmnrGvzbtT
-# Zi0G/CO9f2RDTWyOFER0BcRH+KeEVdbvGzYIZKtJGPXcEkgzyTn/U47rFxfzHXgu
-# 1rg3mqkGZMZE1Ww4u9GDViXcwVuuRwGFX0/LCpx6gDbwnP3W22zLvGUL9Zwu+qmh
-# JN+8yLaf34S5KAH9VFoUut84aboKoLB+ZfXZzFfpwJBY73UmVGFYzvgNQr8jQ9X7
-# +a6FpqtIulaqi0YGlBBa0BI6NrqvoyHiq7ao+H2tevgJ77j/0jqPi5jC3/0oJCuF
-# VkGTnKUOFi1AbYBVq7o=
+# OTI5MDMwMTI5WjAvBgkqhkiG9w0BCQQxIgQg0Mbnf8I1tI2m/EBm7RdHOjKeeDxs
+# veXvRVJG4DbE9UswDQYJKoZIhvcNAQEBBQAEggIAr06tJwvNFI+wCONoSTbMcwsO
+# vEsBqatC50G2Qn2QeYU0W9a3Z8gnMtK2TL5375CefnR8nthCbj3gZA56zjh2897j
+# nhqN8kFAj7zQ/0Ka/NeuGjV3DtCUJY8Bb7zthL4Es6CHvURBUBu1xdj9hZJCaBO5
+# VfSWIk/HBji06aYEDC1vKinA0Qaow/D39kx3z0qE8wCV/83i7tpYgx/kUomxFtn1
+# DvBez1ri7JyvcSQ0Jee1OmW5i7vnqWNwq0CMxgDNmt8g7TOcb7MLAV7/TFCXcj9/
+# Lr3kPPen1vUtyul8Fk9VMkP1Ie3vnsO349wHqG5WWHyL0t7QI3ZqbYfAdZZjVs8+
+# l2c3pVav7c8Wrn3oirAaRPshCklNKeCRU8ILkSI5QTEpJmc9+o9zvc2VE8KfbMDq
+# oU29WD+SPUPUZoy3vM6xhd8z6ltd6IPDzO8EvubaEi0NNunA4Ey4JQGWLQLH9rt/
+# cLiZjAYUWVMtGwkFIyP7EvGVIEs2dh8rYVTl68EDOiNzhp8ELdsdysB6EVh/kSHy
+# x8A8vmzYAY8ojssZ4BN6sMdM+gC7MzLPiy0NCcgfRci4SeMTE8PpjRuGnP0PZqOz
+# 2xm63IOiOiRQ+RkSgi+0/1X6HbLfcW9Mj51YVkX8xLL4w6jfDPMdfH7jv3rbeoTd
+# Tbh3zEd53Vnlz2I1DyM=
 # SIG # End signature block

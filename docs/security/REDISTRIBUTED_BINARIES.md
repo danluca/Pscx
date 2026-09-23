@@ -7,8 +7,10 @@ the generated [NuGet dependency inventory](NUGET_DEPENDENCIES.md).
 | Component | Version | Packaged files | Purpose | License | Source and license record |
 | --- | --- | --- | --- | --- | --- |
 | gsudo | 2.6.1 | `Pscx/Apps/Win/gsudo.exe`, `Pscx/Apps/Win/sudo.exe` | Windows elevation used by the bundled gsudo integration | MIT | [Import notes and license](../../Imports/gsudo/) |
-| less | 704 | `Pscx/Apps/Win/less.exe` | Windows pager used by `PscxLess` | less upstream license; Windows-port changes under MIT | [Import notes and licenses](../../Imports/Less-704/) |
-| lesskey | 704 | `Pscx/Apps/Win/lesskey.exe` | Companion compiler for user-defined less key bindings | less upstream license; Windows-port changes under MIT | [Import notes and licenses](../../Imports/Less-704/) |
+| less | 710 | `Pscx/Apps/Win/less.exe` | Windows pager used by `PscxLess` | less upstream license; Windows-port changes under MIT | [Import notes and licenses](../../Imports/Less-710/) |
+
+Less 710 removed the obsolete `lesskey` compiler. Key-binding source files are
+read directly by less, so `lesskey.exe` is no longer redistributed.
 
 The authoritative, machine-readable record is
 [`Imports/REDISTRIBUTED_BINARIES.psd1`](../../Imports/REDISTRIBUTED_BINARIES.psd1).
@@ -45,7 +47,7 @@ smallest reliable compatibility option with the current ZIP distribution.
 - `Output/`, `artifacts/`, `bin/`, and `obj/` are ignored generated locations.
   Static validation also rejects tracked files under `Output/`.
 - The only native executables in a Full release are `gsudo.exe`, `sudo.exe`,
-  `less.exe`, and `lesskey.exe`. Core packages contain none.
+  and `less.exe`. Core packages contain none.
 
 ## Module contents and size reporting
 

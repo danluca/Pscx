@@ -6,8 +6,9 @@ The Windows version has been downloaded from a site [sanctioned](http://www.gree
 
 Both license files (MIT) have been included.
 
-PSCX currently pins release 704 and redistributes its x64 `less.exe` and
-`lesskey.exe`. Checksums, source, license, and update ownership are recorded in
+PSCX currently pins release 710 and redistributes its x64 `less.exe`.
+Upstream removed the obsolete `lesskey` compiler in this release; less reads
+key-binding source files directly. Checksums, source, license, and update ownership are recorded in
 [`Imports/REDISTRIBUTED_BINARIES.psd1`](../REDISTRIBUTED_BINARIES.psd1). The
 scheduled dependency audit checks the upstream releases; native binaries must
 still be reviewed and approved before replacement.

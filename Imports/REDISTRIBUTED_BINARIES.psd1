@@ -30,37 +30,28 @@
         }
         @{
             Name = 'less'
-            Version = '704'
+            Version = '710'
             License = 'less upstream license; Windows-port changes under MIT'
             LicensePaths = @(
-                'Imports/Less-704/license'
-                'Imports/Less-704/LICENSE_win.txt'
+                'Imports/Less-710/license'
+                'Imports/Less-710/LICENSE_win.txt'
             )
             PackageLicensePaths = @(
                 'Pscx/Apps/Win/LICENSE_less_orig.txt'
                 'Pscx/Apps/Win/LICENSE_less_win.txt'
             )
-            SourceUri = 'https://github.com/jftuga/less-Windows/releases/tag/less-v704'
+            SourceUri = 'https://github.com/jftuga/less-Windows/releases/tag/less-v710'
             LatestReleaseApiUri = 'https://api.github.com/repos/jftuga/less-Windows/releases/latest'
-            ExpectedReleaseTag = 'less-v704'
+            ExpectedReleaseTag = 'less-v710'
             UpdateOwner = 'PSCX maintainer (@danluca)'
-            Purpose = 'Windows pager and companion key-binding compiler used by PscxLess.'
+            Purpose = 'Windows pager used by PscxLess.'
             Artifacts = @(
                 @{
-                    SourcePath = 'Imports/Less-704/less.exe'
+                    SourcePath = 'Imports/Less-710/less.exe'
                     Architecture = 'x64'
                     PackagePaths = @('Pscx/Apps/Win/less.exe')
-                    Size = 457728
-                    Sha256 = 'A77D797D01A85201DA8728280B39306F62AFF2CAA4723E74779683922B6E0422'
-                    SignatureStatus = 'NotSigned'
-                    SignerThumbprint = $null
-                }
-                @{
-                    SourcePath = 'Imports/Less-704/lesskey.exe'
-                    Architecture = 'x64'
-                    PackagePaths = @('Pscx/Apps/Win/lesskey.exe')
-                    Size = 176128
-                    Sha256 = 'B6680063917ACF53481691B0080B0E4C7B7A9774C12AA2E56564435ED403B234'
+                    Size = 485888
+                    Sha256 = 'C6E76A16B034139A52C12BF55CAC7E0F1A424034AF9AB07BB7231E00E119565B'
                     SignatureStatus = 'NotSigned'
                     SignerThumbprint = $null
                 }
@@ -72,8 +63,8 @@
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAnkbLcxyUu6Vzq
-# dttS2dBNiCo18LQmUDQQK4lFb7G27aCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDpA+fYsHEucJhA
+# Kd+SVwXZlXS9W2xcNImO7PPKv62c+6CCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -252,34 +243,34 @@
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgarrB/wbCYdlwPgsGys2M
-# 60sxqS5O3NI4ICYQAX3lehUwDQYJKoZIhvcNAQEBBQAEggIAqHXbFveCUoVi8TlD
-# c+CES4uhsW3paaKaOZ1omzba2ewVRctqhCXOeWIGiSn0U/fWyWmdexA95Rcqbq4k
-# 6wsUvmYLXfzDTLDu1NxUk+vFjzDsA4LumjkTPg5Ekpt+qQnmbsyeyqQNgGLp0ElL
-# VZrypHHoTqb7VdhMN4LRK72VRAeDX62sVtm79Icsa6V1LQLhkSp6vLD/7DKewJEi
-# 89tUicOI85AgHvTHUGVl26/W1NbTVJmHM3/30Op3jLO2RcMnUfz+kRMS7rdeW8U1
-# R661nuo8Dwezadt08onQdPPIkDtMVocIfcIAtogsy5YzGpLRc81thkTRV5zjRn7i
-# Beh4Xsj2U3hLhdUICM3SDPNuwL2tNj72WOVbtg/3+UG5ATlUEYEtNa/gndkGD2uc
-# ONpTJ3frPF9mXeMS7F+99AptuoAiEjAOkEjZjjRjjIFlqqdqowCl6c5TlZUwGtEL
-# gqi2a+RBJkqzJ0w75ihEKjVObF2rkItbhwqs5fY+kyaTf9rK0BjjD2k77NXStEr8
-# tR4XFM2gW5i7VsH35xC4oUDo0InoyuCHch0yeYgFNno1upnXyFlpg9BaSMUFlQ+V
-# CM4YH6gFvDOIpZSFjiX/tlm7aQVNKZzulr3ug+HP+mwKjleYfELhDQyQpNzy7xvc
-# B2Ika5f4HpCaGcow2mYlV4MnUCuhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQghOjNPYUbdv5s0vNe4ofj
+# Ix3L9++GuTdCyoXwGMG0DaYwDQYJKoZIhvcNAQEBBQAEggIAokK8wUjlO7+pnj1O
+# MuISijKdv6QEV9vEMosFNGPVCSyqnpsAiACA3KSU/PNMInJ3DPuv5zKbTzVS2eGH
+# 2B5DrN9k2yYqFtaxdgncwb7k+H9cFX7/FKno7F50+uMrBneXh0UeCcB2r3C6wQWH
+# +Gzm3JR5wI2TQKHqxhluGQ6RIzjc+XNTbYKz59Vi7y9lsqTAbqJyhepFM/X6thgK
+# 2VcZ3aVJ8DBlr+GjNAmDG7PRIU17JrZnhr2GXilnbaY3QTBIO0dhIm9/5LX4pvdu
+# ByazREFlEVsu3DSs3IMHQgZH3gdEtaSdDx9b+zUKkDpcepDzu4igYpTZcqc1j10Q
+# BXnqNOp1dr5yYWxJKXfC/4wURHO+Z6TwHNXXFIUMV0VyS/rUmU5EDkxPTYfwyHo4
+# S6yioJajhFnPp1GQmO3Im72lmjmIWVC1NCFO873+latF9vECc1FpZJzqEWgvKUqI
+# ItsFPBXaQXsbDsm05CfDIiCEXOvWVsrm77pVQJ0r2dfoUVWT1EBZYRqr+PweibpT
+# dO/fyR7HuAaLefBoP2MwNzoAp3adlBP5H9MOYZV6tWYNmaLGs3E52/JJc0yDxmpz
+# LT3z/HcDu7FErPGKHl2Ss1m5e5ptoGh/h75XwVC2ixPL4z5+KqXKyzsZ4F4j7f9f
+# Pxe8GX5+Xra5JOQzQwsJ3JWctLKhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAIT9wzT35FTtvDD4/5khg1MA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# OTE3MDIxMjI4WjAvBgkqhkiG9w0BCQQxIgQgIx50RJWvjfrqVtkQ93IVHhaxlrUC
-# 2dOcJyL4Yw5OxAowDQYJKoZIhvcNAQEBBQAEggIANrGHryINFHPoVgI+C0nc8+b8
-# 9X9UaiKW7iBm6gCTaWB72qbXBBIld9iH+JDRRtrR9To+1JEWsSXJ3gwCH11IDfRy
-# Qoo6pfWC2bDU1dCSaA4GfViejlTVw/Im/89tlWM7HZfQxTs8aAKZ+03R3wJY/hCM
-# mfa28F24awJeMN88EXdhkO0L4SYVFatuXp4pqRGAXFb2LzhFXXP+Vu1LlUax8fxG
-# Nqzzc9esJ6XP6YAwtYsK8G1UAa7g0wI5s7FxprlW9PFE1SBxntyzQfmonWWDUOHO
-# OZS7oE7LEyKkIhAa2S02F5oTqui9SEXCohXcOBm/ZWe6vMukGwupPDA/GuglxLdQ
-# ogxrWjHTvP6JxEDl8SQNJhUiZqJ3ZsivvM9bYesVtasjUNqfz4bbHMZ3ODR/PZBf
-# D5d69Pv8sdZC6iCjFc7PHvSS7khQd+YEHCydmUKMPkWGdhJpJ7OTIf2OPiGpCJe/
-# x2s95B/KfZsoe8PqbMJP9HFzMFgiCmitbZOpAgITuT32glJH38XxLd4FL3iDzVy8
-# gfeCvVIjwbTEPKN8u8Q/OFWR/Zo596cRQ3LQtsvEJIPMjQqCocGmerYElinVMnAG
-# jwyR9wFczS8ggYQ7tJcLdd+di3adXz2Oxk1Oc4NYkXG0kWUg5rJBSjNHC6vxwN0o
-# lWCF80oVZZWYfr/xqXQ=
+# OTI5MDMwMTQyWjAvBgkqhkiG9w0BCQQxIgQgouTr7xzJ2kxZz4B0K/k6lu13NoXa
+# 8KvhsETTAgSae64wDQYJKoZIhvcNAQEBBQAEggIAPPx0TUy6J/6F0M5nDAeu8auF
+# +cRpiNHTv5T/S/AbSj2C/pxQIMaRRu4BM75nDzdCBKpgTFfKp+dYot8mwY1A4KTu
+# oImsK7bydHx5v/uAJNfBzXxRSLOsGTu2aaibC4f9xxzElyjn+OB7lU4hHVxARQeV
+# /frK96yVYlOEyKtLWpr7o2OjIqWNqZ8EE6XUrcpJWfjA0gh+TPlhbfVsCms3S5ni
+# D3CfOQP+RWvmmXKYvtxct2GqMRL5BT+VVGUsFXJ1jakvBoZ8TjJrSKAHOADbfpX1
+# /NB56w5ghjj1EaNGpEhDjyxk1XFOHUEjRBOB7aN+a4UsmJRUYew31dKcK2qboEaR
+# 0whyGCx8/zTsipsW760WwNcA8hkYjs35jKeiGXbR0Q5bRkqr6TzoyE51kNsadctE
+# 3MkxTj64z5eaJxUdUYhyyF0pnaoIJB7s8/ANshpwDMDiyGrRpcE74Lc0a91SLS0L
+# 5NxbqVR7Jl53EXiOTJG2ml23pY2nZXWNwzyIlcIjY5dud6fE7Z4gjVRiYIPCD3U2
+# XNccTLdbQREEQ8o9Dt7jfaBtrREqiSspPBVLh9sAZd/j8A8ylxmdVT97pRHAI94P
+# RAX1VeS5Q4PE6JDHcCEcpJLi334jnUDLZB7SA5rr3vksJJP7mYHh+WxiP0MxrNA5
+# 1zaJ1mKyHvQfKM5tm28=
 # SIG # End signature block

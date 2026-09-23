@@ -2,6 +2,9 @@
 
 ## 4.0.0 - Unreleased
 
+* Updated the bundled Windows pager to Less 710 and synchronized packaging,
+  dependency-audit metadata, and documentation. The obsolete `lesskey.exe`
+  compiler is no longer supplied upstream or included in the package.
 * Started PSCX 4.0 development after publishing the stabilized PSCX 3.8.0
   release.
 * Made module and child-module exports explicit, preventing accidental public
