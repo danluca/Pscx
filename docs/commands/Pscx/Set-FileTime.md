@@ -383,6 +383,10 @@ Returns a System.IO.FileInfo value.
 
 ## NOTES
 
+Creation-time behavior follows the operating system and .NET filesystem APIs.
+On Linux, -Created sets modified time because Linux does not provide an API to
+set file birth time. When birth time is unavailable, the reported CreationTime
+is derived from modification/status-change time and may change after a modified-time update.
 
 
 

@@ -884,7 +884,11 @@ Describe 'Representative public command behavior' {
         $result | Should -BeOfType ([IO.FileInfo])
         $result.LastWriteTime | Should -Be $expected
         $result.LastAccessTime | Should -Be $old
-        $result.CreationTime | Should -Be $created
+        # Linux may synthesize creation time from mtime/ctime, so changing mtime
+        # can change the reported creation time without setting it explicitly.
+        if (-not $IsLinux) {
+            $result.CreationTime | Should -Be $created
+        }
         [IO.File]::ReadAllText($path) | Should -Be 'preserved contents'
     }
 
@@ -930,8 +934,11 @@ Describe 'Representative public command behavior' {
         Pscx\Set-FileTime -LiteralPath $path -Time $expected @Switches -ErrorAction Stop
 
         [IO.File]::GetLastAccessTime($path) | Should -Be $(if ($Switches['Accessed']) { $expected } else { $old })
-        [IO.File]::GetLastWriteTime($path) | Should -Be $(if ($Switches['Modified']) { $expected } else { $old })
-        # Creation-time setters are not supported uniformly by Unix filesystems.
+        # .NET's Linux creation-time setter updates mtime because Linux has no
+        # API to set birth time. Assert that platform behavior for -Created too.
+        $updatesWriteTime = $Switches['Modified'] -or ($IsLinux -and $Switches['Created'])
+        [IO.File]::GetLastWriteTime($path) | Should -Be $(if ($updatesWriteTime) { $expected } else { $old })
+        # Independent creation-time setters are not supported uniformly by Unix filesystems.
         if ($IsWindows) {
             [IO.File]::GetCreationTime($path) | Should -Be $(if ($Switches['Created']) { $expected } else { $created })
         }
