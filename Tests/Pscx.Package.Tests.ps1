@@ -929,11 +929,11 @@ Describe 'Representative public command behavior' {
 
         Pscx\Set-FileTime -LiteralPath $path -Time $expected @Switches -ErrorAction Stop
 
-        [IO.File]::GetLastAccessTime($path) | Should -Be $(if ($Switches.Accessed) { $expected } else { $old })
-        [IO.File]::GetLastWriteTime($path) | Should -Be $(if ($Switches.Modified) { $expected } else { $old })
+        [IO.File]::GetLastAccessTime($path) | Should -Be $(if ($Switches['Accessed']) { $expected } else { $old })
+        [IO.File]::GetLastWriteTime($path) | Should -Be $(if ($Switches['Modified']) { $expected } else { $old })
         # Creation-time setters are not supported uniformly by Unix filesystems.
         if ($IsWindows) {
-            [IO.File]::GetCreationTime($path) | Should -Be $(if ($Switches.Created) { $expected } else { $created })
+            [IO.File]::GetCreationTime($path) | Should -Be $(if ($Switches['Created']) { $expected } else { $created })
         }
     }
 
