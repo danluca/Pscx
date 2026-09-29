@@ -866,6 +866,102 @@ Describe 'Representative public command behavior' {
         (Get-Item -LiteralPath $path).LastWriteTime | Should -Be $expected
     }
 
+    It 'sets only modified time on an existing file through <ParameterName>' -ForEach @(
+        @{ ParameterName = 'Path'; FileName = 'touch-existing.txt' }
+        @{ ParameterName = 'LiteralPath'; FileName = 'touch-[existing].txt' }
+    ) {
+        $path = Join-Path $script:temporaryRoot $FileName
+        [IO.File]::WriteAllText($path, 'preserved contents')
+        $old = [datetime]'2020-01-02T03:04:05'
+        [IO.File]::SetLastAccessTime($path, $old)
+        [IO.File]::SetLastWriteTime($path, $old)
+        $created = [IO.File]::GetCreationTime($path)
+        $expected = [datetime]'2024-01-02T03:04:05'
+        $arguments = @{ $ParameterName = $path; Time = $expected; ErrorAction = 'Stop' }
+
+        $result = Pscx\Set-FileTime @arguments -PassThru
+
+        $result | Should -BeOfType ([IO.FileInfo])
+        $result.LastWriteTime | Should -Be $expected
+        $result.LastAccessTime | Should -Be $old
+        $result.CreationTime | Should -Be $created
+        [IO.File]::ReadAllText($path) | Should -Be 'preserved contents'
+    }
+
+    It 'uses the current modified time for an <State> file when Time is omitted' -ForEach @(
+        @{ State = 'existing' }
+        @{ State = 'missing' }
+    ) {
+        $path = Join-Path $script:temporaryRoot "touch-current-$State.txt"
+        if ($State -eq 'existing') {
+            [IO.File]::WriteAllText($path, 'preserved')
+            [IO.File]::SetLastWriteTime($path, [datetime]'2020-01-02')
+        }
+        $before = [datetime]::Now
+
+        Pscx\Set-FileTime -Path $path -ErrorAction Stop
+
+        $after = [datetime]::Now
+        $item = Get-Item -LiteralPath $path
+        $item.LastWriteTime | Should -BeGreaterOrEqual $before.AddSeconds(-1)
+        $item.LastWriteTime | Should -BeLessOrEqual $after.AddSeconds(1)
+        if ($State -eq 'existing') {
+            [IO.File]::ReadAllText($path) | Should -Be 'preserved'
+        }
+        else {
+            $item.Length | Should -Be 0
+        }
+    }
+
+    It 'updates only the selected timestamps <Selection>' -ForEach @(
+        @{ Selection = 'Accessed'; Switches = @{ Accessed = $true } }
+        @{ Selection = 'Created'; Switches = @{ Created = $true } }
+        @{ Selection = 'Modified'; Switches = @{ Modified = $true } }
+        @{ Selection = 'Accessed and Modified'; Switches = @{ Accessed = $true; Modified = $true } }
+    ) {
+        $path = Join-Path $script:temporaryRoot "touch-selected-$Selection.txt"
+        [IO.File]::WriteAllText($path, 'preserved')
+        $old = [datetime]'2020-01-02T03:04:05'
+        [IO.File]::SetLastAccessTime($path, $old)
+        [IO.File]::SetLastWriteTime($path, $old)
+        $created = [IO.File]::GetCreationTime($path)
+        $expected = [datetime]'2024-01-02T03:04:05'
+
+        Pscx\Set-FileTime -LiteralPath $path -Time $expected @Switches -ErrorAction Stop
+
+        [IO.File]::GetLastAccessTime($path) | Should -Be $(if ($Switches.Accessed) { $expected } else { $old })
+        [IO.File]::GetLastWriteTime($path) | Should -Be $(if ($Switches.Modified) { $expected } else { $old })
+        # Creation-time setters are not supported uniformly by Unix filesystems.
+        if ($IsWindows) {
+            [IO.File]::GetCreationTime($path) | Should -Be $(if ($Switches.Created) { $expected } else { $created })
+        }
+    }
+
+    It 'honors WhatIf on an existing file without updating timestamps' {
+        $path = Join-Path $script:temporaryRoot 'touch-existing-whatif.txt'
+        [IO.File]::WriteAllText($path, 'preserved')
+        $old = [datetime]'2020-01-02T03:04:05'
+        [IO.File]::SetLastWriteTime($path, $old)
+
+        Pscx\Set-FileTime -LiteralPath $path -WhatIf -ErrorAction Stop
+
+        [IO.File]::GetLastWriteTime($path) | Should -Be $old
+    }
+
+    It 'updates existing wildcard matches and pipeline files' {
+        $root = Join-Path $script:temporaryRoot 'touch-wildcards'
+        New-Item -ItemType Directory -Path $root | Out-Null
+        [IO.File]::WriteAllText((Join-Path $root 'one.txt'), 'one')
+        [IO.File]::WriteAllText((Join-Path $root 'two.txt'), 'two')
+        $expected = [datetime]'2024-01-02T03:04:05'
+
+        Pscx\Set-FileTime -Path (Join-Path $root '*.txt') -Time $expected -ErrorAction Stop
+        Get-ChildItem -LiteralPath $root | ForEach-Object { $_.LastWriteTime | Should -Be $expected }
+        $expected = $expected.AddDays(1)
+        Get-ChildItem -LiteralPath $root | Pscx\Set-FileTime -Time $expected -ErrorAction Stop
+        Get-ChildItem -LiteralPath $root | ForEach-Object { $_.LastWriteTime | Should -Be $expected }
+    }
+
     It 'emits a stable non-terminating error for a missing literal path' {
         $missing = Join-Path $script:temporaryRoot 'missing.xml'
         $errors = @()

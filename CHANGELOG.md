@@ -5,6 +5,11 @@
 * Updated the bundled Windows pager to Less 710 and synchronized packaging,
   dependency-audit metadata, and documentation. The obsolete `lesskey.exe`
   compiler is no longer supplied upstream or included in the package.
+* Fixed `Set-FileTime` (`touch`) rejecting existing files. It updates existing
+  files without changing their contents and creates missing files. With no
+  timestamp switches, it now updates only modified time; use `-Accessed
+  -Modified` to retain the previous accessed-and-modified behavior. Omitted
+  time continues to default to the current time.
 * Started PSCX 4.0 development after publishing the stabilized PSCX 3.8.0
   release.
 * Made module and child-module exports explicit, preventing accidental public
