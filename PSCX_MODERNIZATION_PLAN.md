@@ -887,7 +887,7 @@ cycle.
 - [ ] Package contents and SBOM are reviewed.
 - [x] Release notes list additions, fixes, removals, and replacements.
 - [ ] Checksums and an SBOM are published, and signing status is documented.
-- [ ] Documentation points to stable package names and versions.
+- [x] Documentation points to stable package names and versions.
 - [x] Legacy compatibility package or migration instructions are available.
 
 ---

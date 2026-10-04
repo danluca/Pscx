@@ -2,7 +2,7 @@
 
 The sudo utility embedded into PSCX comes from the
 [gsudo project](https://github.com/gerardog/gsudo). PSCX currently pins the
-x64 executable from release 2.6.0. Its reviewed checksum, signer, source, and
+x64 executable from release 2.6.1. Its reviewed checksum, signer, source, and
 update owner are recorded in
 [`Imports/REDISTRIBUTED_BINARIES.psd1`](../REDISTRIBUTED_BINARIES.psd1).
 

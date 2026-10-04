@@ -35,6 +35,17 @@ PSCX is distributed through GitHub Releases rather than PowerShell Gallery.
 The release ZIP and matching SHA-256 file are the supported installation
 inputs.
 
+## File timestamp defaults
+
+`Set-FileTime` (`touch`) updates existing files without changing their contents
+and creates empty files for missing paths. With no timestamp switches, it now
+updates only modified time using the current time, or the supplied `-Time`.
+To retain the previous accessed-and-modified behavior, specify both switches:
+
+```powershell
+Set-FileTime ./output.txt -Accessed -Modified
+```
+
 ## Package boundaries
 
 | PSCX 4.0 module | Import | Platforms | Migration action |

@@ -38,7 +38,10 @@ touch
 
 ## DESCRIPTION
 
-Sets a file or folder's created and last accessed/write times.
+Updates timestamps on an existing file or creates an empty file when the path does not exist.
+With no timestamp switches, only LastWriteTime (modified time) is updated.
+Use -Accessed, -Created, and/or -Modified to select the timestamps to update.
+If neither -Time nor -UseTimeFromFile is supplied, the current time is used.
 
 ## EXAMPLES
 
@@ -48,7 +51,7 @@ Sets a file or folder's created and last accessed/write times.
 Set-FileTime foo.txt
 ```
 
-Updates the LastWriteTime and LastAccessTime properties of the file foo.txt to the current local time.
+Updates LastWriteTime on foo.txt to the current local time, creating an empty file if it does not exist. Existing file contents are preserved.
 
 ### Example 2 - Use Set-FileTime
 
@@ -56,7 +59,7 @@ Updates the LastWriteTime and LastAccessTime properties of the file foo.txt to t
 Set-FileTime foo.txt -Time ((get-date).AddDays(-14))
 ```
 
-Updates the LastWriteTime and LastAccessTime properties of the file foo.txt to the current local time minus 14 days.
+Updates LastWriteTime on foo.txt to the current local time minus 14 days.
 
 ### Example 3 - Use Set-FileTime
 
@@ -64,15 +67,15 @@ Updates the LastWriteTime and LastAccessTime properties of the file foo.txt to t
 Get-ChildItem . *.cs -r | Set-FileTime
 ```
 
-Updates the LastWriteTime and LastAccessTime properties on all files with extension .CS in the current dir and below to the current local time.
+Updates LastWriteTime on all files with extension .CS in the current dir and below to the current local time.
 
 ### Example 4 - Use Set-FileTime
 
 ```powershell
-Get-ChildItem . *.cs -r | Set-FileTime -Modified
+Get-ChildItem . *.cs -r | Set-FileTime -Accessed -Modified
 ```
 
-Updates only the LastWriteTime property on all files with extension .CS in the current dir and below to the current local time.
+Updates LastAccessTime and LastWriteTime on all files with extension .CS in the current dir and below to the current local time.
 
 ### Example 5 - Use Set-FileTime
 
@@ -80,7 +83,7 @@ Updates only the LastWriteTime property on all files with extension .CS in the c
 Get-ChildItem . *.cs -r | Set-FileTime -UseTimeFromFile C:\boot.ini
 ```
 
-Updates the LastWriteTime and LastAccessTime properties on all files with extension .CS in the current dir and below to the same time as the LastWriteTime of the file C:\boot.ini.
+Updates LastWriteTime on all files with extension .CS in the current dir and below to the LastWriteTime of C:\boot.ini.
 
 ## PARAMETERS
 
@@ -205,6 +208,7 @@ HelpMessage: ''
 
 Update the modified time.
  Accessed and created time will not be updated unless also specified.
+This is the default when no timestamp switches are selected.
 Parameter alias is SetModifiedTime.
 
 ```yaml
@@ -270,7 +274,8 @@ HelpMessage: ''
 
 ### -Time
 
-The time to use to set the access, created and modified times unless -Accessed, -Created and/or -Modified is specified, then only those times will be updated.
+The time to use for the selected timestamps. Defaults to the current time.
+Only modified time is updated unless -Accessed, -Created and/or -Modified is specified.
 
 ```yaml
 Type: System.DateTime
@@ -378,6 +383,10 @@ Returns a System.IO.FileInfo value.
 
 ## NOTES
 
+Creation-time behavior follows the operating system and .NET filesystem APIs.
+On Linux, -Created sets modified time because Linux does not provide an API to
+set file birth time. When birth time is unavailable, the reported CreationTime
+is derived from modification/status-change time and may change after a modified-time update.
 
 
 

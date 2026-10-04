@@ -866,6 +866,109 @@ Describe 'Representative public command behavior' {
         (Get-Item -LiteralPath $path).LastWriteTime | Should -Be $expected
     }
 
+    It 'sets only modified time on an existing file through <ParameterName>' -ForEach @(
+        @{ ParameterName = 'Path'; FileName = 'touch-existing.txt' }
+        @{ ParameterName = 'LiteralPath'; FileName = 'touch-[existing].txt' }
+    ) {
+        $path = Join-Path $script:temporaryRoot $FileName
+        [IO.File]::WriteAllText($path, 'preserved contents')
+        $old = [datetime]'2020-01-02T03:04:05'
+        [IO.File]::SetLastAccessTime($path, $old)
+        [IO.File]::SetLastWriteTime($path, $old)
+        $created = [IO.File]::GetCreationTime($path)
+        $expected = [datetime]'2024-01-02T03:04:05'
+        $arguments = @{ $ParameterName = $path; Time = $expected; ErrorAction = 'Stop' }
+
+        $result = Pscx\Set-FileTime @arguments -PassThru
+
+        $result | Should -BeOfType ([IO.FileInfo])
+        $result.LastWriteTime | Should -Be $expected
+        $result.LastAccessTime | Should -Be $old
+        # Linux may synthesize creation time from mtime/ctime, so changing mtime
+        # can change the reported creation time without setting it explicitly.
+        if (-not $IsLinux) {
+            $result.CreationTime | Should -Be $created
+        }
+        [IO.File]::ReadAllText($path) | Should -Be 'preserved contents'
+    }
+
+    It 'uses the current modified time for an <State> file when Time is omitted' -ForEach @(
+        @{ State = 'existing' }
+        @{ State = 'missing' }
+    ) {
+        $path = Join-Path $script:temporaryRoot "touch-current-$State.txt"
+        if ($State -eq 'existing') {
+            [IO.File]::WriteAllText($path, 'preserved')
+            [IO.File]::SetLastWriteTime($path, [datetime]'2020-01-02')
+        }
+        $before = [datetime]::Now
+
+        Pscx\Set-FileTime -Path $path -ErrorAction Stop
+
+        $after = [datetime]::Now
+        $item = Get-Item -LiteralPath $path
+        $item.LastWriteTime | Should -BeGreaterOrEqual $before.AddSeconds(-1)
+        $item.LastWriteTime | Should -BeLessOrEqual $after.AddSeconds(1)
+        if ($State -eq 'existing') {
+            [IO.File]::ReadAllText($path) | Should -Be 'preserved'
+        }
+        else {
+            $item.Length | Should -Be 0
+        }
+    }
+
+    It 'updates only the selected timestamps <Selection>' -ForEach @(
+        @{ Selection = 'Accessed'; Switches = @{ Accessed = $true } }
+        @{ Selection = 'Created'; Switches = @{ Created = $true } }
+        @{ Selection = 'Modified'; Switches = @{ Modified = $true } }
+        @{ Selection = 'Accessed and Modified'; Switches = @{ Accessed = $true; Modified = $true } }
+    ) {
+        $path = Join-Path $script:temporaryRoot "touch-selected-$Selection.txt"
+        [IO.File]::WriteAllText($path, 'preserved')
+        $old = [datetime]'2020-01-02T03:04:05'
+        [IO.File]::SetLastAccessTime($path, $old)
+        [IO.File]::SetLastWriteTime($path, $old)
+        $created = [IO.File]::GetCreationTime($path)
+        $expected = [datetime]'2024-01-02T03:04:05'
+
+        Pscx\Set-FileTime -LiteralPath $path -Time $expected @Switches -ErrorAction Stop
+
+        [IO.File]::GetLastAccessTime($path) | Should -Be $(if ($Switches['Accessed']) { $expected } else { $old })
+        # .NET's Linux creation-time setter updates mtime because Linux has no
+        # API to set birth time. Assert that platform behavior for -Created too.
+        $updatesWriteTime = $Switches['Modified'] -or ($IsLinux -and $Switches['Created'])
+        [IO.File]::GetLastWriteTime($path) | Should -Be $(if ($updatesWriteTime) { $expected } else { $old })
+        # Independent creation-time setters are not supported uniformly by Unix filesystems.
+        if ($IsWindows) {
+            [IO.File]::GetCreationTime($path) | Should -Be $(if ($Switches['Created']) { $expected } else { $created })
+        }
+    }
+
+    It 'honors WhatIf on an existing file without updating timestamps' {
+        $path = Join-Path $script:temporaryRoot 'touch-existing-whatif.txt'
+        [IO.File]::WriteAllText($path, 'preserved')
+        $old = [datetime]'2020-01-02T03:04:05'
+        [IO.File]::SetLastWriteTime($path, $old)
+
+        Pscx\Set-FileTime -LiteralPath $path -WhatIf -ErrorAction Stop
+
+        [IO.File]::GetLastWriteTime($path) | Should -Be $old
+    }
+
+    It 'updates existing wildcard matches and pipeline files' {
+        $root = Join-Path $script:temporaryRoot 'touch-wildcards'
+        New-Item -ItemType Directory -Path $root | Out-Null
+        [IO.File]::WriteAllText((Join-Path $root 'one.txt'), 'one')
+        [IO.File]::WriteAllText((Join-Path $root 'two.txt'), 'two')
+        $expected = [datetime]'2024-01-02T03:04:05'
+
+        Pscx\Set-FileTime -Path (Join-Path $root '*.txt') -Time $expected -ErrorAction Stop
+        Get-ChildItem -LiteralPath $root | ForEach-Object { $_.LastWriteTime | Should -Be $expected }
+        $expected = $expected.AddDays(1)
+        Get-ChildItem -LiteralPath $root | Pscx\Set-FileTime -Time $expected -ErrorAction Stop
+        Get-ChildItem -LiteralPath $root | ForEach-Object { $_.LastWriteTime | Should -Be $expected }
+    }
+
     It 'emits a stable non-terminating error for a missing literal path' {
         $missing = Join-Path $script:temporaryRoot 'missing.xml'
         $errors = @()
@@ -951,7 +1054,7 @@ Describe 'Representative public command behavior' {
     It 'reports structured installation diagnostics without changing module state' {
         $manifest = Import-PowerShellDataFile -LiteralPath (Join-Path $ModulePath 'Pscx.psd1')
         $expectedVersion = ([version]$manifest.ModuleVersion).ToString(3)
-        $prerelease = [string]$manifest.PrivateData.PSData.Prerelease
+        $prerelease = [string]$manifest.PrivateData.PSData['Prerelease']
         if ($prerelease) {
             $expectedVersion = "$expectedVersion-$prerelease"
         }
@@ -1009,6 +1112,41 @@ Describe 'Representative public command behavior' {
 
         $format = Get-FormatData -TypeName Pscx.InstallationDiagnostic
         $format.FormatViewDefinition.Name | Should -Contain 'PscxInstallationDiagnostic'
+    }
+
+    It 'reports the version with <Label> prerelease metadata' -TestCases @(
+        @{ Label = 'absent'; Prerelease = $null }
+        @{ Label = 'present'; Prerelease = 'regression.1' }
+    ) {
+        param($Prerelease)
+
+        $module = Get-Module Pscx | Where-Object Path -Like '*.psm1' |
+            Select-Object -First 1
+        $psData = $module.PrivateData.PSData
+        $hadPrerelease = $psData.ContainsKey('Prerelease')
+        $prereleaseBefore = $psData['Prerelease']
+        try {
+            $expectedVersion = $module.Version.ToString()
+            if ($null -eq $Prerelease) {
+                $psData.Remove('Prerelease')
+            }
+            else {
+                $psData['Prerelease'] = $Prerelease
+                $expectedVersion = "$expectedVersion-$Prerelease"
+            }
+
+            $diagnostics = @(Test-PscxInstallation)
+            ($diagnostics | Where-Object Name -EQ 'PSCX version').Value |
+                Should -Be $expectedVersion
+        }
+        finally {
+            if ($hadPrerelease) {
+                $psData['Prerelease'] = $prereleaseBefore
+            }
+            else {
+                $psData.Remove('Prerelease')
+            }
+        }
     }
 
     It 'warns when configured editor and pager applications cannot be resolved' {
@@ -1180,8 +1318,8 @@ Describe 'Optional feature imports' {
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAjbvrE6g3TZttC
-# 8Cl5lc1wGJrGE3ognut7PJ7ljREcZKCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCD4X0KkkVKbNFNh
+# 71zjrbV6ISI99ckOGvnxn4rsrCBtlaCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -1360,34 +1498,34 @@ Describe 'Optional feature imports' {
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgQNPT7oENAOmY2oykVbKA
-# 5j8asrplEC1+PZcdKtzRqxYwDQYJKoZIhvcNAQEBBQAEggIAqMv/xuFDOiKoNBNk
-# n8gU+O6vuw5sh5jLSf32oiOm4DBBMuMlS8CwdGJUEMwi0evoOyg9c1WSaYyuf332
-# uJdOeeOZRlBxHZVwSBGqZCI/a3Bgo1t3zS4ier4Of9erN55eR1Kvjrl6F1yEwW+k
-# K9UeAXDpsgOKZGgQVTAHFR6hH2BkZsScLZI8O5kjNokiDRkWwG3bkM1DEcXxAXUs
-# kJ3A5HnGMLdlUW4HjT5J8Z7FuplX1omS/Npp5Mvi25PE6r/OusLYp/5AOiO89C+j
-# JEqU/7L4zzWWqCHwAOuWi5ivOFlYX0/GuVt2oc7DEfP2v63FeOT1xFWIQxFYqGkq
-# QsfY66eMoWl5VVN/S5OSFlq0lS6bhdr8vIOdOqpMAorcBLLVUnG+H3YUxRSTfKX6
-# CAD+hLVMN3xjQ/sojhZd7A7M2sDxgLmqSH/wRGglNo6ndhBVjdoM+G9wEhSXs7Pb
-# jHy5v3xM6ty2Zj6H5LqsPCC39ZrpO+Fqd+kEy87Z5T4cLMR+cCUj4En/pieD8y/n
-# aYc2b2QweDjdbfrMWRDTOOshFtIDr1Fjn4zlBF1p4oLXoEoKk+KFZiqwVIziC0Ib
-# rzvJ4ZwkhcnPorcP/zTMyHsq1TRloz5jXIK6zPPZmeV7lZ8pVKmmLr3tmxTfaRj6
-# AIt5gsiuIfoEtzY2Zf+8jsEzSXyhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQghWqZ9PPLnneRN0Eu9IFI
+# LOI+re6l4k2MlZUh53toTeEwDQYJKoZIhvcNAQEBBQAEggIAkd5hGLmoVifV29sC
+# QabsnGNXvCLK4SuTWVoputjy3fPzsIzROrpej5nhaGPAQAw7gY9tSgWndasS4HK5
+# XpqvDhZWXwVtDu9SRb2xQFzNwHRhTws63IRb1hgSIk4toayBJHML96sanVmEqFWk
+# BzHYgfvgjUgDH+ht+AvTl20kEUsE6EUoYTXLovV0bNxEp2KySf4jsploh4YyT2tJ
+# X8O5sX4Br6b6lsl8ym4QIUOqGgZwJ45G66kPcJKGxbGPyfO9mZkf9olcJMckipvK
+# lA82a1e8S6lmK1mt6ekrIqZwim8SwoD0SkxlXsboJntHdvrWbbUPPl4gL7axGhCO
+# 4quBUrgUCRzfmZkmm7kQtXl+BCF8cjZcQf3UBBiwv4m4bQ6q9zCHIPvhwNgENRYF
+# /TFe6xF8nJr53ge1GAxsNK+3uJS1zONTXfcOqeLuLFmdwr790NFmeWB5sd14Aydy
+# QnOmxKoHFkmL655dqyRqIby4567wxcoshjQ+dgy67M0SqzNYoE5QEsZ2u+b4o8y6
+# Ue92eJYBXO3D7covnjh2ql4LTljOomhQnsHd1lAg85UfB2FeQekhYjOeQiu7LLTX
+# Mw78ACWfRPekJmslkUp6/8jrAQ4SAiadnM1wvRudL9zhkTeqq6P5+n7ySNLtpf4d
+# lGEAZhjKyF5ylA0QYgMgo+N6xauhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAIT9wzT35FTtvDD4/5khg1MA0GCWCGSAFlAwQCAQUA
-# oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# OTA0MjEwMzQ3WjAvBgkqhkiG9w0BCQQxIgQg3cp+qcCFNYzVNB0fVpowfv/+wl87
-# 2j5p+0PxC1HOjZ0wDQYJKoZIhvcNAQEBBQAEggIATythScPKiKAtsO9flppbFf1l
-# DSYjSGRnu8FyPsFdmlxUcXKyLqXJ/CbUWFbGU5GOBNhWlJ8rXcbmidXHO6KfkAeY
-# XXrj2pe8C1++xlfsU5puhVmFrHn1SFijq/vOO/9qN+yBAxGoo4AdLcuDQK1/b7np
-# giSPpn4llCEo4DOk7VRdNtuAbkK1WHsdWVrMiQNAWZhP3PniHH1fojfNYFQpOo9r
-# b3Se3kZQt8AvNf7etYdYQFeI18FEvBXNrh2AlNwI0iTP4IFnIjp+HLsVqkkYVk5z
-# RxU+yBLkUfDQAqagkWoSkV3+pA2eY64MS7OQ4dV8W52tlJWOtcMU3Y1wrdGxxrHu
-# zDfs5NV9pC25PRWTq6DuOVd6pglfqVZQe4msL0xKYWUQ23axtXrs6AT7Rcty/Orc
-# WuQDvl+RNnxdtLdwgHJR4yrBOcKk1GdE0pv4yev471kspORqPM0phWflyLoiTgu9
-# 3Z+HmdpwFPL64jxFCApQyiTPvNHimVevsrVQ8dBMUNcG7M6+cZpkX1oaAxzVUYOg
-# qadMcMcUwlj1E2AA3OgE0srhfz+vm44RWKYZp2FmFdJSw0gpvVhb2G2vl/1edHsT
-# TemR5qnmcXkpKR00jecESMYZy6JUs2E6CJqRtyYAbpHYpemTfc+cw/kXGykzOteF
-# dP3euNUg9voCUsK0NNM=
+# oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYx
+# MDA0MjMwMDI1WjAvBgkqhkiG9w0BCQQxIgQg3A20DJfzR+2BX8MnQfnpqWuIHvdB
+# RH02eZ74SnxVJeYwDQYJKoZIhvcNAQEBBQAEggIAGnEnNYFYO3C/MTLUxa8F/U3Y
+# J1ZyzgMJN/GhM6Lw3RgyE0MDKG7gVFbkV4VEkD2DEyPad6FebRmoPWsB3rHrJl8R
+# hWaaKJq5vYZvx98U4Q1vzchO0NK6KS16F1a0lU29tslEDO+Vh1V/noMp8zVJ2NGc
+# 6YoqEOR73OvcixjMtnMe/6H4NEz1uNcAtx6is7HWt9VByiGueAbrX2LYFk2+ctrn
+# R5KNJ9gTDc/WgbRyutQzt9lgerscExDUTFim4vyHKlX4As9MChCKvHHJbVo4GGCd
+# PhLpTSX4DsqlTcFEN3vagwLmAmwL5YEL/KjjCAJMDL20f5Jb7fuuqId1T9hY4fhD
+# XMpyVawZ4/yjce6zggKJ8K/6yslcig2v6+bP0qnnGxBUMFFrkzzn1PZwOxKrRidc
+# bQmIqNxIFrU+7aPhdHCgSr+9XIlgNFrp3vRRCLa85fKpXwlSLfOohKHYf0+bRX2Z
+# 8tyiU/GOjG+uFV8g1Hx8v2o4jfGmW18bYXzEWheFTaK9NlSg6LRiee4cFIAbu3aX
+# 8TuZB8qa422tXi2ZAbTJxuPGB/rKMl40KihB7vdnieHUp6IVa9sD4jc4t45yxXCv
+# KxlCyWik7mZf1Ctp1Dtd15KsCUTbDSasw0zNEpcXJb7pP8U2N6drjP/WZw9IL1La
+# hQJhd6Z58cHVIOjP8A4=
 # SIG # End signature block

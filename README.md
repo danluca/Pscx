@@ -10,7 +10,7 @@ upstream commit
 
 The customizations made in this fork include:
 
-- current development version 4.0.0-rc.1 targeting .NET 10 and the
+- version 4.0.0 targeting .NET 10 and the
   PowerShell 7.6 SDK;
 - a cross-platform core for Windows, macOS, and Linux, with a Windows companion
   module for platform-specific commands;
@@ -20,12 +20,11 @@ The customizations made in this fork include:
 - a GitHub Actions build.
 
 > [!NOTE]
-> PSCX 4.0 development currently retains the PSCX 3.8 runtime baseline: a
+> PSCX 4.0 retains the PSCX 3.8 runtime baseline: a
 > PowerShell 7.6 LTS release (`7.6.x`) and .NET 10. The build accepts PowerShell
 > 7.6.0 as its minimum and currently compiles against PowerShell SDK 7.6.4.
 > PowerShell 7.7 and later remain outside the support contract until they are
-> validated explicitly. Published PSCX releases may have different requirements
-> from the current development branch.
+> validated explicitly. Earlier PSCX releases may have different requirements.
 
 ## Release notes
 
@@ -50,8 +49,8 @@ the [Imports](Imports/) folder for the applicable license files.
 
 ### Pre-requisites
 
-- Install PowerShell 7.6 LTS (`7.6.x`) for the current PSCX 4.0 development
-  branch. It targets .NET 10 and does not support Windows PowerShell 5.1.
+- Install PowerShell 7.6 LTS (`7.6.x`) for PSCX 4.0. It targets .NET 10 and
+  does not support Windows PowerShell 5.1.
 - A PowerShell profile is optional. Add `Import-Module Pscx` to a profile only
   if PSCX should load in every interactive session.
 
@@ -64,8 +63,8 @@ the [Imports](Imports/) folder for the applicable license files.
 2. Verify the ZIP against the matching entry in the checksum file:
 
    ```powershell
-   Get-FileHash ./Pscx-3.8.0.zip -Algorithm SHA256
-   Get-Content ./Pscx-3.8.0.sha256
+   Get-FileHash ./Pscx-4.0.0.zip -Algorithm SHA256
+   Get-Content ./Pscx-4.0.0.sha256
    ```
 
 3. Extract the ZIP directly into a directory listed in `$env:PSModulePath`.

@@ -6,9 +6,11 @@ the generated [NuGet dependency inventory](NUGET_DEPENDENCIES.md).
 
 | Component | Version | Packaged files | Purpose | License | Source and license record |
 | --- | --- | --- | --- | --- | --- |
-| gsudo | 2.6.0 | `Pscx/Apps/Win/gsudo.exe`, `Pscx/Apps/Win/sudo.exe` | Windows elevation used by the bundled gsudo integration | MIT | [Import notes and license](../../Imports/gsudo/) |
-| less | 678 | `Pscx/Apps/Win/less.exe` | Windows pager used by `PscxLess` | less upstream license; Windows-port changes under MIT | [Import notes and licenses](../../Imports/Less-678/) |
-| lesskey | 678 | `Pscx/Apps/Win/lesskey.exe` | Companion compiler for user-defined less key bindings | less upstream license; Windows-port changes under MIT | [Import notes and licenses](../../Imports/Less-678/) |
+| gsudo | 2.6.1 | `Pscx/Apps/Win/gsudo.exe`, `Pscx/Apps/Win/sudo.exe` | Windows elevation used by the bundled gsudo integration | MIT | [Import notes and license](../../Imports/gsudo/) |
+| less | 710 | `Pscx/Apps/Win/less.exe` | Windows pager used by `PscxLess` | less upstream license; Windows-port changes under MIT | [Import notes and licenses](../../Imports/Less-710/) |
+
+Less 710 removed the obsolete `lesskey` compiler. Key-binding source files are
+read directly by less, so `lesskey.exe` is no longer redistributed.
 
 The authoritative, machine-readable record is
 [`Imports/REDISTRIBUTED_BINARIES.psd1`](../../Imports/REDISTRIBUTED_BINARIES.psd1).
@@ -17,7 +19,7 @@ state, upstream release, license paths, packaged names, and update owner. The
 repository and assembled package are checked against it by
 [`Test-PscxRedistributedBinary.ps1`](../../Tools/Test-PscxRedistributedBinary.ps1).
 
-The package contains byte-identical copies of gsudo 2.6.0 as `gsudo.exe` and
+The package contains byte-identical copies of gsudo 2.6.1 as `gsudo.exe` and
 `sudo.exe`, both with SHA-256:
 
 `21C470D6DEABFBD398349168E18ED1CF261D6C204D7BD12EEB53C846403A0D1A`
@@ -45,7 +47,7 @@ smallest reliable compatibility option with the current ZIP distribution.
 - `Output/`, `artifacts/`, `bin/`, and `obj/` are ignored generated locations.
   Static validation also rejects tracked files under `Output/`.
 - The only native executables in a Full release are `gsudo.exe`, `sudo.exe`,
-  `less.exe`, and `lesskey.exe`. Core packages contain none.
+  and `less.exe`. Core packages contain none.
 
 ## Module contents and size reporting
 
@@ -54,7 +56,7 @@ and uncompressed byte sizes for every build are written to
 `artifacts/test-results/Pscx.PackageContents.json` and uploaded with CI test
 results.
 
-| Module root | Contents | Current 4.0 prerelease size, uncompressed |
+| Module root | Contents | PSCX 4.0 size, uncompressed |
 | --- | --- | ---: |
 | `Pscx` | Cross-platform core plus the Full build's Windows companion and retained Windows utilities | about 11.1 MiB |
 | `Pscx.Archive` | Optional managed SharpCompress archive module | about 2.4 MiB |
@@ -62,7 +64,7 @@ results.
 | `Pscx.WinAdmin` | Optional Windows administration module; Full build only | about 0.4 MiB |
 
 The optional module roots do not load with `Pscx`; clients install or import
-them according to need. The current combined compressed prerelease ZIP is about
+them according to need. The combined compressed PSCX 4.0 ZIP is about
 6.6 MiB.
 
 ## Maintenance requirements

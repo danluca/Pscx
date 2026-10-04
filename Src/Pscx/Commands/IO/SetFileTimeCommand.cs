@@ -37,19 +37,20 @@ namespace Pscx.Commands.IO
 
         protected override void OnValidatePath(IPscxPathSettings settings)
         {
-            settings.PathType = PscxPathType.Leaf;
+            // Allow existing files as well as paths that will be created.
+            settings.PathType = PscxPathType.None;
             settings.ShouldExist = false;
         }
 
         protected override void OnValidateLiteralPath(IPscxPathSettings settings)
         {
-            settings.PathType = PscxPathType.Leaf;
+            settings.PathType = PscxPathType.None;
             settings.ShouldExist = false;
         }
 
         [Parameter(Position = 1, 
-                   HelpMessage = "The time to use to set the access, created and modified times unless -Accessed, " +
-                                 "-Created and/or -Modified is specified, then only those times will be updated."),
+                   HelpMessage = "The time to use for the selected timestamps. Defaults to the current time. " +
+                                 "Only modified time is updated unless -Accessed, -Created and/or -Modified is specified."),
          DefaultValue("The current system time")]
         public DateTime Time
         {
@@ -247,7 +248,7 @@ namespace Pscx.Commands.IO
 
         private bool ShouldUpdateAccessTime()
         {
-            return _setAccessTime || !(_setWriteTime || _setCreateTime);
+            return _setAccessTime;
         }
 
         private void SetDateTimeValues(out DateTime accessTime, out DateTime createTime, out DateTime writeTime)

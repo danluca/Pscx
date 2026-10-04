@@ -1,7 +1,29 @@
 # PowerShell Community Extensions Light Changelog
 
-## 4.0.0 - Unreleased
+## 4.0.0 - October 4, 2026
 
+PSCX 4.0 requires PowerShell 7.6 LTS (`7.6.x`) and .NET 10. This is a
+breaking release; review the [migration guide](docs/MIGRATING_TO_4.0.md)
+before upgrading from PSCX Light 3.x or older full/upstream PSCX versions.
+
+The GitHub Release provides `Pscx-4.0.0.zip`, its SPDX SBOM, and SHA-256
+checksums. Extract the ZIP directly onto `PSModulePath`; it contains versioned
+`Pscx`, `Pscx.Archive`, `Pscx.Time`, and Windows-only `Pscx.WinAdmin` roots.
+Optional sibling modules require explicit imports. CI-built PSCX DLLs are
+Authenticode-unsigned; selected PowerShell files retain maintainer signatures.
+Certificate trust remains an explicit, optional user action.
+
+* Fixed `Test-PscxInstallation` failing under strict mode when a stable module
+  manifest omits optional prerelease metadata; version diagnostics now work
+  for both stable and prerelease packages.
+* Updated the bundled Windows pager to Less 710 and synchronized packaging,
+  dependency-audit metadata, and documentation. The obsolete `lesskey.exe`
+  compiler is no longer supplied upstream or included in the package.
+* Fixed `Set-FileTime` (`touch`) rejecting existing files. It updates existing
+  files without changing their contents and creates missing files. With no
+  timestamp switches, it now updates only modified time; use `-Accessed
+  -Modified` to retain the previous accessed-and-modified behavior. Omitted
+  time continues to default to the current time.
 * Started PSCX 4.0 development after publishing the stabilized PSCX 3.8.0
   release.
 * Made module and child-module exports explicit, preventing accidental public
