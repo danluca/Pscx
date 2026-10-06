@@ -13,7 +13,7 @@ Optional sibling modules require explicit imports. CI-built PSCX DLLs are
 Authenticode-unsigned; selected PowerShell files retain maintainer signatures.
 Certificate trust remains an explicit, optional user action.
 
-* Fixed `Test-PscxInstallation` failing under strict mode when a stable module
+* Fixed guided updates, local installation and `Test-PscxInstallation` failing under strict mode when a stable module
   manifest omits optional prerelease metadata; version diagnostics now work
   for both stable and prerelease packages.
 * Updated the bundled Windows pager to Less 710 and synchronized packaging,
