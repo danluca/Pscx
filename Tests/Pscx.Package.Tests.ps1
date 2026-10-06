@@ -1176,7 +1176,12 @@ Describe 'Representative public command behavior' {
 }
 
 Describe 'Cross-platform local build installer' {
-    It 'installs and replaces staged Core modules only within an explicit destination' {
+    It 'installs and replaces staged Core modules with <Label> prerelease metadata only within an explicit destination' -TestCases @(
+        @{ Label = 'absent'; PrereleaseLine = ''; ExpectedVersion = '4.2.0' }
+        @{ Label = 'present'; PrereleaseLine = "Prerelease = 'local.1'"; ExpectedVersion = '4.2.0-local.1' }
+    ) {
+        param($PrereleaseLine, $ExpectedVersion)
+
         $repositoryRoot = Split-Path -Parent $PSScriptRoot
         $installerPath = Join-Path $repositoryRoot 'Tools/Local-Install.ps1'
         $artifactsRoot = Join-Path $TestDrive 'local-install-artifacts'
@@ -1191,7 +1196,7 @@ Describe 'Cross-platform local build installer' {
 @{
     RootModule = '$moduleName.psm1'
     ModuleVersion = '4.2.0'
-    PrivateData = @{ PSData = @{ Prerelease = 'local.1' } }
+    PrivateData = @{ PSData = @{ $PrereleaseLine } }
 }
 "@ | Set-Content -LiteralPath (Join-Path $sourcePath "$moduleName.psd1") -Encoding utf8
             '# local installer fixture' |
@@ -1202,6 +1207,7 @@ Describe 'Cross-platform local build installer' {
             -File $installerPath -SkipBuild -BuildScope Core `
             -ArtifactsPath $artifactsRoot -DestinationRoot $destinationRoot 2>&1
         $LASTEXITCODE | Should -Be 0 -Because ($installOutput -join [Environment]::NewLine)
+        ($installOutput -join [Environment]::NewLine) | Should -Match ([regex]::Escape($ExpectedVersion))
         foreach ($moduleName in $moduleNames) {
             $installedPath = Join-Path $destinationRoot "$moduleName/4.2.0"
             Test-Path -LiteralPath (Join-Path $installedPath "$moduleName.psd1") |
@@ -1318,8 +1324,8 @@ Describe 'Optional feature imports' {
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCD4X0KkkVKbNFNh
-# 71zjrbV6ISI99ckOGvnxn4rsrCBtlaCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDsKxd86lRE10z0
+# woZU09+QVRt0dp0sCdvnoOfDNWj3EKCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -1498,34 +1504,34 @@ Describe 'Optional feature imports' {
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQghWqZ9PPLnneRN0Eu9IFI
-# LOI+re6l4k2MlZUh53toTeEwDQYJKoZIhvcNAQEBBQAEggIAkd5hGLmoVifV29sC
-# QabsnGNXvCLK4SuTWVoputjy3fPzsIzROrpej5nhaGPAQAw7gY9tSgWndasS4HK5
-# XpqvDhZWXwVtDu9SRb2xQFzNwHRhTws63IRb1hgSIk4toayBJHML96sanVmEqFWk
-# BzHYgfvgjUgDH+ht+AvTl20kEUsE6EUoYTXLovV0bNxEp2KySf4jsploh4YyT2tJ
-# X8O5sX4Br6b6lsl8ym4QIUOqGgZwJ45G66kPcJKGxbGPyfO9mZkf9olcJMckipvK
-# lA82a1e8S6lmK1mt6ekrIqZwim8SwoD0SkxlXsboJntHdvrWbbUPPl4gL7axGhCO
-# 4quBUrgUCRzfmZkmm7kQtXl+BCF8cjZcQf3UBBiwv4m4bQ6q9zCHIPvhwNgENRYF
-# /TFe6xF8nJr53ge1GAxsNK+3uJS1zONTXfcOqeLuLFmdwr790NFmeWB5sd14Aydy
-# QnOmxKoHFkmL655dqyRqIby4567wxcoshjQ+dgy67M0SqzNYoE5QEsZ2u+b4o8y6
-# Ue92eJYBXO3D7covnjh2ql4LTljOomhQnsHd1lAg85UfB2FeQekhYjOeQiu7LLTX
-# Mw78ACWfRPekJmslkUp6/8jrAQ4SAiadnM1wvRudL9zhkTeqq6P5+n7ySNLtpf4d
-# lGEAZhjKyF5ylA0QYgMgo+N6xauhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgYZHMzgHdtC9lBHZxfU/H
+# 4cWj6hTWPIDfja3FsHvqHMwwDQYJKoZIhvcNAQEBBQAEggIAmkBVww4HA9Hc+qPF
+# 8h2qkbAHPuI5TT7zDBIIKBuUSn9OW+z6Jycn2pR5vMuekBPYDhDaEYdjJuV9yWB9
+# s1RJVDYkx4ZSh0cnk4BvhvufG0/t6G1fJK91LuFd25pehFCa3a4Eb2BmCvwIVeRG
+# UGdqSskNYfTjKye480+P8i+kJHmrrOFCxzhZx+fwJ8AIqwxD2dhsxRz8FlvfRTyC
+# Lxkx15n98KVMlu9M+cStI71JJH/4B/on10S0CxWqKjhzLZfVhL3Re/QK5uVh4mf2
+# nD28tLVG6V1WaA2j9aerJDPYH3yGmLC3c2hDoLxcddRB8NXBpuXa4cgrypGSNbER
+# +GKq648pK/5M72DXi+94z0deHUCEJMagedhyIAf06ZJ86UL+lb4giQdsYernwZYY
+# QlG7YzB4tLUj3RKzLu/InSr5zE5xlZLXVOBvxbI3k9zePQ1zQhRlBftOAm8Qk36e
+# dTBFqBfVjxcVPBX0w6zWnS25WlB/QF9xTH87HLhQPkkbRqK4w0/3Q5i5RHu523KI
+# 9F2ktYNT1q90ouLbmx2p3aOApr5wU8UHbcjUC1rz89I5xkpckqwM14Y5brTvSQGQ
+# fMh1rHVsnHgGYqAz/zl1+b46S1nTAth2ZRiF2i3lmt3KhrIjO3rBKD2eEzkL+vje
+# nYGv6IhiParOXuGHo1z6KI+/SjGhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAIT9wzT35FTtvDD4/5khg1MA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYx
-# MDA0MjMwMDI1WjAvBgkqhkiG9w0BCQQxIgQg3A20DJfzR+2BX8MnQfnpqWuIHvdB
-# RH02eZ74SnxVJeYwDQYJKoZIhvcNAQEBBQAEggIAGnEnNYFYO3C/MTLUxa8F/U3Y
-# J1ZyzgMJN/GhM6Lw3RgyE0MDKG7gVFbkV4VEkD2DEyPad6FebRmoPWsB3rHrJl8R
-# hWaaKJq5vYZvx98U4Q1vzchO0NK6KS16F1a0lU29tslEDO+Vh1V/noMp8zVJ2NGc
-# 6YoqEOR73OvcixjMtnMe/6H4NEz1uNcAtx6is7HWt9VByiGueAbrX2LYFk2+ctrn
-# R5KNJ9gTDc/WgbRyutQzt9lgerscExDUTFim4vyHKlX4As9MChCKvHHJbVo4GGCd
-# PhLpTSX4DsqlTcFEN3vagwLmAmwL5YEL/KjjCAJMDL20f5Jb7fuuqId1T9hY4fhD
-# XMpyVawZ4/yjce6zggKJ8K/6yslcig2v6+bP0qnnGxBUMFFrkzzn1PZwOxKrRidc
-# bQmIqNxIFrU+7aPhdHCgSr+9XIlgNFrp3vRRCLa85fKpXwlSLfOohKHYf0+bRX2Z
-# 8tyiU/GOjG+uFV8g1Hx8v2o4jfGmW18bYXzEWheFTaK9NlSg6LRiee4cFIAbu3aX
-# 8TuZB8qa422tXi2ZAbTJxuPGB/rKMl40KihB7vdnieHUp6IVa9sD4jc4t45yxXCv
-# KxlCyWik7mZf1Ctp1Dtd15KsCUTbDSasw0zNEpcXJb7pP8U2N6drjP/WZw9IL1La
-# hQJhd6Z58cHVIOjP8A4=
+# MDA2MDIwNjQ2WjAvBgkqhkiG9w0BCQQxIgQgYM9VC2tRl2KeaUtz/hAzjfZDVBEZ
+# glQvQiNS1z8TWIYwDQYJKoZIhvcNAQEBBQAEggIAdDUobWAJiwipMEkFwtJv+MpQ
+# JkKZNwgGyRAoHC2nmfIHp0f/D7iNKln8/JnfKqB+QS0i+og2L7d+nMDagByClj2Y
+# RurJQm6MilwuFz5exFSLgzro1+mDvryLDEHPIEo/y/8HRZwaaCsT2DFQQPeomRmV
+# 4dd+CdipDddg24+PKCphA1N0NGwisEge7jqszznGo7fXjYDlmCvucnvmteGbWlqS
+# U3CJk71O6T8aKUHydJQZksIKWmOwVfzkeq6wTr6lixGk216mGnBEtCBKGU4OEsxK
+# YQ5qYSIlgQTp+o/q1OtYRQi3o11EYGSgl7c1JTu7LNi3c5cYX6HWv2Tmqd4Q8zDd
+# MXJTytnDETa80mR/FXYRa8nIfpLVMGmwHn1vzVYyfX4Z6LJr2iceDF0j2CHc1+wv
+# Rer1HkzxeqsthTVB/EGkIvtHHhJLTn98Gp2ZsJ6WI5+rz566b89cawzzFX1KfuSm
+# nuzzuQ1ryX8khKSk1aaXVy5VvDT5VLj54t3R9o5i1VIm0yvAUeiEF8wwgIoK9whc
+# G3Efbc10nnw0M+QOfAL3KZkoYajc5dYAwr35ooxGsCYQWBKkHpWG8fBc3PGtXRJ9
+# wBZlNNorBtSU6H5XY9TUU4Ws3F7wxBnRarHlz3EcNm7k+ClCtKMeDTFzsQ9nwoTc
+# Cam5+HZoIG8SpD+uS9o=
 # SIG # End signature block

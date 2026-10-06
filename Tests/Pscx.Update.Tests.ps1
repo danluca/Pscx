@@ -34,7 +34,7 @@ BeforeAll {
                 "Prerelease = '$Prerelease'"
             }
             else {
-                "Prerelease = ''"
+                ''
             }
             @"
 @{
@@ -88,6 +88,27 @@ AfterAll {
 }
 
 Describe 'PSCX updater semantic version and release selection' {
+    It 'reads manifest versions with <Label> prerelease metadata' -TestCases @(
+        @{ Label = 'absent'; PSData = @{}; Expected = '4.1.0' }
+        @{ Label = 'null'; PSData = @{ Prerelease = $null }; Expected = '4.1.0' }
+        @{ Label = 'empty'; PSData = @{ Prerelease = '' }; Expected = '4.1.0' }
+        @{ Label = 'whitespace'; PSData = @{ Prerelease = ' ' }; Expected = '4.1.0' }
+        @{ Label = 'present'; PSData = @{ Prerelease = 'preview.1' }; Expected = '4.1.0-preview.1' }
+    ) {
+        param($PSData, $Expected)
+
+        $version = & $script:updateModule {
+            param($PSData)
+            Get-PscxManifestSemanticVersion -Manifest @{
+                ModuleVersion = '4.1.0'
+                PrivateData = @{ PSData = $PSData }
+            }
+        } $PSData
+
+        $version.Text | Should -Be $Expected
+        $version.IsPrerelease | Should -Be ($Expected -eq '4.1.0-preview.1')
+    }
+
     It 'implements Semantic Version prerelease precedence' {
         $ordered = @(
             '1.0.0-alpha'
@@ -488,8 +509,8 @@ Describe 'PSCX updater confirmation and WhatIf contract' {
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCbyWSKY59RcsdH
-# IF1op+yz7GCdiYE2yLJCc1NNZdNJvKCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBPn3QGn2t0NSJh
+# 96qZXBNtB2Edkdh3bYdSi+9D+eo8TqCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -668,34 +689,34 @@ Describe 'PSCX updater confirmation and WhatIf contract' {
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgLSNLr7NbfzhEV39ypyfc
-# iXSIbzGbeuiDLCU4Ri/iVagwDQYJKoZIhvcNAQEBBQAEggIArf96Y1KQMAeRn+6b
-# 2fMsZ+nvBobSApujlGPJYICvDj0JCgoOOUH1CN+SfPTiG4k4Jolu8AX2OlP+XAfU
-# RkHU4gpgfJSprjQnXHTS5cjjO0qnYCNFfXJJB2jN9J2/AJgKC2PMrK0gDo9KJMHq
-# y9VxryZFeeN7vGMdZeiV4vExthh3dVpEaYs1KQy+zc9MDgBh/Ah0xFNGc2hyn05R
-# ad9OZjdT9PDfMw+WDWnY7e++DLsDfslQFnUUA7g48l0LS8VS9PpyO7LtTLaqqmH8
-# F6E9c56J1uUb86Ns4gRzRSjK4mrxlgZgc5UpMu+H9V/A/FQpKleQt+SdsbnRRxYi
-# KYoHPrm1SeRxb7H5srRNgso/nFzdJIYYsCSZIdnXTAphnud1i9D5OWYTRegIDadB
-# 6jIp63CgRSmRECpB9Ju7Exw/AraLz5bWb1cEiQ9/U9wwQzCgexnP0cgOWe8Whco7
-# Rz0N13IWcsCnzbL39GFRgwE9TLEXuDJqTZ/GrlnSpcx5BBCCB01qdqbfIhuSwlWO
-# Zf+CAMK6sG8aES5v3pXrPPjyWp5uYrpvJXoi43elg0H3/n+ug+4spXNUfPILxvhB
-# p5GV0jnyueoyAd9jN+dwrnkqonClQxUWCXP0DhCYDz3Jjih8OkV+ZIrX6nXeedq8
-# m0sjYXF7ryrQFc4kt5zjSJNFTgWhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgDfSslPFBMsolmrUjBMFp
+# env/AJFC0K0RPoOh0pi/d5owDQYJKoZIhvcNAQEBBQAEggIAQdi/JOhJOPL3iU4d
+# PQFV67uG/oAWdI/lyNMrzeefrTKvoUQ22oF8Zt0/DJ3laPc4MKbdjaUedUNVDgbS
+# V4+w5d/PxDobNRK+hhTAPpct3pCkqAKTc5JrCD/Sqe1wTojyDahIfg9KF0OWNcnv
+# fisHd88OUrWh+0s8t6bmz4tm9dM5TqNgAW4roENnawQEnSdDrLSIGaN5gfcltRiq
+# RnlsA1eq/O3azOWI5a9s0pZcy3SaCmRhA6Ai5I3LlrSNYFV9uvu0tMBcVEu1SVcT
+# RPnzGcMJAChDu7+fUldKoi8A4lap41nMFAYksPTA7m+IdFl5cVI6ulUNWmGdFDqD
+# iw7VWFMYTqcklCwr2JI3QKJwyizVjrm007fCnaVl8wIPqMz8GwyEQACdw0wcJJkL
+# 8/ktaghDieaFTpEv6WrRT4TrL1T/uj11143sus/NjZvtozsNFvS35Unef57Kh4j7
+# syOAvbr3AclY7Ke2k1oRZoNwyaFYxL7sAvfT/z4kXllwsWL0+uXqEn9ckYDIOWa5
+# pK9Z3XN468gqi5yqBFzGrns7BsoPb2IB6on7n8YwsIoPPqMovAEeXGs0htKUlGrN
+# vz1BdjulezAF7niBXY3ub9jJ2Wifmr0WzjEHBslVr1v5yDnKlv6x16N+36Edy/+S
+# LmI0mgXrlhctWd00fXyISsrFb56hggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAIT9wzT35FTtvDD4/5khg1MA0GCWCGSAFlAwQCAQUA
-# oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYw
-# OTA0MDEzMjMxWjAvBgkqhkiG9w0BCQQxIgQgNMd5FjbmkbhLFPigVncLwQZ7iEDK
-# AKcmXfyqZexFbvMwDQYJKoZIhvcNAQEBBQAEggIAdENo9Z1TlPeLYIg+KE6MaKJ/
-# hxGsQxcLvhLXMPtx3y9fko/ZNFQ+6n6+BhmYx9fQTnjoviBtUgJNB03vInoaoWOQ
-# gPKnk3kieoT7Gcpe3ARLDmYsdVywiVyHFxbWwWnQmqESNvaRnJQ2Nr1lJxK/+1Ic
-# UQbAeL+/1PaIDX/oFS5boR2Jpi9A/v9jO1QBg39Cw/EearJj7NZ7Uwig9sPlxKSL
-# jTZLOdQ91PxmMmnuA/jeteDUNltBK0sZ6YentkXdHnMIsUXcfX6xcZXfsaaKSxer
-# H8OKMOMKX/e5YDOWCx5KtFbiM8Wa28H9l+HQ1y/i9VbCBOrIodk8XK5Rb4VuOybp
-# bYFwTAVkRiLuqcI0w0B122eXt3/R8Sp0yqRbC3O6nj/WKv4fpbg3cGpY8aY8hc3O
-# z9cL7yYXIxxJstK1+vtunwJogsgXP/Q5Qf+hcVmdgSaxwanMttApj1w0I+8jB8Eb
-# V605bqKW7slBtli15H2Zj7XUWsAsXnNhq+elM3P2qB0LShwIrYBRQqHzrhkkxVSo
-# UGvc7W6q5QWQCwLJLm7xwHAdrMC7a7c7fq3cCuJWJGG3lG92vwZmq0EcJ3H0oAcT
-# ESMHbKG4hIfAi4pHEdLy/+j4rojG6LRmTJzwyLmfjT8OJf64YvPLrs/tz5rafyx3
-# 2Tds9a36AZcJ7sRFNtc=
+# oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYx
+# MDA2MDIwNjU3WjAvBgkqhkiG9w0BCQQxIgQgszvZ/xH/r8RsdcXvvHDNt2OHg+vs
+# +mpnPSF2HEK59eYwDQYJKoZIhvcNAQEBBQAEggIAX7tIB6djrUJgB4citSGwztOc
+# g5AT2CJqLWOc360TJXLfCvp+B4lnzlq9E0YknAjalhjvXivhquU+AjCHZ+rlHEKe
+# 0LL9LyGuG+pK+JeEgPR+YRkTK66eVsmHF7M1fyA2cfRvK5WdhBMxYxuNWReuH1HV
+# cQejVGoofD/rkw3TySTliv3B+FdCD/LokbPAI2ZOLnZjO6P0I1yC6BsXhAxRqiXw
+# FAGszUeJ6bpzGx//hxdGGTTS7xDIZ1aaHQzx1PTgEaUao9ZbBoWsF2T4tBqsQKvI
+# cr94PyUg2+zj9gtWglNfQdSqUs1ffPQ6ebBeVDwilFFLezWOFBY4bDSu7XyhssjP
+# bpKAbXnEEh2sCTbL6MSNF+0da139F0kU29pHkLsDL2cf2lby2EbTuJVBsgrHtiE6
+# t48Ssbc8dJn3/vzmTOTVsXPOW00XgErXA/eBlOAbWRRakcAX5jZ1cjLVwbg7/Jyj
+# S98011LRWzdifWm2ilLH0Rk2R0x52mwELlWQ+BVMIPGQAJ7EOkcn3n8i8cHe0ZuR
+# SyjMI5LPl6N42xZNaYjuqxUwPQ7ARtFVG6kXrOyMva8z4EuJFS5NdAA3wbBC1uKO
+# +SSRUjGeDggG0GxKJaruy7/vOi/uQ22WC5iYmi08AUoge8PRu3nHJd69+W+0MX3V
+# di/tiEP5fFPpvCnuS+0=
 # SIG # End signature block
