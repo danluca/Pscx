@@ -1,5 +1,14 @@
 # PowerShell Community Extensions Light Changelog
 
+## 4.0.1 - October 5, 2026
+
+* Reissued the PSCX 4.0 release as 4.0.1 because the existing `v4.0.0` tag
+  cannot be recreated on GitHub. This release includes the fixes documented
+  below for optional prerelease metadata in guided updates, local installation,
+  and installation diagnostics.
+* Release assets use `Pscx-4.0.1.zip` and matching checksum and SBOM names;
+  modules install under their `4.0.1` version directories.
+
 ## 4.0.0 - October 4, 2026
 
 PSCX 4.0 requires PowerShell 7.6 LTS (`7.6.x`) and .NET 10. This is a

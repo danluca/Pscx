@@ -18,16 +18,16 @@ directories. Extract it directly into a directory on `$env:PSModulePath` so
 
 ```text
 Modules/
-  Pscx/4.0.0/Pscx.psd1
-  Pscx.Archive/4.0.0/Pscx.Archive.psd1
-  Pscx.Time/4.0.0/Pscx.Time.psd1
-  Pscx.WinAdmin/4.0.0/Pscx.WinAdmin.psd1   # Windows package only
+  Pscx/4.0.1/Pscx.psd1
+  Pscx.Archive/4.0.1/Pscx.Archive.psd1
+  Pscx.Time/4.0.1/Pscx.Time.psd1
+  Pscx.WinAdmin/4.0.1/Pscx.WinAdmin.psd1   # Windows package only
 ```
 
 Import a specific version while validating existing profiles and scripts:
 
 ```powershell
-Import-Module Pscx -RequiredVersion 4.0.0
+Import-Module Pscx -RequiredVersion 4.0.1
 Test-PscxInstallation
 ```
 
@@ -184,7 +184,7 @@ Use a clean PowerShell 7.6 process with only the intended PSCX version on
 `PSModulePath`:
 
 ```powershell
-Import-Module Pscx -RequiredVersion 4.0.0 -Force
+Import-Module Pscx -RequiredVersion 4.0.1 -Force
 
 Test-PscxInstallation |
     Format-Table Status, Category, Name, Message -AutoSize

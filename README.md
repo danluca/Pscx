@@ -10,7 +10,7 @@ upstream commit
 
 The customizations made in this fork include:
 
-- version 4.0.0 targeting .NET 10 and the
+- version 4.0.1 targeting .NET 10 and the
   PowerShell 7.6 SDK;
 - a cross-platform core for Windows, macOS, and Linux, with a Windows companion
   module for platform-specific commands;
@@ -63,8 +63,8 @@ the [Imports](Imports/) folder for the applicable license files.
 2. Verify the ZIP against the matching entry in the checksum file:
 
    ```powershell
-   Get-FileHash ./Pscx-4.0.0.zip -Algorithm SHA256
-   Get-Content ./Pscx-4.0.0.sha256
+   Get-FileHash ./Pscx-4.0.1.zip -Algorithm SHA256
+   Get-Content ./Pscx-4.0.1.sha256
    ```
 
 3. Extract the ZIP directly into a directory listed in `$env:PSModulePath`.
