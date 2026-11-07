@@ -1,5 +1,11 @@
 # PowerShell Community Extensions Light Changelog
 
+## Unreleased
+
+* Fixed the guided updater masking GitHub HTTP 403/429 responses with an
+  `HttpResponseHeaders` indexing error. Rate-limit failures now report the
+  original status and the reset header when available.
+
 ## 4.0.1 - October 5, 2026
 
 * Reissued the PSCX 4.0 release as 4.0.1 because the existing `v4.0.0` tag

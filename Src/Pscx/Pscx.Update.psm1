@@ -229,7 +229,12 @@ function Get-PscxGitHubRelease {
         $statusCode = if ($null -ne $response) { $response.StatusCode } else { $null }
         $statusValue = if ($null -ne $statusCode) { [int]$statusCode } else { 0 }
         if ($statusValue -in 403, 429) {
-            $reset = if ($null -ne $response) { $response.Headers['X-RateLimit-Reset'] } else { $null }
+            # PowerShell 7 exposes HttpResponseHeaders, which has no indexer.
+            $resetValues = $null
+            $reset = if ($response.Headers.TryGetValues('X-RateLimit-Reset', [ref]$resetValues)) {
+                $resetValues -join ', '
+            }
+            else { $null }
             $resetMessage = if ($reset) { " Retry after GitHub's reset value '$reset'." } else { '' }
             throw "GitHub release discovery was rate-limited (HTTP $statusValue).$resetMessage"
         }
@@ -833,8 +838,8 @@ Export-ModuleMember -Function Invoke-PscxUpdate
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCC4/c859eL6Kz57
-# geDmLOcHnBUMoPa8MH7SJYosOAWLQKCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBWvtl3oYhQI5yx
+# Jkdv7NzILEdgDH7n+bA3pEXYjboSMaCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -1013,34 +1018,34 @@ Export-ModuleMember -Function Invoke-PscxUpdate
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgeaqEBi1u65eMa25ws7Eh
-# FFK96buUZodvI8UR4k3F3xwwDQYJKoZIhvcNAQEBBQAEggIAVbSRAgDfmg2qU5Dh
-# 0AjGKPyHHwHtJJBrjxfusDNyjDeZWbYmccWSvZWHU0r2RiQp5ZxCJ3ebAL87ZjC3
-# QdFVIo0MA/fHN9Bww/1shp1aXGhT3N2TXboHuNaTTNx58Lw6ckA/0zkaZFcIW0+Q
-# z8jlKpkIjfAYWMHQeXU5eytzufn9WJx5ZO41NC/uy2sY2eSRo+26rUXQhhLhYjpd
-# XRjJuAP1gXFX5pmaQCnpP8a3K3P5FNpLpTH/iV5iuH/WNHTeBZSmGnERhb0fEdvJ
-# uOBHSRXDAzxj0gMpueSJ+Qvh7NBKCx+KYs2LVztUbmDeYdeTQ6+rBYYWgbhmtyKQ
-# P36BnaSnlyah8yHz4Xcb+gB+mzDI6/1UW+nIrHLklENL+kd7wN73UvEsfpg3Npw/
-# +oob6rGKpr4BY8j04L7xSqnugnO/wrwF3nfCQgFN0jgh9PDwjLSBLuNIj8UBtVHs
-# +9godycqQAcDfb1CGKCWARuvKSagS0ynGbyoqld1hh/RMBzuqPS0Hj9NiHcyKQdd
-# aaFnqH4u+0jx6nTPGyDI6V+0Dx/WaYHbcYPRi6FS8Gy6e8AuJffCisU0ZYt0DTLy
-# jKPAECVPQD2wolud5zzZagOsuPdxfBp72GuPqy8xjMoQDhIVddkZ0zNjRLzqDEqJ
-# F9Vimp2swtN8m9afc/6b9pNY7EyhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQg8Vjd9SIeatcdRkADoTbg
+# t7pmGq19QaEuDkaN9W9iERswDQYJKoZIhvcNAQEBBQAEggIAQD63d7uEtbqJUpSM
+# vModGSazcaL32vABOJyuHN28ixD1zZ5T2B6V7VYTKx7hdZGQ2aNuKwd+UIgiQnqI
+# nsQ1Ji+eK4c1m74CracusG5wtHGPWtrJeHgdyHe7+ADtJ/T4JZYphD+7vrclrDFo
+# 8hU+JaL8o3AhITZ8jp21wuFp8uJDm+OZITolgr2tfRriF3b4NCMa+q7caH0jUl/V
+# jZxH/u+7lcpPxt5uYLYW0fXms4XDvefOwTseVoInMB4iKoLYPgnIO09fYaoyQ6MQ
+# 9RzoVo5BHAcHHXqyqPiFShUsnEwAZwLeYORlFjZ1N4PKHhMROEu+4cK0/xdaxOOr
+# ZIo9FoHsTbuCU79nn158139YaXiErJ1T2/X680rAdYpoiWGUU64tKgrazvwPadqS
+# qMl9E5qeA7hX1R58pbXwy7punR8rlvFfck3Nyus4cHNq/wB1ozux5MjaDPvcHHbv
+# sQQ2D9/I+v1JwX58Y2KeVxYbYBoi78ZAMqM/v+woRjLsqpPv6XC8SKewsMtt6ooa
+# KxELpcfhetGmvci1MUnWFAGE6mwx/F3JG4JCW//TaGHaZH6WQl0Z0GgKmA4Ogpiy
+# 1WrleKQmGvV6VUtl3Ooit/v07pP276+0VlRL//c3ZrvInVk2UkflJWXFU38PM7qi
+# jpS44yCR9YyhL+S8PJ3lufdg8IOhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAIT9wzT35FTtvDD4/5khg1MA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYx
-# MDA2MDIwNjM1WjAvBgkqhkiG9w0BCQQxIgQgNN05dpW/DlTJsqdIyVzENznTPvm8
-# wRf0nwe8OWnfARYwDQYJKoZIhvcNAQEBBQAEggIAYbqxa3icuntjEOHQ2pBHA7Mx
-# K2RAetvZTj3utN+LrJGlDyuG1hH0nMPtEdEa+qxHeaj4U7YxHvad1NOx+BCbLBmP
-# QqYIuYl0Pa4JiSjn8xH0FVT9uVPmyPMoey8oE7TokfVL5TV6hZ8xCPYs7krRFcJ4
-# xghrvra/mwAnGcrsMeksCmsy8xip3pFNB2M+lIbDKiaALM6H2gzY90ILWucLQkz3
-# giO0l3yOrqTLhhNfygNJfTHGCffYti23oBUhGXrmAaZcp+y+0R+5GkTSPvGjkvQV
-# zKlqRlwlXpdxlp9aP3nQ0URGs6BnzpsKgqL7WTaPtin4MGjpmcI6KSN5MqEdxNKj
-# 9uLAGcz7Zih8S7qDGG4pgh3058IurD1iMfO+aWD4qN4kd/+nfF88LZnnQvEj6BkL
-# JFbM0lZ7Mta9KGM/vEjfaMERyEGUDoGQsKZwyYTDM6qGOKYq9iWVlZfoAU7CHGDD
-# eYvJAfcFM0EGgcnepcmQyuWlVZ6WhOLgofry8yJbi5B1w2JN+3oCoKfxPhc09fw0
-# /FjkUG5ENu9spPRCWLmZ7IgDVorqruFP1rRYor4ir8d3hoglAmJJ9GkHgUsPe2B4
-# jRRvRwxVrcJA7Gyn2djsB2hF6HI60wNCeJcbsU5D9dzTO8ManE51EOPVeM92X8/r
-# yJ1RtSkOmEAZ14/KDvo=
+# MTA3MjA0MTU5WjAvBgkqhkiG9w0BCQQxIgQgNWay9fIp0EQwAtI93V4Gq+4uc0gR
+# 4EYhEBNIMQ6ez8AwDQYJKoZIhvcNAQEBBQAEggIAdo2E9A8QIiLSVZDaZUjy8gS0
+# EtcSvr3brqH7Ko5Z94z78rToUemoUwwQ3GIZBA4vZeIbyu/CC0OT22b6laSFIgND
+# DAc5b6EbgujP/UiepVuvi1/rjGfawAmXU7PYD15+4og6+GgYV6BnhuPkRYDf2EE1
+# Y1DaRaoh4WOA7syMvNHM5s6dIL30D2Z1ENwvzhkxWw0PKg8ilmvHMLyinfDpsFJc
+# il58FyJcbHgtkuDRidtRk9+gNNormnqtiyWGDHQOuIAzS1Bsci44RKfzpWK2KYQr
+# ary7nFOWATNbrS55uWB7kipzuZeA4pbFhdVJMCAS8SMUV+W3XiIoKy3C1ZX67Fuc
+# SnNoxyKQ8n+9YvZ/DMwjuzdGCKs5xl3kZDKnZFhMe/g7EPerxk5/OVIaFtpwSQaO
+# tY4/5U21sh89nWXZvyw7bwkb5tznue99+x1XEzVGNRGzQUtQhnSGae/TXohd2E2/
+# /gYPddcdJn4aYOAXgOxDz6X+tbwZBg0XbpvJrHnryJjHJm+CToceHon2lc+6+OlW
+# C+4OMdg/dumUIrT4rQM0ZIUJbsFtJ/rRd4FAbrgg8/fWjPbsEBm0KuygnKdVpAlC
+# iWgxG4T5irmOAQzb0KpFIncnjsGxGRaTJ3aCxpefeFKSaud7Tnuo5QqFxM2m1kxd
+# tdJtbtr4QdcZb5xRhZw=
 # SIG # End signature block

@@ -207,6 +207,36 @@ Describe 'PSCX updater semantic version and release selection' {
         $selected.Version.Text | Should -Be @('4.0.1', '4.0.0', '3.8.0')
     }
 
+    It 'reports HTTP <StatusCode> with reset header <IncludeReset> without masking the failure' -TestCases @(
+        @{ StatusCode = 403; IncludeReset = $true }
+        @{ StatusCode = 403; IncludeReset = $false }
+        @{ StatusCode = 429; IncludeReset = $true }
+        @{ StatusCode = 429; IncludeReset = $false }
+    ) {
+        param($StatusCode, $IncludeReset)
+
+        $response = [System.Net.Http.HttpResponseMessage]::new([System.Net.HttpStatusCode]$StatusCode)
+        try {
+            if ($IncludeReset) {
+                $response.Headers.Add('X-RateLimit-Reset', '1794070800')
+            }
+            $script:releaseRequestException = [Microsoft.PowerShell.Commands.HttpResponseException]::new(
+                'GitHub request failed.', $response
+            )
+            Mock -ModuleName Pscx.Update Invoke-RestMethod { throw $script:releaseRequestException }
+
+            $expected = "GitHub release discovery was rate-limited (HTTP $StatusCode)."
+            if ($IncludeReset) {
+                $expected += " Retry after GitHub's reset value '1794070800'."
+            }
+            { & $script:updateModule { Get-PscxGitHubRelease } } |
+                Should -Throw -ExpectedMessage $expected
+        }
+        finally {
+            $response.Dispose()
+        }
+    }
+
     It 'reads installed prerelease metadata from manifest hashtables' {
         Mock -ModuleName Pscx.Update Get-Module {
             @(
@@ -509,8 +539,8 @@ Describe 'PSCX updater confirmation and WhatIf contract' {
 # SIG # Begin signature block
 # MIInmgYJKoZIhvcNAQcCoIInizCCJ4cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBPn3QGn2t0NSJh
-# 96qZXBNtB2Edkdh3bYdSi+9D+eo8TqCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBnoCQwFOo6D47x
+# WpNSJE0f047lSeKQHWtJO2QUR2BmlKCCIHEwggWNMIIEdaADAgECAhAOmxiO+dAt
 # 5+/bUOIIQBhaMA0GCSqGSIb3DQEBDAUAMGUxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xJDAiBgNV
 # BAMTG0RpZ2lDZXJ0IEFzc3VyZWQgSUQgUm9vdCBDQTAeFw0yMjA4MDEwMDAwMDBa
@@ -689,34 +719,34 @@ Describe 'PSCX updater confirmation and WhatIf contract' {
 # cyBDb2RlIFJTQSBDQTEiMCAGCSqGSIb3DQEJARYTZGFubHVjYUBjb21jYXN0Lm5l
 # dAIIBtflh7Az5TYwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIBDDEKMAig
 # AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
-# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgDfSslPFBMsolmrUjBMFp
-# env/AJFC0K0RPoOh0pi/d5owDQYJKoZIhvcNAQEBBQAEggIAQdi/JOhJOPL3iU4d
-# PQFV67uG/oAWdI/lyNMrzeefrTKvoUQ22oF8Zt0/DJ3laPc4MKbdjaUedUNVDgbS
-# V4+w5d/PxDobNRK+hhTAPpct3pCkqAKTc5JrCD/Sqe1wTojyDahIfg9KF0OWNcnv
-# fisHd88OUrWh+0s8t6bmz4tm9dM5TqNgAW4roENnawQEnSdDrLSIGaN5gfcltRiq
-# RnlsA1eq/O3azOWI5a9s0pZcy3SaCmRhA6Ai5I3LlrSNYFV9uvu0tMBcVEu1SVcT
-# RPnzGcMJAChDu7+fUldKoi8A4lap41nMFAYksPTA7m+IdFl5cVI6ulUNWmGdFDqD
-# iw7VWFMYTqcklCwr2JI3QKJwyizVjrm007fCnaVl8wIPqMz8GwyEQACdw0wcJJkL
-# 8/ktaghDieaFTpEv6WrRT4TrL1T/uj11143sus/NjZvtozsNFvS35Unef57Kh4j7
-# syOAvbr3AclY7Ke2k1oRZoNwyaFYxL7sAvfT/z4kXllwsWL0+uXqEn9ckYDIOWa5
-# pK9Z3XN468gqi5yqBFzGrns7BsoPb2IB6on7n8YwsIoPPqMovAEeXGs0htKUlGrN
-# vz1BdjulezAF7niBXY3ub9jJ2Wifmr0WzjEHBslVr1v5yDnKlv6x16N+36Edy/+S
-# LmI0mgXrlhctWd00fXyISsrFb56hggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
+# MQ4wDAYKKwYBBAGCNwIBFjAvBgkqhkiG9w0BCQQxIgQgvc55L6qyQ/pEoafY97H5
+# Xtwkn7fWN3mC3+oWqtCaxCcwDQYJKoZIhvcNAQEBBQAEggIAOM+Nlmbfi/isT8dK
+# BwvAvy++fUQnxk4vfWwUR68cS0RRhk7wlKKMe7DqN/hA4jyANQD4XrlPEMaM9kkz
+# DVdvF8Ker+WvMieYPPL6ue8S/oAlyzf73iipfAtG+ltuQn2iPzJ7h6AOhLiK6MEI
+# iDNaKC1s7VP3fRHUZ9J120Rv5PDluE4kag/l2uW05RVhm/Tg9aNm2HYBtL9oC9tU
+# 3YmQZ7bPwDiXwhEsU2uXHTFiliz4kXt5Bvq8y8RcnMYdvpSD0rWcNo5kp7DrduHQ
+# 17jnrfHCVlwxXzmeDM1qa+5smtQrhgRaYcG5/JRnfvPYOaaqOKV8N1JnEQkrEHzB
+# a+/CetbG0Vii2j+WuNPt5UjKLOMPIJfY1yq49iiT8V6NGeweZSYfAq7lyE46x1I5
+# 0KEYvMnRDe9izbI26ifPIfUgfmpNUbRqUzzpyMsfte6tJJy/FO9ncHF4wcWYT0U0
+# Q289a7pIiIFrVRne0DnvwySkkqKwIm7QeqB58KnPMKM7ID2W+pQfPbzgTkS056Yo
+# gSzNOjgFFESyma+IS7C5wQIPpVYWZPewK88UiMLkmyEHifHhHFgTQLgsC81vX/0/
+# 0eV0tRr1jNx9lZL9+cPoqL+KgnI6SDFIC+TxSraZyig1qTEGTzGLuYlEalWuFhBh
+# 2+1lH+7YKi3KQS4/dg9CAZVUZVWhggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8C
 # AQEwfTBpMQswCQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/
 # BgNVBAMTOERpZ2lDZXJ0IFRydXN0ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYg
 # U0hBMjU2IDIwMjUgQ0ExAhAIT9wzT35FTtvDD4/5khg1MA0GCWCGSAFlAwQCAQUA
 # oGkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYx
-# MDA2MDIwNjU3WjAvBgkqhkiG9w0BCQQxIgQgszvZ/xH/r8RsdcXvvHDNt2OHg+vs
-# +mpnPSF2HEK59eYwDQYJKoZIhvcNAQEBBQAEggIAX7tIB6djrUJgB4citSGwztOc
-# g5AT2CJqLWOc360TJXLfCvp+B4lnzlq9E0YknAjalhjvXivhquU+AjCHZ+rlHEKe
-# 0LL9LyGuG+pK+JeEgPR+YRkTK66eVsmHF7M1fyA2cfRvK5WdhBMxYxuNWReuH1HV
-# cQejVGoofD/rkw3TySTliv3B+FdCD/LokbPAI2ZOLnZjO6P0I1yC6BsXhAxRqiXw
-# FAGszUeJ6bpzGx//hxdGGTTS7xDIZ1aaHQzx1PTgEaUao9ZbBoWsF2T4tBqsQKvI
-# cr94PyUg2+zj9gtWglNfQdSqUs1ffPQ6ebBeVDwilFFLezWOFBY4bDSu7XyhssjP
-# bpKAbXnEEh2sCTbL6MSNF+0da139F0kU29pHkLsDL2cf2lby2EbTuJVBsgrHtiE6
-# t48Ssbc8dJn3/vzmTOTVsXPOW00XgErXA/eBlOAbWRRakcAX5jZ1cjLVwbg7/Jyj
-# S98011LRWzdifWm2ilLH0Rk2R0x52mwELlWQ+BVMIPGQAJ7EOkcn3n8i8cHe0ZuR
-# SyjMI5LPl6N42xZNaYjuqxUwPQ7ARtFVG6kXrOyMva8z4EuJFS5NdAA3wbBC1uKO
-# +SSRUjGeDggG0GxKJaruy7/vOi/uQ22WC5iYmi08AUoge8PRu3nHJd69+W+0MX3V
-# di/tiEP5fFPpvCnuS+0=
+# MTA3MjA0MjI2WjAvBgkqhkiG9w0BCQQxIgQgE0Sxaw4WbSo+J3pYASNZaE6jbEhs
+# /G7sJFbgpsJl4uAwDQYJKoZIhvcNAQEBBQAEggIAEvbRyIGDiE4a4W+QTXc8MjyE
+# cRitHaHq2luG0BBkbwzsthRDGvSBgK283vZu+ZPXZkJplF981FQTTp6VPPlUnkBe
+# qN7G/ZeJupGAEkCEbdmE11bLueTtyG59+xPVL7SgRkuZ1zgIO3UuagNwC8F/VC6Q
+# RicHIbE0m8iN03F7bM6oWjGlGgwGr3c6Ed4sOdajAx6HM488aasko9nLfRvDV97f
+# WTspsRqGPFwmemdVnuEIyg/n4PCtK8wtgVITY/8xdzgG1O/xDhJLXgvem0uMLUlU
+# lUmjD78ENVdLhxoakYadmOjovv5TNLPI2MjsEbXJy2mVg4xjhZxMOUWYDpQVBgpf
+# HxqNfaUj5z+X1MOAwFDUyaBVZOTb8o4Lq1Lk79A5tajhcJAl6HOhg2kx2FmoLxEI
+# 3+9EsFhCdQYzHM3LPeP30ULha1V5kn/NaDD0qGh68LHVhHmIYZwL2Sk5A8HgvN4Z
+# IpoUPd/uZs0VroqgLGtTLb9BOyi6P+u7ibFtnrlIx2tdNhpdEf9J6x8xyVa+HywX
+# dt+fxQsh78rRHBPlfSbcyncAC0v2sW9H/lQmbWjjImXHm92mhyhAu8LHcAEjgjiG
+# x0AgBGAS/EIpYgVTm+vKWYIT2H8rAjAo626kjgiF6TGEAANRA1tvW1EL5Y7o3cNw
+# fy9lxLgI126ZNRUZZgs=
 # SIG # End signature block
