@@ -437,8 +437,12 @@ Use `-BuildScope Full` for the complete Windows package or `-BuildScope Core`
 for the cross-platform projects and package. Full builds are intentionally
 Windows-only.
 
-The build requires a stable .NET 10 SDK. `global.json` accepts installed
-10.0.x feature bands and rejects preview or later-major SDKs.
+The build targets .NET 10 and accepts a stable .NET 10 SDK or a newer major
+SDK, including .NET 11. `global.json` prefers the requested SDK feature band,
+then rolls forward to the next available feature band or major version when
+necessary; preview SDKs are rejected. Using SDK 11 does not change the module's
+.NET 10 target or PowerShell 7.6 runtime requirement. Running managed tests
+still requires the .NET 10 runtime.
 
 Build output is written beneath the ignored `artifacts` directory. Pass
 `-ArtifactsPath` to use another directory. `Test` runs the cross-platform,

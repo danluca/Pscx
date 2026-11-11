@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+* Updated the cryptography dependency override to 10.0.15, resolving the
+  high-severity Xml and Pkcs audit failures. Builds now allow stable SDK 11
+  through SDK roll-forward while retaining the .NET 10 target and PowerShell
+  7.6 runtime baseline (#36).
 * Fixed the guided updater masking GitHub HTTP 403/429 responses with an
   `HttpResponseHeaders` indexing error. Rate-limit failures now report the
   original status and the reset header when available.

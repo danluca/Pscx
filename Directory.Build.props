@@ -25,7 +25,7 @@
     <NuGetAuditLevel>high</NuGetAuditLevel>
     <WarningsAsErrors>$(WarningsAsErrors);NU1903;NU1904</WarningsAsErrors>
     <SystemSecurityCryptographyXmlVersion
-      Condition="'$(SystemSecurityCryptographyXmlVersion)' == ''">10.0.10</SystemSecurityCryptographyXmlVersion>
+      Condition="'$(SystemSecurityCryptographyXmlVersion)' == ''">10.0.15</SystemSecurityCryptographyXmlVersion>
   </PropertyGroup>
 
   <ItemGroup Condition="
@@ -37,7 +37,9 @@
       '$(MSBuildProjectName)' == 'Pscx.Win'">
     <!--
       Microsoft.PowerShell.SDK 7.6.4 resolves the vulnerable 10.0.6 version
-      transitively. Keep this explicit override until the SDK dependency graph
+      transitively. Xml 10.0.15 also raises Pkcs to 10.0.15, fixing the high
+      severity advisories affecting both packages through 10.0.12.
+      Keep this explicit override until the SDK dependency graph
       selects a non-vulnerable version on its own.
     -->
     <PackageReference
